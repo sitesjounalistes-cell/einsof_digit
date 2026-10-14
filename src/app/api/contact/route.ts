@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { upsertLead } from "@/lib/leads";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { sendContactAck } from "@/lib/adapters/email";
 
 const schema = z.object({
   firstName: z.string().trim().min(2).max(60),
@@ -64,6 +65,15 @@ export async function POST(req: Request) {
     await db.leadEvent.create({
       data: { leadId: lead.id, type: "message", data: JSON.stringify({ messageId: msg.id, subject: d.subject }) },
     });
+
+    // Accusé de réception e-mail (réel via Resend si configuré, sinon journalisé)
+    if (d.email) {
+      try {
+        await sendContactAck(d.email, d.firstName, lead.id);
+      } catch (e) {
+        console.error("[contact] ack email", e);
+      }
+    }
 
     return NextResponse.json({ ok: true, data: { id: msg.id } }, { status: 201 });
   } catch (e) {

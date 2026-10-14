@@ -19,6 +19,8 @@ export const SECTIONS: SectionDef[] = [
   { id: "pricing", fr: "Tarifs" },
   { id: "faq", fr: "Questions fréquentes" },
   { id: "about", fr: "À propos" },
+  { id: "projects", fr: "Réalisations" },
+  { id: "journal", fr: "Journal" },
   { id: "trial", fr: "Essai gratuit" },
   { id: "contact", fr: "Contact" },
 ];

@@ -14,6 +14,8 @@ import { ProcessSection } from "@/components/site/ProcessSection";
 import { PricingSection } from "@/components/site/PricingSection";
 import { FaqSection } from "@/components/site/FaqSection";
 import { AboutSection } from "@/components/site/AboutSection";
+import { ProjectsSection } from "@/components/site/ProjectsSection";
+import { JournalSection } from "@/components/site/JournalSection";
 import { TrialSection } from "@/components/site/TrialSection";
 import { ContactSection } from "@/components/site/ContactSection";
 import { Footer } from "@/components/site/Footer";
@@ -43,6 +45,8 @@ export default function Home() {
           <PricingSection />
           <FaqSection />
           <AboutSection />
+          <ProjectsSection />
+          <JournalSection />
           <TrialSection />
           <ContactSection />
         </main>

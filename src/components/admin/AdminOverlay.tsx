@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { Download, LogOut, RefreshCw, X } from "lucide-react";
+import { Download, LogOut, Plus, RefreshCw, Send, Trash2, X } from "lucide-react";
 import { GoldButton, Monogram } from "@/components/site/kit";
 import { onAdminToggle } from "@/lib/chat-bus";
 import { SAAS_PRODUCTS } from "@/lib/catalog";
@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 /* ── Typage des données (aucun any) ─────────────────────────── */
 
@@ -62,6 +63,74 @@ interface OverviewData {
 }
 
 type AdminView = "closed" | "login" | "panel";
+type AdminTab = "flux" | "journal" | "realisations" | "emails" | "push";
+
+const TABS: { id: AdminTab; label: string }[] = [
+  { id: "flux", label: "Flux" },
+  { id: "journal", label: "Journal" },
+  { id: "realisations", label: "Réalisations" },
+  { id: "emails", label: "E-mails" },
+  { id: "push", label: "Push" },
+];
+
+const EMAIL_STATUS: Record<string, string> = {
+  sent: "Envoyé",
+  mock: "Simulé",
+  error: "Erreur",
+};
+
+const EMAIL_DOT: Record<string, string> = {
+  sent: "bg-success",
+  mock: "bg-gold",
+  error: "bg-destructive",
+};
+
+interface PostAdminRow {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  isPublished: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+}
+
+interface ProjectAdminRow {
+  id: string;
+  slug: string;
+  title: string;
+  client: string | null;
+  sector: string | null;
+  year: number;
+  summary: string;
+  linkUrl: string | null;
+  isPublished: boolean;
+  sortOrder: number;
+}
+
+interface EmailAdminRow {
+  id: string;
+  toEmail: string;
+  subject: string;
+  template: string;
+  status: string;
+  provider: string;
+  error: string | null;
+  createdAt: string;
+}
+
+interface PushSubRow {
+  id: string;
+  endpoint: string;
+  locale: string | null;
+  createdAt: string;
+}
+
+interface PushAdminData {
+  publicKey: string;
+  count: number;
+  subscriptions: PushSubRow[];
+}
 
 /* ── Libellés statiques (outil interne francophone) ─────────── */
 
@@ -210,6 +279,570 @@ function LeadCard({
   );
 }
 
+/* ── Barre d'onglets ────────────────────────────────────────── */
+
+function TabBar({ tab, setTab }: { tab: AdminTab; setTab: (t: AdminTab) => void }) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Sections de l'Espace équipe"
+      className="mb-8 flex gap-1 overflow-x-auto border-b border-line"
+    >
+      {TABS.map((tb) => (
+        <button
+          key={tb.id}
+          role="tab"
+          aria-selected={tab === tb.id}
+          type="button"
+          onClick={() => setTab(tb.id)}
+          className={`-mb-px inline-flex min-h-[44px] cursor-pointer items-center whitespace-nowrap border-b-2 px-4 text-sm transition-colors ${
+            tab === tb.id
+              ? "border-gold text-goldtext"
+              : "border-transparent text-mute hover:text-ink"
+          }`}
+        >
+          {tb.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ── Onglet Journal — publication des articles ──────────────── */
+
+function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
+  const [rows, setRows] = useState<PostAdminRow[] | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/posts")
+      .then(async (res) => {
+        if (res.status === 401) {
+          onUnauthorized();
+          return;
+        }
+        const json = (await res.json()) as { ok: boolean; data?: PostAdminRow[] };
+        if (!cancelled) setRows(json.ok && json.data ? json.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setRows([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [onUnauthorized]);
+
+  const toggle = async (row: PostAdminRow) => {
+    setBusyId(row.id);
+    try {
+      const res = await fetch("/api/admin/posts", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: row.id, isPublished: !row.isPublished }),
+      });
+      if (res.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      if (res.ok) {
+        setRows((r) =>
+          r ? r.map((x) => (x.id === row.id ? { ...x, isPublished: !x.isPublished } : x)) : r
+        );
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <section aria-labelledby="admin-posts-t">
+      <h2 id="admin-posts-t" className="font-serif text-xl">
+        Journal
+      </h2>
+      <p className="mt-1 text-sm text-mute">
+        Publiez ou masquez les articles du Journal public. La rédaction se fait dans
+        <code className="mx-1 rounded bg-surface px-1.5 py-0.5 text-xs">scripts/seed-content.ts</code>
+        puis <code className="rounded bg-surface px-1.5 py-0.5 text-xs">bun scripts/seed-content.ts</code>.
+      </p>
+      <div className="mt-4 flex flex-col gap-3">
+        {rows === null ? (
+          <Skeleton className="h-24 rounded-lg" />
+        ) : rows.length === 0 ? (
+          <EmptyRow />
+        ) : (
+          rows.map((p) => (
+            <article
+              key={p.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4"
+            >
+              <div className="min-w-0">
+                <p className="font-medium">{p.title}</p>
+                <p className="mt-0.5 truncate text-xs text-mute">
+                  /{p.slug} · {p.category} · {fmtDate(p.createdAt)}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-mute">
+                  {p.isPublished
+                    ? `Publié${p.publishedAt ? ` — ${fmtDate(p.publishedAt)}` : ""}`
+                    : "Masqué"}
+                </span>
+                <Switch
+                  checked={p.isPublished}
+                  disabled={busyId === p.id}
+                  onCheckedChange={() => void toggle(p)}
+                  aria-label={`Publication — ${p.title}`}
+                />
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ── Onglet Réalisations — CRUD complet (H-08) ──────────────── */
+
+const projectInputCls =
+  "h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm focus:border-gold focus:outline-none";
+
+function ProjectsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
+  const [rows, setRows] = useState<ProjectAdminRow[] | null>(null);
+  const [reload, setReload] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [client, setClient] = useState("");
+  const [sector, setSector] = useState("");
+  const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [summary, setSummary] = useState("");
+  const [publishNow, setPublishNow] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/projects")
+      .then(async (res) => {
+        if (res.status === 401) {
+          onUnauthorized();
+          return;
+        }
+        const json = (await res.json()) as { ok: boolean; data?: ProjectAdminRow[] };
+        if (!cancelled) setRows(json.ok && json.data ? json.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setRows([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [onUnauthorized, reload]);
+
+  const create = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (busy) return;
+    setFormError(null);
+    if (title.trim().length < 2 || summary.trim().length < 4) {
+      setFormError("Titre (2+ caractères) et résumé (4+ caractères) requis.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          client: client.trim() || undefined,
+          sector: sector.trim() || undefined,
+          year: Number(year) || new Date().getFullYear(),
+          summary: summary.trim(),
+          isPublished: publishNow,
+        }),
+      });
+      if (res.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      if (res.status === 201) {
+        setTitle("");
+        setClient("");
+        setSector("");
+        setSummary("");
+        setPublishNow(false);
+        setReload((k) => k + 1);
+      } else {
+        setFormError("Création impossible — vérifiez les champs (année valide requise).");
+      }
+    } catch {
+      setFormError("Erreur réseau. Réessayez.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const patch = async (id: string, body: Record<string, unknown>) => {
+    try {
+      const res = await fetch("/api/admin/projects", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...body }),
+      });
+      if (res.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      if (res.ok) setReload((k) => k + 1);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const remove = async (row: ProjectAdminRow) => {
+    if (!window.confirm(`Supprimer définitivement « ${row.title} » ?`)) return;
+    try {
+      const res = await fetch(`/api/admin/projects?id=${encodeURIComponent(row.id)}`, {
+        method: "DELETE",
+      });
+      if (res.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      if (res.ok) setReload((k) => k + 1);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  return (
+    <section aria-labelledby="admin-projects-t">
+      <h2 id="admin-projects-t" className="font-serif text-xl">
+        Réalisations
+      </h2>
+      <p className="mt-1 text-sm text-mute">
+        Les réalisations publiées alimentent la section publique éponyme. Tant qu'aucune n'est
+        publiée, la section reste masquée sur le site (aucun contenu fictif).
+      </p>
+
+      {/* Formulaire de création */}
+      <form
+        onSubmit={create}
+        className="mt-4 grid gap-3 rounded-lg border border-line bg-surface p-4 md:grid-cols-2"
+      >
+        <p className="text-xs uppercase tracking-[0.14em] text-mute md:col-span-2">
+          Nouvelle réalisation
+        </p>
+        <input
+          className={projectInputCls}
+          placeholder="Titre du projet *"
+          aria-label="Titre du projet"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={120}
+        />
+        <input
+          className={projectInputCls}
+          placeholder="Client (optionnel)"
+          aria-label="Client"
+          value={client}
+          onChange={(e) => setClient(e.target.value)}
+          maxLength={120}
+        />
+        <input
+          className={projectInputCls}
+          placeholder="Secteur (optionnel)"
+          aria-label="Secteur"
+          value={sector}
+          onChange={(e) => setSector(e.target.value)}
+          maxLength={60}
+        />
+        <input
+          className={projectInputCls}
+          placeholder="Année"
+          aria-label="Année"
+          inputMode="numeric"
+          value={year}
+          onChange={(e) => setYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
+        />
+        <textarea
+          className="min-h-[72px] w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-gold focus:outline-none md:col-span-2"
+          placeholder="Résumé affiché sur la carte *"
+          aria-label="Résumé"
+          value={summary}
+          onChange={(e) => setSummary(e.target.value)}
+          maxLength={400}
+        />
+        <label className="flex items-center gap-3 text-sm text-mute md:col-span-2">
+          <Switch checked={publishNow} onCheckedChange={setPublishNow} aria-label="Publier immédiatement" />
+          Publier immédiatement
+        </label>
+        {formError && (
+          <p role="alert" className="text-sm text-destructive md:col-span-2">
+            {formError}
+          </p>
+        )}
+        <div className="md:col-span-2">
+          <GoldButton type="submit" disabled={busy} className="min-h-10! px-4! text-xs!">
+            <Plus className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+            Ajouter
+          </GoldButton>
+        </div>
+      </form>
+
+      {/* Liste */}
+      <div className="mt-4 flex flex-col gap-3">
+        {rows === null ? (
+          <Skeleton className="h-24 rounded-lg" />
+        ) : rows.length === 0 ? (
+          <EmptyRow />
+        ) : (
+          rows.map((p) => (
+            <article
+              key={p.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4"
+            >
+              <div className="min-w-0">
+                <p className="font-medium">
+                  {p.title} <span className="text-mute">· {p.year}</span>
+                </p>
+                <p className="mt-0.5 truncate text-xs text-mute">
+                  {[p.client, p.sector, p.slug].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-mute">{p.isPublished ? "Publiée" : "Masquée"}</span>
+                <Switch
+                  checked={p.isPublished}
+                  onCheckedChange={(v) => void patch(p.id, { isPublished: v })}
+                  aria-label={`Publication — ${p.title}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => void remove(p)}
+                  aria-label={`Supprimer — ${p.title}`}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-line text-mute transition-colors hover:border-destructive/60 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                </button>
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ── Onglet E-mails — journal de l'adaptateur ───────────────── */
+
+function EmailsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
+  const [rows, setRows] = useState<EmailAdminRow[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/emails")
+      .then(async (res) => {
+        if (res.status === 401) {
+          onUnauthorized();
+          return;
+        }
+        const json = (await res.json()) as { ok: boolean; data?: EmailAdminRow[] };
+        if (!cancelled) setRows(json.ok && json.data ? json.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setRows([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [onUnauthorized]);
+
+  return (
+    <section aria-labelledby="admin-emails-t">
+      <h2 id="admin-emails-t" className="font-serif text-xl">
+        E-mails
+      </h2>
+      <p className="mt-1 text-sm text-mute">
+        Journal des e-mails transactionnels. En sandbox (sans RESEND_API_KEY), les envois sont
+        simulés et consignés ici ; en production, la clé Resend active l'envoi réel.
+      </p>
+      <div className="mt-4 flex flex-col gap-3">
+        {rows === null ? (
+          <Skeleton className="h-24 rounded-lg" />
+        ) : rows.length === 0 ? (
+          <EmptyRow />
+        ) : (
+          rows.map((m) => (
+            <article
+              key={m.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-medium">{m.subject}</p>
+                <p className="mt-0.5 truncate text-xs text-mute">
+                  {m.toEmail} · {m.template} · {fmtDate(m.createdAt)}
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1.5 text-xs text-mute">
+                <span
+                  aria-hidden
+                  className={`h-2 w-2 shrink-0 rounded-full ${EMAIL_DOT[m.status] ?? "bg-mute"}`}
+                />
+                {EMAIL_STATUS[m.status] ?? m.status}
+                {m.error ? ` — ${m.error}` : ""}
+              </span>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ── Onglet Push — abonnés + envoi de test ──────────────────── */
+
+function PushPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
+  const [data, setData] = useState<PushAdminData | null>(null);
+  const [reload, setReload] = useState(0);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/push")
+      .then(async (res) => {
+        if (res.status === 401) {
+          onUnauthorized();
+          return;
+        }
+        const json = (await res.json()) as { ok: boolean; data?: PushAdminData };
+        if (!cancelled && json.ok && json.data) setData(json.data);
+      })
+      .catch(() => {
+        /* état conservé */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [onUnauthorized, reload]);
+
+  const send = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (busy) return;
+    setFeedback(null);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), body: body.trim() }),
+      });
+      if (res.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      const json = (await res.json()) as {
+        ok: boolean;
+        data?: { sent: number; failed: number; removed: number };
+      };
+      if (json.ok && json.data) {
+        setFeedback(
+          `Envoi terminé : ${json.data.sent} délivrée(s), ${json.data.failed} échec(s)${json.data.removed ? `, ${json.data.removed} abonnement(s) nettoyé(s)` : ""}.`
+        );
+        setTitle("");
+        setBody("");
+        setReload((k) => k + 1);
+      } else {
+        setFeedback("Envoi impossible — vérifiez les champs.");
+      }
+    } catch {
+      setFeedback("Erreur réseau. Réessayez.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section aria-labelledby="admin-push-t">
+      <h2 id="admin-push-t" className="font-serif text-xl">
+        Notifications push
+      </h2>
+      <p className="mt-1 text-sm text-mute">
+        Abonnements des visiteurs (bouton « Notifications » du pied de page). Clés VAPID :
+        variables d'environnement, sinon paire générée et persistée automatiquement.
+      </p>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
+        <div className="rounded-xl border border-line bg-surface p-5">
+          <p className="font-serif text-3xl text-goldtext">{data?.count ?? "—"}</p>
+          <p className="mt-1 text-xs uppercase tracking-wide text-mute">Abonnés</p>
+        </div>
+        <form onSubmit={send} className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-5">
+          <p className="text-xs uppercase tracking-[0.14em] text-mute">Notification de test</p>
+          <input
+            className={projectInputCls}
+            placeholder="Titre (80 caractères max.)"
+            aria-label="Titre de la notification"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={80}
+          />
+          <input
+            className={projectInputCls}
+            placeholder="Message (280 caractères max.)"
+            aria-label="Message de la notification"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            maxLength={280}
+          />
+          {feedback && <p className="text-sm text-mute">{feedback}</p>}
+          <div>
+            <GoldButton type="submit" disabled={busy || !title.trim() || !body.trim()} className="min-h-10! px-4! text-xs!">
+              <Send className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+              Envoyer
+            </GoldButton>
+          </div>
+        </form>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-3">
+        {data === null ? (
+          <Skeleton className="h-24 rounded-lg" />
+        ) : data.subscriptions.length === 0 ? (
+          <EmptyRow />
+        ) : (
+          data.subscriptions.map((s) => {
+            let host = s.endpoint;
+            try {
+              host = new URL(s.endpoint).host;
+            } catch {
+              /* endpoint brut */
+            }
+            return (
+              <article
+                key={s.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{host}</p>
+                  <p className="mt-0.5 truncate text-xs text-mute">
+                    {s.locale ?? "—"} · {fmtDate(s.createdAt)}
+                  </p>
+                </div>
+              </article>
+            );
+          })
+        )}
+      </div>
+    </section>
+  );
+}
+
 /* ── Overlay principal ──────────────────────────────────────── */
 
 export function AdminOverlay() {
@@ -222,6 +855,7 @@ export function AdminOverlay() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [tab, setTab] = useState<AdminTab>("flux");
 
   const goto = useCallback((v: AdminView) => {
     viewRef.current = v;
@@ -521,6 +1155,9 @@ export function AdminOverlay() {
 
         {data && (
           <>
+            <TabBar tab={tab} setTab={setTab} />
+            {tab === "flux" && (
+          <>
             {/* Statistiques */}
             <section aria-label="Statistiques" className="grid grid-cols-2 gap-4 md:grid-cols-5">
               {[
@@ -643,6 +1280,12 @@ export function AdminOverlay() {
                 )}
               </div>
             </section>
+          </>
+            )}
+            {tab === "journal" && <PostsPanel onUnauthorized={() => goto("login")} />}
+            {tab === "realisations" && <ProjectsPanel onUnauthorized={() => goto("login")} />}
+            {tab === "emails" && <EmailsPanel onUnauthorized={() => goto("login")} />}
+            {tab === "push" && <PushPanel onUnauthorized={() => goto("login")} />}
           </>
         )}
       </div>

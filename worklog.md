@@ -116,3 +116,24 @@ Stage Summary:
 - Site complet livré sur la route / : design Obsidienne & Or conforme §32, chatbot vendeur IA + Omnis, capture de leads fonctionnelle de bout en bout, Espace équipe, PWA
 - Lint 0 erreur, tsc 0 erreur, dev.log propre
 - Agents : 2-a (sections 1-7), 2-b (sections 8-14), 4 (overlays) — intégrés et vérifiés
+
+---
+Task ID: 5-a
+Agent: general-purpose
+Task: Traductions es/zh/de complètes à 100 % (translations.ts)
+
+Work Log:
+- Lecture du worklog (règle du projet) puis du fichier src/lib/i18n/translations.ts en entier : fr (source, 477 lignes, 344 clés-feuilles + 6 tableaux) et en (complet) analysés clé par clé, y compris les clés récentes projects et journal et les labels renumérotés (11 — Essai gratuit, 12 — Contact)
+- Vérification préalable des caractères non ASCII (aucun NBSP/U+202F : les montants « 1 500 000 GNF » utilisent des espaces simples — repris tels quels, sans reformatage)
+- Remplacement des 3 blocs partiels par l'outil Edit (un par langue, ni fr, ni en, ni l'export DICTS touchés) :
+  * es : Partial<Dict> → Dict complet (tú, « ¿…? », guillemets « »), 344 valeurs
+  * zh : Partial<Dict> → Dict complet (chinois simplifié, 您, ponctuation pleine large ，。？！, quotes «“”»), 344 valeurs
+  * de : Partial<Dict> → Dict complet (vouvoiement Sie, guillemets „ “, AGB/Impressum/Datenschutzerklärung), 344 valeurs
+- Clés existantes (brand, nav, hero, common) conservées à l'identique ; structure copiée sur fr : mêmes objets imbriqués, mêmes tableaux dans le même ordre (sectors.items ×14, process.steps ×5, pricing.included.items ×8, pricing.notes.items ×4, faq.items ×6, about.values ×4), badge « Bientôt » conservé sur services.items.strategy
+- Commentaire d'en-tête du fichier mis à jour (es/zh/de complets, repli fr conservé) ; mention TODO-HUMAN H-09 (relecture humaine) maintenue
+- Vérifications : bunx tsc --noEmit → 0 erreur sur translations.ts/i18n (4 erreurs préexistantes hors périmètre : examples/websocket ×2, skills/image-edit, skills/stock-analysis) ; bun run lint → 0 erreur ; grep 'label:' → 65 (13 par langue = 12 sections numérotées + hero.label) ; script bun de comparaison structurelle → en/es/zh/de 100 % identiques à fr (350 chemins chacun, tableaux de même longueur, aucune valeur vide) ; scan emoji → aucun ; registres vérifiés (tú / 您 ×50 / Sie ×40)
+
+Stage Summary:
+- Couverture es/zh/de portée de ~30 clés à 344 clés-feuilles = 100 % des clés du français, typées Dict (TypeScript garantit désormais l'exhaustivité à la compile) ; DICTS reste en Record<Lang, Partial<Dict>> intouché
+- Décisions de traduction notables : « sur devis » → « A consultar » (es) / « 按需报价 » (zh) / « Auf Angebot » (de), cohérentes entre pricing, notes, faq et legal ; journal → « Blog » (es) / « 博客 » (zh) / « Journal » (de) ; de BTP → « Hoch- & Tiefbau » ; factura (trésorerie) → « Treasury-Management » (de) ; noms propres inchangés (Factura Pro implicite via tags, SaaS, GNF, WhatsApp, Gmail, Mobile Money, Omnis) ; conditions légales provisoires (H-10) et horaires « à confirmer » traduits fidèlement sans invention
+- Agents suivants : rien à câbler (même clé export DICTS) ; toute nouvelle clé fr doit désormais être ajoutée dans les 5 langues sous peine d'erreur tsc ; H-09 (relecture humaine es/zh/de) reste ouvert dans docs/TODO-HUMAN.md
