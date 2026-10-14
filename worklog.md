@@ -382,3 +382,20 @@ Stage Summary:
 - L'interface est maintenant très fortement animée : rideau d'ouverture, titres mot à mot, stagger spring des blocs, compteurs animés, filets d'or qui se dessinent, halos spotlight suivant le curseur, bordures or rotatives, parallaxe multi-couches, ruban réactif au scroll, navbar directionnelle
 - Sécurité d'affichage garantie : le contenu est toujours visible même sans animation (light mode / préférences système / appareil faible)
 - animations vérifiables dans le navigateur de test via localStorage eins-reduce-motion=0 (les appareils ≤ 4 cœurs basculent automatiquement en mode léger)
+
+---
+Task ID: UI-FIX-1
+Agent: orchestrator (Z.ai Code)
+Task: Correction des incohérences visuelles signalées par le client (textes illisibles, filigranes, mots manquants)
+
+Work Log:
+- Diagnostic racine : WordMask observait chaque mot individuellement avec whileInView alors que le mot était translaté à 115 % dans un masque overflow-hidden — l'IntersectionObserver ne détectait jamais les mots courts, restés invisibles pour toujours (d'où « faille, erreur, chargeons, supplémentaire » sans le reste de la phrase, « secteur » sans « Tous les », « partenaire unique pour » troué)
+- Réécriture de WordMask (components/motion/index.tsx) : un seul useInView sur l'enveloppe (jamais transformée ni masquée), animation propagée à chaque mot via animate, masque avec débords px/pb pour italiques, accents et jambages — plus aucun mot ne peut rester coincé
+- Suppression des 4 filigranes géants en arrière-plan (text-outline-faint) : hero « à l'excellence. », stats « 7 · 10 · 5 · 6 » (conserve les petits chiffres dorés animés), services « tout votre digital. » (rendait le titre illisible), contact « EINSOF »
+- Placeholders e-mail raccourcis dans les 5 langues (le texte long était tronqué dans le champ)
+- Vérification Agent Browser complète (1440 px et 390 px, FR) : hero, chiffres, services, engagements, SaaS, secteurs, méthode, tarifs, FAQ, à propos, journal, essai, contact, footer, menu mobile — toutes les phrases sont complètes et lisibles ; aucune erreur console bloquante
+
+Stage Summary:
+- Cause racine éliminée (plus aucune révélation de texte ne dépend d'un IO sur un élément masqué)
+- Interface épurée : plus de textes fantômes derrière le contenu ; les chiffres clés ne gardent que la version dorée animée
+- Commit a164aa2 « fix(ui): textes complets et lisibles — suppression des filigranes, WordMask fiable »
