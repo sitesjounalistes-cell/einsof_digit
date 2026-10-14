@@ -399,3 +399,25 @@ Stage Summary:
 - Cause racine éliminée (plus aucune révélation de texte ne dépend d'un IO sur un élément masqué)
 - Interface épurée : plus de textes fantômes derrière le contenu ; les chiffres clés ne gardent que la version dorée animée
 - Commit a164aa2 « fix(ui): textes complets et lisibles — suppression des filigranes, WordMask fiable »
+
+---
+Task ID: UI-FIX-2
+Agent: orchestrator (Z.ai Code)
+Task: « certaines parties de ces textes ne s'affichent pas du tout » — les 8 titres de section restent amputés malgré UI-FIX-1
+
+Work Log:
+- Reproduction agent-browser (1440 px, animations forcées) : services affiche « Un partenaire unique pour » SANS « tout votre digital. » ; hero SANS « à l'excellence. »
+- Inspection DOM décisive : les mots or sont présents, opacity 1, transform none (l'animation WordMask se termine) — mais aucun glyphe peint. Cause : .gold-text-gradient (background-clip:text, color:transparent) sur l'<em> PARENT ; les descendants transformés + overflow-hidden + will-change:transform créent des couches compositées que le clip texte de l'ancêtre ne capture pas → dégradé vide, texte transparent (bug Chrome connu)
+- Pattern identique dans 10 emplacements : tous les tGold de SectionHeading (12 titres), hero, trial
+- WordMask v3 (components/motion/index.tsx) : prop `gold` appliquant le dégradé SUR CHAQUE MOT animé (background-clip sur l'élément transformé lui-même = fiable) ; filet de sécurité forceShown via setTimeout 4 s → un texte ne peut plus rester invisible même si IntersectionObserver échoue (iframe, quirk) ; branche lightMode dégradée aussi
+- kit.tsx / Hero.tsx / TrialSection.tsx : <em> sans gold-text-gradient + WordMask gold
+- Accroche hero « à l'excellence. » (jugée inutile par le client) remplacée par « Votre présence digitale, notre métier. » ; À propos « l'excellence numérique. » → « le numérique guinéen. » — décliné en en/es/zh/de + openGraph (layout.tsx)
+- Lint : 0 erreur
+- Vérification agent-browser complète : desktop 1440 px (hero, stats=petits chiffres or seuls, services, engagements + citation complète, SaaS, secteurs, méthode, tarifs, FAQ, à propos, journal, essai, contact, footer) + mobile 390 px (hero, services, engagements) — toutes les parties dorées visibles
+- Audit DOM final : 65 mots animés h1/h2, 0 bloqué au repos ; API projects/partners/testimonials/documents vides → sections masquées par conception (rendu conditionnel voulu)
+
+Stage Summary:
+- Cause racine éradiquée : plus AUCUN background-clip:text au-dessus de contenu transformé ; le dégradé or voyage avec chaque mot
+- Double garantie de lisibilité : dégradé par mot (CSS fiable) + force-reveal 4 s (JS) + branches lightMode complètes
+- Copy hero/about rafraîchie en 5 langues, alignée OpenGraph
+- Commit 3e31ef7 « fix(ui): texte or visible partout — dégradé posé mot par mot, fin des titres amputés »
