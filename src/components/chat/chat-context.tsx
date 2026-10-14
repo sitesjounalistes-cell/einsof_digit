@@ -9,17 +9,28 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, LANGS, type Lang } from "@/lib/i18n";
+import { useTheme } from "next-themes";
 import { useConsent, getVisitorId } from "@/lib/consent";
 import { scrollToSection, openForm, type OpenFormType } from "@/lib/chat-bus";
 import { track } from "@/lib/analytics";
 import { SECTIONS } from "@/lib/sections-registry";
+
+export interface ChatSlotView {
+  id: string;
+  startsAt: string;
+  remaining: number;
+}
 
 export interface ChatMsg {
   role: "user" | "assistant";
   content: string;
   /** server message id (feedback) when persisted */
   id?: number;
+  /** carte des créneaux de démo (rendue par DemoSlotsCard) ou confirmation système */
+  kind?: "demo-slots" | "demo-system";
+  slots?: ChatSlotView[];
+  startsAt?: string;
 }
 
 interface ChatContextValue {
@@ -33,6 +44,10 @@ interface ChatContextValue {
   sendFeedback: (id: number | undefined, value: 1 | -1) => void;
   consentNoticeAck: boolean;
   ackConsentNotice: () => void;
+  /** Réservation réussie depuis la carte de créneaux → confirmation dans le fil */
+  demoBooked: (startsAt: string) => void;
+  /** Échec de réservation depuis la carte → message traduit + éventuelle re-proposition */
+  demoFailed: (reason: string) => void;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -59,7 +74,8 @@ interface SseEvent {
 }
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { t, lang } = useI18n();
+  const { t, lang, setLang } = useI18n();
+  const { setTheme } = useTheme();
   const { chatStorage } = useConsent();
   const [open, setOpen] = useState(false);
   const [omnisOpen, setOmnisOpen] = useState(false);
@@ -100,28 +116,108 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }
   }, [lang, chatStorage]);
 
-  const handleAction = useCallback((tool: string, args: Record<string, unknown>) => {
-    switch (tool) {
-      case "navigate": {
-        const section = String(args.section ?? "");
-        scrollToSection(section);
-        break;
-      }
-      case "open_form": {
-        const type = String(args.type ?? "contact") as OpenFormType;
-        openForm(type, args as Record<string, string>);
-        break;
-      }
-      case "handoff_human": {
-        openForm("contact");
-        break;
-      }
-      case "create_lead": {
-        if (args._created) track("chat_lead_created", {});
-        break;
-      }
-    }
+  /* ── Réservation de démonstration (actions suggest_slots / book_demo) ── */
+
+  const pushDemoSlots = useCallback((slots: ChatSlotView[]) => {
+    setMessages((m) => [...m, { role: "assistant", content: "", kind: "demo-slots", slots }]);
   }, []);
+
+  const reSuggestSlots = useCallback(async () => {
+    try {
+      const res = await fetch("/api/demo/slots", { cache: "no-store" });
+      const json = (await res.json()) as { ok?: boolean; data?: ChatSlotView[] };
+      const slots = Array.isArray(json?.data) ? json.data : [];
+      if (slots.length > 0) pushDemoSlots(slots);
+    } catch {
+      /* silencieux — le message d'erreur suffit */
+    }
+  }, [pushDemoSlots]);
+
+  const demoBooked = useCallback((startsAt: string) => {
+    setMessages((m) => {
+      // retire la carte de créneaux qui vient d'être utilisée, puis confirme
+      let idx = -1;
+      for (let i = m.length - 1; i >= 0; i--) {
+        if (m[i].kind === "demo-slots") {
+          idx = i;
+          break;
+        }
+      }
+      const withoutCard = idx >= 0 ? [...m.slice(0, idx), ...m.slice(idx + 1)] : [...m];
+      return [...withoutCard, { role: "assistant", content: "", kind: "demo-system", startsAt }];
+    });
+    track("demo_booked", { via: "chat" });
+  }, []);
+
+  const demoFailed = useCallback(
+    (reason: string) => {
+      if (reason === "full") {
+        setMessages((m) => [...m, { role: "assistant", content: t("chat.demo.full") }]);
+        void reSuggestSlots();
+      } else if (reason === "invalid_slot") {
+        setMessages((m) => [...m, { role: "assistant", content: t("chat.demo.invalidSlot") }]);
+        void reSuggestSlots();
+      } else if (reason === "already_booked") {
+        setMessages((m) => [...m, { role: "assistant", content: t("chat.demo.already") }]);
+      } else {
+        setMessages((m) => [...m, { role: "assistant", content: t("chat.demo.error") }]);
+      }
+    },
+    [t, reSuggestSlots]
+  );
+
+  const handleAction = useCallback(
+    (tool: string, args: Record<string, unknown>) => {
+      switch (tool) {
+        case "navigate": {
+          const section = String(args.section ?? "");
+          scrollToSection(section);
+          break;
+        }
+        case "open_form": {
+          const type = String(args.type ?? "contact") as OpenFormType;
+          openForm(type, args as Record<string, string>);
+          break;
+        }
+        case "handoff_human": {
+          openForm("contact");
+          break;
+        }
+        case "create_lead": {
+          if (args._created) track("chat_lead_created", {});
+          break;
+        }
+        case "suggest_slots": {
+          const slots = Array.isArray(args.slots)
+            ? (args.slots as ChatSlotView[]).filter(
+                (s) => s && typeof s.id === "string" && typeof s.startsAt === "string"
+              )
+            : [];
+          if (slots.length > 0) pushDemoSlots(slots);
+          break;
+        }
+        case "book_demo": {
+          if (args.ok === true && typeof args.startsAt === "string") {
+            demoBooked(String(args.startsAt));
+          } else if (args.ok === false) {
+            demoFailed(String(args.reason ?? "error"));
+          }
+          break;
+        }
+        case "switch_locale": {
+          const next = String(args.locale ?? "") as Lang;
+          if (LANGS.some((l) => l.code === next) && next !== lang) setLang(next);
+          break;
+        }
+        case "switch_theme": {
+          const theme = String(args.theme ?? "");
+          if (theme === "dark" || theme === "light") setTheme(theme);
+          break;
+        }
+      }
+    },
+    [lang, setLang, setTheme, pushDemoSlots, demoBooked, demoFailed]
+  );
 
   const send = useCallback(
     async (text: string) => {
@@ -260,8 +356,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       sendFeedback,
       consentNoticeAck,
       ackConsentNotice: () => setConsentNoticeAck(true),
+      demoBooked,
+      demoFailed,
     }),
-    [open, omnisOpen, messages, streaming, send, sendFeedback, consentNoticeAck, setOpenSafe, setOmnisOpenSafe]
+    [open, omnisOpen, messages, streaming, send, sendFeedback, consentNoticeAck, setOpenSafe, setOmnisOpenSafe, demoBooked, demoFailed]
   );
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

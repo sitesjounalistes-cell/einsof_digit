@@ -9,8 +9,10 @@ import {
   UserRound,
   ThumbsUp,
   ThumbsDown,
+  CalendarCheck2,
 } from "lucide-react";
 import { useChat } from "./chat-context";
+import { DemoSlotsCard, formatDemoSlot } from "./DemoSlotsCard";
 import { useI18n } from "@/lib/i18n";
 import { openForm, onChatOpen } from "@/lib/chat-bus";
 import { Monogram } from "@/components/site/kit";
@@ -19,8 +21,8 @@ import { useMotionMode } from "@/components/providers";
 const SUGGESTION_KEYS = ["chat.s1", "chat.s2", "chat.s3"] as const;
 
 export function ChatWidget() {
-  const { open, setOpen, setOmnisOpen, messages, streaming, send, sendFeedback, consentNoticeAck, ackConsentNotice } = useChat();
-  const { t } = useI18n();
+  const { open, setOpen, setOmnisOpen, messages, streaming, send, sendFeedback, consentNoticeAck, ackConsentNotice, demoBooked, demoFailed } = useChat();
+  const { t, lang } = useI18n();
   const { lightMode } = useMotionMode();
   const [showNudge, setShowNudge] = useState(false);
   const [input, setInput] = useState("");
@@ -139,7 +141,19 @@ export function ChatWidget() {
           {/* Messages */}
           <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
             {messages.map((m, i) =>
-              m.role === "assistant" ? (
+              m.role === "assistant" && m.kind === "demo-slots" && m.slots ? (
+                <DemoSlotsCard key={i} slots={m.slots} onBooked={demoBooked} onFailure={demoFailed} />
+              ) : m.role === "assistant" && m.kind === "demo-system" && m.startsAt ? (
+                <div
+                  key={i}
+                  className="flex items-start gap-2.5 rounded-xl border border-gold/40 bg-surface px-3.5 py-3"
+                >
+                  <CalendarCheck2 className="mt-0.5 h-4 w-4 shrink-0 text-goldtext" strokeWidth={1.5} />
+                  <p className="text-sm leading-relaxed text-ink">
+                    {t("chat.demo.confirmed").replace("{date}", formatDemoSlot(m.startsAt, lang))}
+                  </p>
+                </div>
+              ) : m.role === "assistant" ? (
                 <div key={i} className="border-l-2 border-gold/50 pl-3">
                   <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">
                     {m.content || (

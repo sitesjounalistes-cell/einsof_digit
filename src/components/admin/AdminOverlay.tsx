@@ -15,6 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { PostsPanel } from "@/components/admin/PostsPanel";
+import { DemosPanel } from "@/components/admin/DemosPanel";
+import { PartnersPanel } from "@/components/admin/PartnersPanel";
+import { TestimonialsPanel } from "@/components/admin/TestimonialsPanel";
+import { DocumentsPanel } from "@/components/admin/DocumentsPanel";
 
 /* ── Typage des données (aucun any) ─────────────────────────── */
 
@@ -63,12 +68,25 @@ interface OverviewData {
 }
 
 type AdminView = "closed" | "login" | "panel";
-type AdminTab = "flux" | "journal" | "realisations" | "emails" | "push";
+type AdminTab =
+  | "flux"
+  | "journal"
+  | "realisations"
+  | "demos"
+  | "partners"
+  | "temoignages"
+  | "documents"
+  | "emails"
+  | "push";
 
 const TABS: { id: AdminTab; label: string }[] = [
   { id: "flux", label: "Flux" },
   { id: "journal", label: "Journal" },
   { id: "realisations", label: "Réalisations" },
+  { id: "demos", label: "Démos" },
+  { id: "partners", label: "Partenaires" },
+  { id: "temoignages", label: "Témoignages" },
+  { id: "documents", label: "Documents" },
   { id: "emails", label: "E-mails" },
   { id: "push", label: "Push" },
 ];
@@ -84,16 +102,6 @@ const EMAIL_DOT: Record<string, string> = {
   mock: "bg-gold",
   error: "bg-destructive",
 };
-
-interface PostAdminRow {
-  id: string;
-  slug: string;
-  title: string;
-  category: string;
-  isPublished: boolean;
-  publishedAt: string | null;
-  createdAt: string;
-}
 
 interface ProjectAdminRow {
   id: string;
@@ -305,103 +313,6 @@ function TabBar({ tab, setTab }: { tab: AdminTab; setTab: (t: AdminTab) => void 
         </button>
       ))}
     </div>
-  );
-}
-
-/* ── Onglet Journal — publication des articles ──────────────── */
-
-function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
-  const [rows, setRows] = useState<PostAdminRow[] | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/admin/posts")
-      .then(async (res) => {
-        if (res.status === 401) {
-          onUnauthorized();
-          return;
-        }
-        const json = (await res.json()) as { ok: boolean; data?: PostAdminRow[] };
-        if (!cancelled) setRows(json.ok && json.data ? json.data : []);
-      })
-      .catch(() => {
-        if (!cancelled) setRows([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [onUnauthorized]);
-
-  const toggle = async (row: PostAdminRow) => {
-    setBusyId(row.id);
-    try {
-      const res = await fetch("/api/admin/posts", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: row.id, isPublished: !row.isPublished }),
-      });
-      if (res.status === 401) {
-        onUnauthorized();
-        return;
-      }
-      if (res.ok) {
-        setRows((r) =>
-          r ? r.map((x) => (x.id === row.id ? { ...x, isPublished: !x.isPublished } : x)) : r
-        );
-      }
-    } catch {
-      /* ignore */
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  return (
-    <section aria-labelledby="admin-posts-t">
-      <h2 id="admin-posts-t" className="font-serif text-xl">
-        Journal
-      </h2>
-      <p className="mt-1 text-sm text-mute">
-        Publiez ou masquez les articles du Journal public. La rédaction se fait dans
-        <code className="mx-1 rounded bg-surface px-1.5 py-0.5 text-xs">scripts/seed-content.ts</code>
-        puis <code className="rounded bg-surface px-1.5 py-0.5 text-xs">bun scripts/seed-content.ts</code>.
-      </p>
-      <div className="mt-4 flex flex-col gap-3">
-        {rows === null ? (
-          <Skeleton className="h-24 rounded-lg" />
-        ) : rows.length === 0 ? (
-          <EmptyRow />
-        ) : (
-          rows.map((p) => (
-            <article
-              key={p.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4"
-            >
-              <div className="min-w-0">
-                <p className="font-medium">{p.title}</p>
-                <p className="mt-0.5 truncate text-xs text-mute">
-                  /{p.slug} · {p.category} · {fmtDate(p.createdAt)}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-mute">
-                  {p.isPublished
-                    ? `Publié${p.publishedAt ? ` — ${fmtDate(p.publishedAt)}` : ""}`
-                    : "Masqué"}
-                </span>
-                <Switch
-                  checked={p.isPublished}
-                  disabled={busyId === p.id}
-                  onCheckedChange={() => void toggle(p)}
-                  aria-label={`Publication — ${p.title}`}
-                />
-              </div>
-            </article>
-          ))
-        )}
-      </div>
-    </section>
   );
 }
 
@@ -1284,6 +1195,10 @@ export function AdminOverlay() {
             )}
             {tab === "journal" && <PostsPanel onUnauthorized={() => goto("login")} />}
             {tab === "realisations" && <ProjectsPanel onUnauthorized={() => goto("login")} />}
+            {tab === "demos" && <DemosPanel onUnauthorized={() => goto("login")} />}
+            {tab === "partners" && <PartnersPanel onUnauthorized={() => goto("login")} />}
+            {tab === "temoignages" && <TestimonialsPanel onUnauthorized={() => goto("login")} />}
+            {tab === "documents" && <DocumentsPanel onUnauthorized={() => goto("login")} />}
             {tab === "emails" && <EmailsPanel onUnauthorized={() => goto("login")} />}
             {tab === "push" && <PushPanel onUnauthorized={() => goto("login")} />}
           </>

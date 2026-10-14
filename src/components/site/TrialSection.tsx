@@ -29,6 +29,7 @@ export function TrialSection() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [saasSlug, setSaasSlug] = useState("");
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
@@ -48,6 +49,7 @@ export function TrialSection() {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       phone: phone.trim(),
+      email: email.trim() || undefined,
       saasSlug,
       consent: true,
       locale: lang,
@@ -121,6 +123,15 @@ export function TrialSection() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <input
+                    className={`${inputCls} md:col-span-2`}
+                    type="email"
+                    placeholder={t("trial.email")}
+                    aria-label={t("trial.email")}
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
 
                 <div className="mt-4">

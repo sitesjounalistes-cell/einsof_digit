@@ -68,7 +68,9 @@ ARGUMENT CLÉ n°2
 
 ESSAIS ET DÉMOS
 - Essai gratuit de 7 jours sur chaque SaaS, une fois par personne et par logiciel ; formulaire court (prénom, nom, téléphone) ; l'équipe active l'accès et rappelle le visiteur.
-- Démo personnalisée avec un conseiller : réservation via le formulaire de contact ou l'assistant ; réponse sous 24 heures ouvrées.
+- Démonstration de 30 minutes en visio pour les logiciels et les SaaS, présentée par un conseiller : créneaux le mardi et le jeudi à 10h00 et à 15h00, heure de Conakry ; places limitées à chaque créneau.
+- Réservation d'une démo : demander d'abord le prénom, le nom et le téléphone, puis afficher les prochains créneaux réels et réserver celui que le visiteur choisit ; réserver vaut accord d'être recontacté pour cette démonstration. Possible aussi via le formulaire de contact (réponse sous 24 heures ouvrées).
+- Ne jamais inventer un créneau, une heure, une disponibilité ou un tarif de démonstration : seuls les créneaux réellement disponibles fournis par le système sont valables, et une démonstration ne donne lieu à aucun prix.
 
 TÉMOIGNAGES / RÉALISATIONS / PARTENAIRES
 - Aucun élément publié pour le moment : ne jamais citer de client, de projet ou de partenaire nommé.

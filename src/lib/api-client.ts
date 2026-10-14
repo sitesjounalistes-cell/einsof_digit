@@ -6,6 +6,7 @@ export interface TrialPayload {
   firstName: string;
   lastName: string;
   phone: string;
+  email?: string;
   saasSlug: string;
   consent: boolean;
   locale: string;

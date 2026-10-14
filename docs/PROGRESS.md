@@ -46,6 +46,17 @@
 - [x] Leads : statuts §12 (nouveau → gagné/perdu) avec events horodatés, notes internes, badges source/intérêts
 - [x] Messages de contact (statuts), Essais gratuits, Export CSV (BOM, `;`)
 - [x] Design sobre noir/or (§32.8)
+- [x] **9 onglets** : Flux, Journal (rédaction complète), Réalisations (CRUD), Démos, Partenaires, Témoignages, Documents, E-mails, Push
+
+### Compléments livrés (session « achèvement » — 14/10/2026)
+- [x] **Rédaction du Journal dans l'admin** (§26) : création/édition/suppression d'articles, onglets de langue fr requis + en/es/zh/de optionnels (repli fr), slug auto-suggéré, catégorie, temps de lecture auto-estimé (mots/200), publication par interrupteur — format de sérialisation identique au seed (`{"fr":"p1\n\np2"}`)
+- [x] **Réservation de démonstration** (§24/§27) : tables DemoSlot/DemoBooking, 12 créneaux seedés (mardi/jeudi 10 h & 15 h, heure de Conakry, capacité 2, idempotent), API publique `GET /api/demo/slots` + `POST /api/demo/book` (rate-limit 5/min, anti-surréservation en transaction Prisma, déduplication par téléphone → 409), outils chatbot `suggest_slots`/`book_demo` (procédure : coordonnées → créneaux → créneau choisi explicitement, jamais inventé), carte de créneaux dans le chat avec formulaire inline et confirmation bordée or (fuseau Africa/Conakry), panneau admin Démos (à venir/passées, statuts confirmé/annulé/terminé/no-show, annulation libère la place)
+- [x] **Outils chatbot `switch_locale`/`switch_theme`** (§27) : changement de langue et de thème depuis la conversation
+- [x] **E-mails transactionnels** (§25) : adaptateur Resend (envoi réel si `RESEND_API_KEY`, sinon simulé + journalisé), accusés contact / essai gratuit / newsletter, champ e-mail optionnel ajouté au formulaire d'essai, journal consultable dans l'admin (onglet E-mails)
+- [x] **Notifications push** (§6/§14/§28) : clés VAPID auto-générées et persistées (ou `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`), abonnement depuis le pied de page (consentement), `POST /api/push/subscribe`, envoi de test depuis l'admin (onglet Push), nettoyage des abonnements morts 404/410, handlers `push`/`notificationclick` dans le service worker
+- [x] **Tâche planifiée** (§25) : `/api/cron/maintenance` protégé par `CRON_SECRET` — expiration des essais à 7 jours, clôture des chats > 24 h, purge analytics > 12 mois et e-mails > 90 jours ; planifié dans `vercel.json` (3 h)
+- [x] **Infrastructure Partenaires / Témoignages / Documents** (§23/§24) : tables Partner/Testimonial/Document, API publiques (documents filtrés `visibility="public"`), CRUD admin complet, sections publiques **masquées tant que vide** (règle §20.4 — testé : apparaissent dès la première donnée, se masquent à la suppression), i18n ×5 langues
+- [x] Base de connaissances chatbot enrichie (section Essais et Démos — démo 30 min en visio, aucun prix inventé)
 
 ### PWA & technique (sections 9, 21, 28)
 - [x] Manifeste (nom de marque, icônes 192/512/maskable, couleurs #0A0A0A, standalone)
@@ -56,16 +67,17 @@
 - [x] Lint ESLint : 0 erreur · TypeScript strict : 0 erreur
 
 ## ⏳ Reste (reporté — voir docs/TODO-HUMAN.md)
-- Notifications push (VAPID), e-mails transactionnels (Resend), tâches planifiées (cron), espace client, blog, paiement en ligne
-- Multilingue es/zh/de à compléter + relecture humaine (H-09)
-- Migration PostgreSQL/pgvector + Auth.js/TOTP pour la production
-- Jeu de 100 questions du chatbot + revue hebdomadaire
+- Espace client, paiement en ligne (hors v1 §18/§20)
+- Relecture humaine des traductions es/zh/de (complètes à 100 %, H-09) et validation des textes (H-07)
+- Migration PostgreSQL/pgvector + Auth.js/TOTP pour la production + compte Resend/VAPID de production (H-03/H-05)
+- Jeu de 100 questions du chatbot + revue hebdomadaire (H-11)
+- Fichiers réels des documents/ressources (H-08) — l'infrastructure est prête
 
-## 🧪 Vérification navigateur (agent-browser) — passée le 14/10/2026
-- Rendu sombre + clair, desktop 1280 px et mobile 390 px : conforme aux jetons §22/§32
-- Chatbot : question tarifs → réponses EXACTES §19 ; action navigate → scroll + flash ; create_lead → lead en base
-- Essai gratuit : soumission → lead + trial + events en base ; doublon → 409
-- Contact : API 201 + validation 400 ; préremplissage depuis les cartes services
-- Admin : connexion, stats réelles, changement de statut (event `status_changed`), export CSV
-- Omnis : ouverture, état mic-refusé traduit, Escape
-- Bugs corrigés en cours de route : polices next/font sur `<html>` (var en cascade), ancrage `absolute` des remplissages de boutons (`relative` manquant), normalisation téléphone 9 chiffres, snapshots serveurs `useSyncExternalStore` mémoïsés
+## 🧪 Vérification navigateur (agent-browser) — complétée le 14/10/2026 (session achèvement)
+- **Réservation de démo de bout en bout** : chat → demande démo → coordonnées → carte des créneaux (Africa/Conakry) → formulaire inline → confirmation « Démo confirmée · 10:00 (Conakry) » → DemoBooking + Lead `source=demo` + LeadEvent en base, 2/2 places prises visibles dans l'admin
+- **Journal** : création d'article via l'admin (201), notice « Article créé », publication, suppression avec dialogue de confirmation ; API publique cohérente
+- **Partenaires** : création dans l'admin → section publique apparaît (masquée-si-vide vérifié dans les deux sens), carte rendue en thèmes sombre et clair
+- **E-mails** : newsletter → POST 201 → EmailLog `newsletter_welcome` visible dans l'onglet E-mails (« Simulé » en sandbox)
+- **Base purgée de toute donnée de test** après vérification : 0 lead/réservation/e-mail/chat/consentement, 3 articles éditoriaux, 12 créneaux opérationnels
+- Sections re-masquées automatiquement après purge ; lint 0 erreur, tsc 0 erreur, dev.log sans erreur
+- Vérifications antérieures (14/10) : rendu sombre + clair, desktop/mobile, chatbot tarifs exacts §19, essai 201/409, contact 201/400, admin flux/CSV, Omnis, PWA

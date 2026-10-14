@@ -12,7 +12,7 @@ export interface SendEmailInput {
   to: string;
   subject: string;
   text: string;
-  /** contact_ack | trial_ack | custom */
+  /** contact_ack | trial_ack | newsletter_welcome | custom */
   template: string;
   leadId?: string;
 }
@@ -87,4 +87,34 @@ export function sendContactAck(email: string, firstName: string, leadId: string)
     `— L'équipe ${BRAND}`,
   ].join("\n");
   return sendEmail({ to: email, subject, text, template: "contact_ack", leadId });
+}
+
+export function sendTrialAck(email: string, firstName: string, saasName: string, leadId: string) {
+  const subject = `Votre demande d'essai gratuit — ${BRAND}`;
+  const text = [
+    `Bonjour ${firstName},`,
+    ``,
+    `Nous avons bien reçu votre demande d'essai gratuit de 7 jours pour ${saasName}.`,
+    `Notre équipe active votre accès et vous recontacte rapidement.`,
+    ``,
+    `Rappel : cet essai est entièrement gratuit — aucune carte bancaire ne vous est demandée.`,
+    ``,
+    `— L'équipe ${BRAND}`,
+  ].join("\n");
+  return sendEmail({ to: email, subject, text, template: "trial_ack", leadId });
+}
+
+export function sendNewsletterWelcome(email: string, leadId: string) {
+  const subject = `Votre inscription est confirmée — ${BRAND}`;
+  const text = [
+    `Bonjour,`,
+    ``,
+    `Votre inscription à notre lettre d'information est confirmée. Merci de votre confiance.`,
+    ``,
+    `Nous partageons occasionnellement, par ce canal, des conseils et des actualités liés à nos métiers.`,
+    `Vous pouvez également consulter le Journal de notre site, où sont publiés nos articles.`,
+    ``,
+    `— L'équipe ${BRAND}`,
+  ].join("\n");
+  return sendEmail({ to: email, subject, text, template: "newsletter_welcome", leadId });
 }

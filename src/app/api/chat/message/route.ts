@@ -5,6 +5,13 @@ import { clientIp, rateLimit } from "@/lib/rate-limit";
 import ZAI from "z-ai-web-dev-sdk";
 import { buildSystemPrompt, parseActions, type ModelAction } from "@/lib/chatbot/prompt";
 import { isValidSection } from "@/lib/sections-registry";
+import {
+  bookDemoSchema,
+  bookDemoSlot,
+  listUpcomingSlots,
+  DEMO_CHAT_SLOTS_LIMIT,
+} from "@/lib/demo";
+import { SAAS_SLUGS } from "@/lib/catalog";
 
 const historySchema = z.array(
   z.object({
@@ -133,19 +140,32 @@ export async function POST(req: Request): Promise<Response> {
     if (a.tool === "create_lead") {
       const created = await handleCreateLead(a, ip);
       if (created) a.args = { ...a.args, _created: true };
+    } else if (a.tool === "suggest_slots") {
+      // Les créneaux réels viennent de la base — aucune donnée inventée ;
+      // l'action est abandonnée s'il n'y a rien à proposer.
+      const slots = await listUpcomingSlots(DEMO_CHAT_SLOTS_LIMIT).catch(() => []);
+      if (slots.length > 0) a.args = { slots };
+      else a.args = { _drop: true };
+    } else if (a.tool === "book_demo") {
+      await handleBookDemo(a, ip, d.locale);
     }
   }
+  const emitActions = validActions.filter((a) => a.args?._drop !== true);
 
   // Stream tokens word-by-word (simulated flow, LLM is non-streaming)
   const tokens = clean.match(/\S+\s*/g) ?? [clean];
   const events: SseEvent[] = tokens.map((tk) => ({ type: "token", v: tk }));
-  for (const a of validActions) {
+  for (const a of emitActions) {
     events.push({ type: "action", tool: a.tool, args: a.args });
   }
   events.push({ type: "done", messageId });
 
   return sse(events, 22);
 }
+
+const CHAT_LOCALES = ["fr", "en", "es", "zh", "de"] as const;
+const THEMES = ["dark", "light"] as const;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function filterActions(actions: ModelAction[]): ModelAction[] {
   const out: ModelAction[] = [];
@@ -159,6 +179,31 @@ function filterActions(actions: ModelAction[]): ModelAction[] {
       const ph = String(a.args?.phone ?? "").trim();
       if (fn.length < 2 || ln.length < 2 || ph.length < 6) continue;
     }
+    if (a.tool === "book_demo") {
+      // Cap de sécurité : le LLM doit disposer de données réelles — jamais de
+      // données inventées ; si un champ manque ou est invalide, l'action est
+      // abandonnée (le modèle devra redemander l'information au visiteur).
+      const fn = String(a.args?.first_name ?? "").trim();
+      const ln = String(a.args?.last_name ?? "").trim();
+      const ph = String(a.args?.phone ?? "").trim();
+      const slotId = String(a.args?.slot_id ?? "").trim();
+      const saas = a.args?.saas_slug ? String(a.args.saas_slug).trim() : "";
+      const email = a.args?.email ? String(a.args.email).trim() : "";
+      const digits = (ph.match(/\d/g) ?? []).length;
+      const emailOk = email === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if (
+        fn.length < 1 ||
+        ln.length < 1 ||
+        !/^[\d\s+]{7,20}$/.test(ph) ||
+        digits < 7 ||
+        !UUID_RE.test(slotId) ||
+        (saas !== "" && !SAAS_SLUGS.includes(saas)) ||
+        !emailOk
+      )
+        continue;
+    }
+    if (a.tool === "switch_locale" && !CHAT_LOCALES.includes(String(a.args?.locale ?? "") as (typeof CHAT_LOCALES)[number])) continue;
+    if (a.tool === "switch_theme" && !THEMES.includes(String(a.args?.theme ?? "") as (typeof THEMES)[number])) continue;
     out.push(a);
   }
   return out;
@@ -185,6 +230,35 @@ async function handleCreateLead(a: ModelAction, ip: string): Promise<boolean> {
   } catch (e) {
     console.error("[chat/message] create_lead", e);
     return false;
+  }
+}
+
+async function handleBookDemo(a: ModelAction, ip: string, locale: string): Promise<void> {
+  try {
+    const args = a.args ?? {};
+    const parsed = bookDemoSchema.safeParse({
+      firstName: String(args.first_name ?? "").trim(),
+      lastName: String(args.last_name ?? "").trim(),
+      phone: String(args.phone ?? "").trim(),
+      email: args.email ? String(args.email).trim() : "",
+      saasSlug: args.saas_slug ? String(args.saas_slug).trim() : "",
+      slotId: String(args.slot_id ?? "").trim(),
+      locale: String(args.locale ?? locale ?? "fr").slice(0, 2) || "fr",
+      consentContact: true, // réserver une démo = accord d'être recontacté pour celle-ci
+    });
+    if (!parsed.success) {
+      a.args = { ok: false, reason: "invalid_slot" };
+      return;
+    }
+    const result = await bookDemoSlot(parsed.data, ip);
+    if (result.ok) {
+      a.args = { ok: true, startsAt: result.startsAt };
+    } else {
+      a.args = { ok: false, reason: result.code };
+    }
+  } catch (e) {
+    console.error("[chat/message] book_demo", e);
+    a.args = { ok: false, reason: "error" };
   }
 }
 

@@ -30,8 +30,12 @@ RÈGLES :
 ACTIONS DISPONIBLES — pour déclencher une action, écris sur une ligne dédiée à la FIN de ta réponse un marqueur au format exact [[action:{"tool":"...","args":{...}}]] . Utilise au plus UNE action par réponse, seulement quand le visiteur le souhaite clairement.
 - {"tool":"navigate","args":{"section":"<id>"}} : va à une section du site. Sections valides : ${sectionList}. (ex. tarifs → "pricing", services → "services")
 - {"tool":"open_form","args":{"type":"trial"|"quote"|"contact"}} : ouvre le formulaire demandé.
-- {"tool":"create_lead","args":{"first_name":"...","last_name":"...","phone":"...","interest":"..."}} : enregistre les coordonnées (seulement après consentement explicite du visiteur).
+- {"tool":"create_lead","args":{"first_name":"...","last_name":"...","phone":"...","interest":"..."}} : enregistre les coordonnées (seulement après consentement explicite du visiteur). Si le visiteur donne ses coordonnées SANS choisir de créneau, utilise create_lead — il reste prioritaire.
 - {"tool":"handoff_human"} : propose de passer à l'équipe (formulaire de contact).
+- {"tool":"suggest_slots","args":{}} : affiche au visiteur une carte avec les PROCHAINS créneaux réels de démonstration. Les créneaux sont fournis par le système — ne cite JAMAIS une date ou une heure toi-même dans ta réponse, la carte s'en charge. À appeler quand le visiteur s'intéresse à une démonstration.
+- {"tool":"book_demo","args":{"slot_id":"<identifiant EXACT d'un créneau proposé par suggest_slots>","first_name":"...","last_name":"...","phone":"...","email":"... (optionnel)","saas_slug":"... (optionnel : ${saasList})"}} : réserve la démonstration sur le créneau choisi. Procédure obligatoire : 1) demande d'abord le prénom, le nom et le téléphone du visiteur ; 2) appelle suggest_slots pour lui proposer les créneaux ; 3) quand le visiteur a choisi UN créneau précis ET donné ses coordonnées, appelle book_demo avec l'identifiant EXACT de ce créneau. N'invente JAMAIS un slot_id et ne réserve jamais sans créneau choisi explicitement. Réserver une démo vaut accord d'être recontacté pour cette démonstration.
+- {"tool":"switch_locale","args":{"locale":"fr"|"en"|"es"|"zh"|"de"}} : change la langue de tout le site quand le visiteur le demande.
+- {"tool":"switch_theme","args":{"theme":"dark"|"light"}} : passe le site en mode sombre ou clair quand le visiteur le demande.
 Le visiteur consulte actuellement la section : "${currentSection}".
 
 BASE DE CONNAISSANCES :
@@ -40,7 +44,15 @@ ${KNOWLEDGE}`;
 
 /** Parse & validate model actions. Returns cleaned text + actions. */
 export interface ModelAction {
-  tool: "navigate" | "open_form" | "create_lead" | "handoff_human";
+  tool:
+    | "navigate"
+    | "open_form"
+    | "create_lead"
+    | "handoff_human"
+    | "suggest_slots"
+    | "book_demo"
+    | "switch_locale"
+    | "switch_theme";
   args: Record<string, unknown>;
 }
 
@@ -50,7 +62,16 @@ export function parseActions(text: string): { clean: string; actions: ModelActio
     .replace(/\[\[action:\s*(\{[\s\S]*?\})\s*\]\]/g, (_m, json: string) => {
       try {
         const parsed = JSON.parse(json) as { tool?: string; args?: Record<string, unknown> };
-        const VALID: ModelAction["tool"][] = ["navigate", "open_form", "create_lead", "handoff_human"];
+        const VALID: ModelAction["tool"][] = [
+          "navigate",
+          "open_form",
+          "create_lead",
+          "handoff_human",
+          "suggest_slots",
+          "book_demo",
+          "switch_locale",
+          "switch_theme",
+        ];
         if (parsed.tool && VALID.includes(parsed.tool as ModelAction["tool"])) {
           actions.push({ tool: parsed.tool as ModelAction["tool"], args: parsed.args ?? {} });
         }

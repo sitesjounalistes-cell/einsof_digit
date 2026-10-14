@@ -3,12 +3,14 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { upsertLead, normalizePhone } from "@/lib/leads";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
-import { SAAS_SLUGS } from "@/lib/catalog";
+import { SAAS_SLUGS, findSaas } from "@/lib/catalog";
+import { sendTrialAck } from "@/lib/adapters/email";
 
 const schema = z.object({
   firstName: z.string().trim().min(2).max(60),
   lastName: z.string().trim().min(2).max(60),
   phone: z.string().trim().min(6).max(20),
+  email: z.string().email().optional().or(z.literal("")),
   saasSlug: z.string().refine((s) => SAAS_SLUGS.includes(s), "unknown_saas"),
   consent: z.literal(true),
   locale: z.string().max(5).default("fr"),
@@ -58,6 +60,7 @@ export async function POST(req: Request) {
       firstName: d.firstName,
       lastName: d.lastName,
       phone: d.phone,
+      email: d.email || null,
       source: "trial",
       interests: [d.saasSlug],
       locale: d.locale,
@@ -72,6 +75,16 @@ export async function POST(req: Request) {
     await db.leadEvent.create({
       data: { leadId: lead.id, type: "trial_requested", data: JSON.stringify({ trialId: trial.id, saas: d.saasSlug }) },
     });
+
+    // Accusé de réception e-mail (réel via Resend si configuré, sinon journalisé)
+    if (d.email) {
+      const saasName = findSaas(d.saasSlug)?.name ?? d.saasSlug;
+      try {
+        await sendTrialAck(d.email, d.firstName, saasName, lead.id);
+      } catch (e) {
+        console.error("[trial] ack email", e);
+      }
+    }
 
     return NextResponse.json({ ok: true, data: { id: trial.id } }, { status: 201 });
   } catch (e) {
