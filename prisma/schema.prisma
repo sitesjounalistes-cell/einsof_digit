@@ -1,0 +1,115 @@
+// Schéma adapté de la section 24 du cahier des charges.
+// SQLite en sandbox (production visée : PostgreSQL + pgvector — voir docs/DECISIONS.md).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Lead {
+  id             String          @id @default(uuid())
+  firstName      String
+  lastName       String
+  phone          String
+  email          String?
+  company        String?
+  sector         String?
+  message        String?
+  // trial | quote | contact | chat | download | newsletter | demo
+  source         String          @default("contact")
+  // new | contacted | qualified | trial_or_demo | proposal | won | lost
+  status         String          @default("new")
+  interests      String?         // slugs séparés par des virgules
+  locale         String          @default("fr")
+  consentContact Boolean         @default(false)
+  consentAt      DateTime?
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  events   LeadEvent[]
+  trials   TrialRequest[]
+  messages ContactMessage[]
+}
+
+model LeadEvent {
+  id        String   @id @default(uuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  // created | status_changed | note | trial_requested | demo_requested | message
+  type      String
+  data      String?
+  createdAt DateTime @default(now())
+}
+
+model TrialRequest {
+  id        String   @id @default(uuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  saasSlug  String
+  // requested | activated | expired | converted | declined
+  status    String   @default("requested")
+  trialDays Int      @default(7)
+  createdAt DateTime @default(now())
+
+  @@unique([leadId, saasSlug])
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  subject   String?
+  message   String
+  // new | read | answered | archived
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+}
+
+model ChatSession {
+  id        String        @id @default(uuid())
+  visitorId String
+  locale    String        @default("fr")
+  // text | omnis
+  mode      String        @default("text")
+  entryPath String?
+  createdAt DateTime      @default(now())
+  endedAt   DateTime?
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id        Int         @id @default(autoincrement())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  // user | assistant | system
+  role      String
+  content   String?
+  // -1 | 1 (retour utilisateur) ; null sinon
+  feedback  Int?
+  createdAt DateTime    @default(now())
+}
+
+model Consent {
+  id        String   @id @default(uuid())
+  visitorId String
+  // cookies_analytics | chat_storage | microphone | contact
+  type      String
+  granted   Boolean
+  locale    String?
+  createdAt DateTime @default(now())
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(uuid())
+  name      String
+  props     String?
+  path      String?
+  locale    String?
+  visitorId String?
+  createdAt DateTime @default(now())
+}

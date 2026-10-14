@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8A6A14"/>
+      <stop offset="40%" stop-color="#D4AF37"/>
+      <stop offset="55%" stop-color="#F6E7A8"/>
+      <stop offset="70%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#8A6A14"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#0A0A0A"/>
+  <circle cx="256" cy="256" r="180" fill="none" stroke="url(#gold)" stroke-width="6" opacity="0.9"/>
+  <circle cx="256" cy="256" r="158" fill="none" stroke="#D4AF37" stroke-width="1.5" opacity="0.35"/>
+  <text x="256" y="330" font-family="Cormorant Garamond, Georgia, serif" font-size="220" font-weight="600" fill="url(#gold)" text-anchor="middle">E</text>
+</svg>

@@ -1,0 +1,494 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* shadcn mapping */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* ── Obsidienne & Or ─────────────────────────────── */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-mute: var(--mute);
+  --color-gold: var(--gold);
+  --color-goldtext: var(--gold-text);
+  --color-golddeep: var(--gold-deep);
+  --color-goldlight: var(--gold-light);
+  --color-ongold: var(--on-gold);
+  --color-success: var(--success);
+
+  --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+/* ── Thème clair (ivoire) ─────────────────────────── */
+:root,
+.light {
+  --font-serif: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+  --bg: #faf8f3;
+  --surface: #ffffff;
+  --surface-2: #f1ede3;
+  --line: #e4ddcc;
+  --ink: #111111;
+  --mute: #5e5a52;
+  --gold: #b8921f;
+  --gold-text: #7a5c0e;
+  --gold-deep: #8a6a14;
+  --gold-light: #e9d38a;
+  --on-gold: #0a0a0a;
+  --success: #1f7a33;
+  --danger: #c62828;
+  --gold-gradient: linear-gradient(135deg, #8a6a14 0%, #b8921f 40%, #e9d38a 55%, #b8921f 70%, #8a6a14 100%);
+  --shadow-lift: 0 20px 50px -25px rgba(0, 0, 0, 0.25);
+  --grain-opacity: 0.02;
+  --vignette: none;
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(138, 106, 20, 0.22);
+  --glow: none;
+
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--gold);
+  --primary-foreground: var(--on-gold);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--mute);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--gold);
+}
+
+/* ── Thème sombre (signature) ─────────────────────── */
+.dark {
+  --bg: #0a0a0a;
+  --surface: #121212;
+  --surface-2: #1a1a1a;
+  --line: #2a2a2a;
+  --ink: #f5f2ea;
+  --mute: #a8a39a;
+  --gold: #d4af37;
+  --gold-text: #e2c25a;
+  --gold-deep: #8a6a14;
+  --gold-light: #f6e7a8;
+  --on-gold: #0a0a0a;
+  --success: #3fb950;
+  --danger: #e5484d;
+  --gold-gradient: linear-gradient(135deg, #8a6a14 0%, #d4af37 40%, #f6e7a8 55%, #d4af37 70%, #8a6a14 100%);
+  --shadow-lift: 0 20px 60px -20px rgba(212, 175, 55, 0.25);
+  --grain-opacity: 0.035;
+  --vignette: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.22) 100%);
+  --glass-bg: rgba(18, 18, 18, 0.6);
+  --glass-border: rgba(212, 175, 55, 0.18);
+  --glow: 0 0 40px rgba(212, 175, 55, 0.25);
+
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--gold);
+  --primary-foreground: var(--on-gold);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--mute);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--gold);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-bg text-ink;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  /* Grain obsidienne + vignette */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 59;
+    pointer-events: none;
+    background: var(--vignette);
+  }
+  ::selection {
+    background: var(--gold);
+    color: var(--on-gold);
+  }
+  :focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--gold-deep);
+    border-radius: 99px;
+    border: 2px solid var(--bg);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--gold);
+  }
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* ── Utilitaires or ───────────────────────────────── */
+.gold-text-gradient {
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.gold-fill {
+  background: var(--gold-gradient);
+  color: var(--on-gold);
+}
+.gold-fill-pan {
+  background: var(--gold-gradient);
+  background-size: 220% 100%;
+  animation: gradient-pan 8s linear infinite;
+  color: var(--on-gold);
+}
+.glass-panel {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+}
+.light .glass-panel {
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.card-lift {
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.5s;
+}
+@media (hover: hover) {
+  .card-lift:hover {
+    border-color: rgba(212, 175, 55, 0.55);
+    box-shadow: var(--shadow-lift);
+  }
+  .light .card-lift:hover {
+    border-color: rgba(138, 106, 20, 0.5);
+  }
+}
+.link-gold {
+  position: relative;
+}
+.link-gold::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 1px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.link-gold:hover::after {
+  transform: scaleX(1);
+}
+
+/* Reflet doré qui traverse les boutons */
+.btn-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.btn-sheen::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.38), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+.btn-sheen:hover::before {
+  left: 130%;
+}
+
+/* Filet d'or avec point lumineux */
+.gold-rule {
+  position: relative;
+  height: 1px;
+  background: color-mix(in srgb, var(--gold) 30%, transparent);
+  overflow: hidden;
+}
+.gold-rule::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -12%;
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+  animation: rule-sweep 6s linear infinite;
+}
+@keyframes rule-sweep {
+  to {
+    left: 112%;
+  }
+}
+
+/* Bordure dorée animée (bandeau essai, offre vedette) */
+.gold-frame {
+  position: relative;
+}
+.gold-frame::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--gold-gradient);
+  background-size: 220% 100%;
+  animation: gradient-pan 8s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Surlignage de section par le chatbot */
+.section-flash {
+  animation: section-flash 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes section-flash {
+  0% {
+    box-shadow: inset 0 0 0 999px rgba(212, 175, 55, 0.14);
+  }
+  100% {
+    box-shadow: inset 0 0 0 999px rgba(212, 175, 55, 0);
+  }
+}
+
+/* Marquee */
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee var(--marquee-duration, 40s) linear infinite;
+}
+.marquee-paused:hover .marquee-track {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes gradient-pan {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: -220% 50%;
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.045);
+  }
+}
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes spin-arc {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes scroll-fill {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  45% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  55% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Pulsation douce du bouton chatbot (toutes les ~8 s) */
+.fab-pulse {
+  animation: fab-pulse 8s ease-in-out infinite;
+}
+@keyframes fab-pulse {
+  0%,
+  86%,
+  100% {
+    box-shadow: 0 8px 30px rgba(212, 175, 55, 0.35), 0 0 0 0 rgba(212, 175, 55, 0);
+  }
+  90% {
+    box-shadow: 0 8px 30px rgba(212, 175, 55, 0.35), 0 0 0 18px rgba(212, 175, 55, 0.14);
+  }
+  96% {
+    box-shadow: 0 8px 30px rgba(212, 175, 55, 0.35), 0 0 0 10px rgba(212, 175, 55, 0.06);
+  }
+}
+
+/* Défilement indicateurs */
+.scroll-indicator-line {
+  animation: scroll-fill 2.4s cubic-bezier(0.76, 0, 0.24, 1) infinite;
+}
+
+/* Titres serif */
+.font-serif {
+  font-family: var(--font-serif);
+}
+.display-1 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(2.75rem, 6.5vw, 6rem);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.display-2 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(2rem, 4.5vw, 3.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.display-3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  line-height: 1.2;
+}
+.lead-text {
+  font-size: clamp(1.05rem, 1.4vw, 1.3rem);
+  line-height: 1.6;
+  color: var(--mute);
+  text-wrap: pretty;
+}
+.label-caps {
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--gold-text);
+}
+
+/* Mouvement réduit (système ou interrupteur) */
+html.reduce-motion,
+html.reduce-motion * {
+  scroll-behavior: auto !important;
+  animation-duration: 0.15s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.15s !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html,
+  html * {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Toasts sombres premium */
+[data-sonner-toast] {
+  border-left: 2px solid var(--gold) !important;
+}
