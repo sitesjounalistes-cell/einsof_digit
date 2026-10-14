@@ -22,7 +22,7 @@ import { DocumentsSection } from "@/components/site/DocumentsSection";
 import { TrialSection } from "@/components/site/TrialSection";
 import { ContactSection } from "@/components/site/ContactSection";
 import { Footer } from "@/components/site/Footer";
-import { ScrollProgress } from "@/components/motion";
+import { ScrollProgress, CurtainIntro } from "@/components/motion";
 import { ConsentBanner } from "@/components/site/ConsentBanner";
 import { PwaPrompt } from "@/components/site/PwaPrompt";
 import { MobileActionBar } from "@/components/site/MobileActionBar";
@@ -34,6 +34,7 @@ export default function Home() {
   return (
     <ChatProvider>
       <div className="flex min-h-screen flex-col">
+        <CurtainIntro />
         <ScrollProgress />
         <CustomCursor />
         <Navbar />

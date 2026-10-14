@@ -271,3 +271,114 @@ Stage Summary:
 - Écart assumé : l'éditeur d'articles ne publie pas automatiquement à la création (isPublished=false par défaut) — publication volontaire par interrupteur, conforme au contrôle éditorial
 - Le chatbot peut promettre des créneaux dans un tour puis les afficher au tour suivant (non-déterminisme LLM) ; la carte s'affiche dès que suggest_slots est émis — acceptable
 - Site complet : 15 sections + 5 nouvelles infrastructures de contenu, chatbot à 6 outils, admin à 9 onglets, i18n ×5 complets, e-mails + push + cron opérationnels en sandbox
+
+---
+Task ID: 11
+Agent: orchestrator (Z.ai Code)
+Task: Refonte complète de la bibliothèque d'animation (demande client : interface « très très animée » — animations de blocs + chiffres)
+
+Work Log:
+- Réécriture de src/components/motion/index.tsx autour de framer-motion v12 : Reveal (6 variantes up/down/left/right/scale/blur), Stagger + StaggerItem (orchestration spring), Parallax, Float, Shimmer, Beam (bordure or rotative), SpotlightCard (halo suivant curseur), DrawRule (filet qui se dessine), Counter (spring + prefix/suffix), VelocityRow (ruban réactif au scroll), LettersReveal, PopIn, PulseGlow, CurtainIntro (rideau d'ouverture), CollapseMotion, ScrollProgress spring
+- globals.css : .shimmer-text, .text-outline / .text-outline-faint, .glow-pulse, .spin-slower / .spin-reverse, .spot-card (halo interne), @property --beam-angle + .beam-wrap
+- kit.tsx : SectionHeading animée (WordMask titre + filet DrawRule + sous-titre Reveal), GoldButton primary avec lift + glow renforcé, export GoldRuleDraw
+- page.tsx : monté CurtainIntro
+
+Stage Summary:
+- Toutes les primitives respectent lightMode (reduce-motion / appareil faible) : rendu statique sans animation
+- API 100 % rétrocompatible : Reveal/Counter/Marquee/Magnetic/Tilt/ScrollProgress/WordMask conservent leurs props
+- Les sections restent à animer (tâches 12-a..d) : chaque section doit utiliser Stagger/StaggerItem + SpotlightCard + Beam + DrawRule + Parallax + Float + Shimmer
+
+---
+Task ID: 12-b
+Agent: animations-blocs (Z.ai Code)
+Task: Chorégraphie riche des 4 sections Services / Piliers / SaaS / Secteurs (motif « cartes spectaculaires »)
+
+Work Log:
+- Lecture worklog (tâches 1→11), bibliothèque src/components/motion/index.tsx (API complète), kit.tsx, globals.css (classes .beam-wrap/.spot-card/.text-outline-faint/.glow-pulse/.label-caps vérifiées) et i18n fr (services.tGold, strategy.badge « Bientôt », saas.items ×6, sectors.items ×14)
+- ServicesSection.tsx : grille Reveal → Stagger step 0.08 + StaggerItem ; chaque carte = Tilt > Beam(hover ; always sur « strategy » qui garde opacity-80) > SpotlightCard > article.card-lift (classes et handler openForm/trackCta conservés) ; icônes Lucide dans PopIn delay écho i*0.08 + group-hover:rotate-6 group-hover:scale-110 ; numéro en filigrane text-7xl text-gold opacity-[0.07] avec group-hover:opacity-[0.15] transition-opacity ; flèche ArrowUpRight group-hover:-translate-y-1 group-hover:translate-x-1 + transition-[transform,color] group-hover:text-goldlight ; badge « Bientôt » enveloppé dans PulseGlow ; filigrane géant aria-hidden text-outline-faint de services.tGold en absolu derrière la grille (clip overflow-hidden, Parallax speed 0.25) ; DrawRule pleine largeur avant le CTA final
+- PillarsSection.tsx : entrées alternées Reveal variant="left" (engagement 01) / variant="right" (engagement 02) ; citations serif passées dans WordMask (delay 0.12) ; anneaux dorés lévités via Float (y 10-12, duration 7-8, delay décalé) ; icônes ShieldCheck/Gem dans PopIn (0.35/0.5) ; GoldRule statique remplacée par DrawRule (filet qui se dessine) entre les items ; aucun Counter ajouté (aucun chiffre dans le contenu i18n — règle « ne rien inventer » respectée)
+- SaasSection.tsx : 6 produits → Stagger step 0.06 ; motif commun Tilt > Beam (always conditionné à offers[0]?.featured — aucun produit SaaS featured aujourd'hui) > SpotlightCard > article.card-lift (+ classe group/relative) ; DeviceMockup : Tilt interne retiré (double inclinaison) remplacé par group-hover:scale-[1.02] transition ease-cubic ; mockup dans PopIn delay écho i*0.08 ; numéro filigrane absolu sur la maquette (0.07 → 0.15 au hover) ; blocs prix (PriceTag formatGNF + plage hôpital EXACTE conservée) dans Reveal variant="scale" delay 0.2 ; DrawRule pleine largeur avant le CTA essai ; handlers openForm("demo")/trackCta/scrollToSection inchangés
+- SectorsSection.tsx : Marquee remplacé par VelocityRow baseVelocity 1.8 (réactif à la vitesse de scroll) ; badges secteurs : group + transition-all hover:-translate-y-1 hover:border-gold/60 hover:text-goldtext, point or group-hover:scale-[1.9] (pop) ; entrée de l'ensemble en Reveal variant="blur" ; fondus latéraux conservés
+- Validation : bunx eslint sur les 4 fichiers → 0 erreur 0 warning ; bun run lint projet → seules 2 erreurs PRÉEXISTANTES dans src/components/motion/index.tsx (lignes 365/721, set-state-in-effect sur Counter et CurtainIntro de la tâche 11) — fichier interdit de modification, non touché ; dev.log : compilations propres, aucune erreur runtime
+
+Stage Summary:
+- Les 4 sections appliquent le motif commun « cartes spectaculaires » : Stagger/StaggerItem (spring blur) + Tilt 3D + SpotlightCard (halo curseur) + Beam (bordure or rotative au hover) + PopIn icônes + filigrane numéroté réactif + DrawRule de séparation
+- Tarifs et contenus intacts : formatGNF (1,5 M / 20 M / 100 000 GNF), plage hôpital 1–5 000 000 GNF/mois, notes école/hôpital, badge « Bientôt » — aucun prix ni clé i18n modifié
+- Toute l'animation passe par les primitives gated lightMode (aucun framer-motion direct nécessaire) : dégradation statique propre en mode léger / mobile
+- SSR sûr : aucun Math.random, filigrane déterministe (index de boucle), handlers et cliquabilité des cartes/button conservés à 100 %
+---
+Task ID: 12-c
+Agent: motion-choreographer (Z.ai Code)
+Task: Chorégraphie riche des sections Process, Pricing, FAQ, Trial & Contact (interface « très très très animée »)
+
+Work Log:
+- ProcessSection.tsx : filet horizontal remplacé par DrawRule (dessin scaleX gauche→droite au scroll) derrière les nœuds ; nœuds en PopIn échelonné (delay i×0.12) avec anneau ping doré (animate-ping bg-gold/40, animation-delay i×0.3s inline) ; numéros d'étape en Reveal variant "scale" ; corps des étapes en Stagger/StaggerItem (step 0.1) ; mobile : border-l statique conservée + mêmes nœuds PopIn/ping + Stagger
+- PricingSection.tsx : grilles web/software/saas en Stagger step 0.08 ; chaque carte = Tilt(max 4) > SpotlightCard (halo curseur) > Beam (bordure or au hover) ; carte vedette web-dashboard : Beam always + glow-pulse + md:scale-[1.02] permanent + pastille or PulseGlow décorative (aria-hidden — aucun texte inventé, i18n gelée) ; prix entourés de Reveal variant "scale" delay 0.2 (PriceTag/formatGNF/HOSPITAL_RANGE inchangés) ; hover carte card-lift + hover:-translate-y-1.5 ; CTA GoldButton magnetic ; listes « inclus » et notes en Stagger ; bandeau renouvellement + notes en Reveal
+- FaqSection.tsx : accordéon shadcn remplacé par un accordéon custom — useState<number|null> (un seul ouvert), vrai <button> avec aria-expanded/aria-controls, panneau role="region" aria-labelledby + aria-hidden fermé, chevron ChevronDown tournant 180° via motion (gate lightMode → transition CSS), réponse dans CollapseMotion (hauteur auto), question hover text-goldtext + translate-x-1, items en Stagger step 0.07 ; questions/réponses i18n intactes
+- TrialSection.tsx : conteneur gold-frame remplacé par Beam always (bordure or rotative permanente) ; ornement Monogram en Float ; titre en WordMask (titre + gold décalé), sous-texte Reveal ; champs du formulaire en Stagger (delay/step 0.06) ; note de garantie en Shimmer (mot-clé or scintillant, robuste toutes langues) ; submit Magnetic + spinner Loader2 animate-spin en état submitting ; succès = PopIn du Check circulaire doré + Reveal texte ; logique submitTrial/toasts/track/trackCta/validations conservées à l'identique
+- ContactSection.tsx : filigrane « EINSOF » géant text-outline-faint (via BRAND, jamais hardcodé) en Parallax aria-hidden pointer-events-none derrière la section ; DrawRule pleine largeur sous le titre ; champs du formulaire en Stagger step 0.05 (ids/labels/erreurs conservés) ; consentement + submit en Reveal, bouton Magnetic + spinner, succès PopIn Check or ; panneau latéral : carte horaires/localisation Tilt(max 3) > SpotlightCard avec les 3 moyens de contact en Stagger, hover translate-x-1 + icône group-hover:scale-110 ; WhatsApp/GoldRule/CTA chat en Reveal, CTA Magnetic
+- Aucune modification de globals.css, motion/*, kit.tsx, i18n, catalog ; pas de Math.random au rendu ; pas d'emoji ; tous les handlers/états de formulaires préservés
+
+Stage Summary:
+- 5 sections réécrites avec la bibliothèque task 11 (primitives gated lightMode ; framer-motion direct uniquement pour le chevron FAQ, gated via useMotionMode)
+- Lint : 0 erreur dans les 5 fichiers de la tâche (3 erreurs préexistantes hors périmètre : motion/index.tsx ×2 [fichier gelé, task 11] et Navbar.tsx ×1)
+- Tarifs EXACTS §19 inchangés (WEB_OFFERS/SOFTWARE_OFFERS/SAAS_PRODUCTS/WEB_RENEWAL/HOSPITAL_RANGE via lib/catalog + formatGNF) ; badge « populaire » rendu comme pastille décorative PulseGlow sans texte (i18n gelée, aucun nom inventé)
+- Dev server : GET / 200, compilation OK
+
+---
+Task ID: 12-a
+Agent: hero-nav-footer-motion (Z.ai Code)
+Task: Chorégraphie riche Hero / StatsSection / Navbar / Footer (interface « très très très animée »)
+
+Work Log:
+- Lecture worklog (tâches 1→12-c), bibliothèque src/components/motion/index.tsx (API complète), kit.tsx, globals.css (.spin-slower/.spin-reverse/.glow-pulse/.text-outline-faint/.link-gold/.card-lift/.scroll-indicator-line vérifiées), lib/brand.ts (constante BRAND — jamais hardcodée), translations.ts (hero.*, stats.*, footer.*)
+- Hero.tsx : image de fond en Parallax speed 0.15 (wrapper -inset-y-10 anti-révélation de bords) ; contenu en contre-parallaxe Parallax speed -0.08 (profondeur) ; filigrane géant aria-hidden = hero.tGold en text-outline-faint, Parallax speed 0.3, visible lg+, opacity-70 ; ornement : deux anneaux SVG semi-transparents (arcs or en dasharray) en spin-slower + spin-reverse, dans Float y=14 puis PulseGlow (pulse subtil), absolus à droite z-[5] ; entrée orchestrée Stagger delay 0.95 step 0.16 : badge (PulseGlow) → surtitre → titre WordMask (t1 delay 1.15 step 0.09, tGold delay 1.75 step 0.1 — corrige au passage l'ancien delay=400 interprété en secondes) → sous-titre → CTAs ; CTA primaire Magnetic conservé + classe glow-pulse sur le bouton principal uniquement ; indicateur de scroll en Float y=4 ; GoldParticles/Spotlight et tous les handlers (trackCta, scrollToSection, openChat) conservés
+- StatsSection.tsx : filigrane géant aria-hidden « 7 · 10 · 5 · 6 » (les 4 chiffres RÉELS du cahier des charges, rien d'inventé) en text-outline-faint + Parallax 0.3 ; DrawRule pleine largeur au-dessus ET en-dessous du bloc ; Stagger step 0.12 + StaggerItem par stat ; carte StatCard = motion.div whileHover scale 1.035 (spring, gated lightMode → div statique) + card-lift (halo or au survol) ; chiffre en PopIn (0.4→1 élastique, delay 0.4+i×0.12) font-serif text-6xl md:text-7xl avec Counter (1800 ms) et group-hover:text-goldlight (transition-colors) ; GoldRule remplacée par DrawRule w-10 mx-auto ; label en Reveal delay échelonné ; valeurs 7/10/5/6 et clés i18n inchangées, aucun suffixe ajouté (label suffit)
+- Navbar.tsx : motion.header initial y:-110% → 0 (entrée glissée), animate y:-110%/0% piloté par useScroll + useMotionValueEvent(scrollY,"change") — cache au-delà de 160 px en descente, réapparaît en remontée ou menu ouvert ; glass-panel + ombre dès scrollY > 24 (synchronisation initiale via requestAnimationFrame pour satisfaire react-hooks/set-state-in-effect) ; liens : link-gold appliqué à un span interne (soulignement or animé sous le mot) + micro-lift hover:-translate-y-0.5, pastille active conservée ; monogramme en group-hover:rotate-12 ; CTA navbar enveloppé dans PulseGlow ; menu mobile en AnimatePresence (panneau opacity+y, items en cascade delay 0.1+i×0.05, bloc langues/CTA en queue) ; branche lightMode dédiée : header CSS classique + tiroir statique (zéro framer-motion en mode réduit) ; IntersectionObserver section active, sélecteur de langue (clic extérieur/Échap), verrouillage scroll du tiroir, goTo/navCta inchangés
+- Footer.tsx : DrawRule pleine largeur au-dessus du wordmark ; wordmark géant = BRAND en LettersReveal (text-outline, aria-label conservé, lettres aria-hidden) ; les 4 colonnes en Stagger step 0.1 + StaggerItem ; liens footerLinkCls + hover:translate-x-1 hover:text-goldtext (transition-all duration-300) ; NOUVEAU bouton retour en haut (window.scrollTo top smooth) dans Magnetic, icône ArrowUp en group-hover:rotate-12, aria-label = nouvelle clé i18n footer.backTop ajoutée aux 5 langues (fr « Retour en haut », en, es, zh, de — seule chaîne ajoutée, indispensable pour l'a11y) ; monogramme ornemental final en Float y=8 ; newsletter (submitNewsletter), push, bascule motion, admin et dialogues légaux préservés à l'identique ; exports Footer + default Footer inchangés
+- Validation : curl / → 200, marqueurs SSR vérifiés (spin-slower/spin-reverse, text-outline-faint ×2, aria-label="EINSOF" via constante, « Retour en haut », « 7 · 10 · 5 · 6 ») ; dev.log compilations propres, aucune erreur runtime ; bun run lint → 0 erreur 0 warning dans mes 4 fichiers + translations.ts (restationnent 2 erreurs PRÉEXISTANTES dans src/components/motion/index.tsx lignes 365/721 — fichier gelé task 11, non touché, mtime antérieur à mes edits)
+
+Stage Summary:
+- Chorégraphie livrée : parallaxe multi-couches (fond 0.15 / filigrane 0.3 / contenu −0.08), orchestration Stagger post-rideau (~1 s), PulseGlow badge + CTA navbar, glow-pulse CTA primaire, anneaux or contrarotatifs lévités, navbar directionnelle cache/restore, tiroir mobile AnimatePresence en cascade, stats spectaculaires (PopIn élastique + Counter spring + DrawRule + scale/halo au survol), footer wordmark lettre à lettre + retour en haut magnétique
+- Contrats respectés : data-section-id, clés i18n existantes, handlers (openChat, scrollToSection, trackCta…), exports nommés identiques, framer-motion direct uniquement là où nécessaire (header/tiroir Navbar, whileHover StatCard) et TOUJOURS derrière une branche lightMode explicite
+- Or ≤ 8 % des surfaces (filets, anneaux semi-transparents, contours pâles), pas de néon, pas d'emoji, SSR sûr (aucun Math.random, filigranes déterministes)
+- Une seule chaîne i18n ajoutée : footer.backTop ×5 langues (aria-label a11y du bouton retour en haut) — aucune autre clé ni aucun tarif/contenu modifié
+---
+Task ID: 12-d
+Agent: motion-choreographer (Z.ai Code)
+Task: Chorégraphie riche « très très très animée » des 6 sections restantes (About, Projects, Journal, Partners, Testimonials, Documents) via la bibliothèque d'animation de la tâche 11 — sans toucher aux handlers, données API, clés i18n ni aux fichiers interdits
+
+Work Log:
+- Lecture du worklog (tâches 1→11), de src/components/motion/index.tsx (API complète), de kit.tsx, de globals.css (tokens bg-surface2/goldlight, classes spin-slower/shimmer-text/beam-wrap/spot-card) et des 6 sections à réécrire
+- AboutSection.tsx : texte en Stagger (step 0.09, 6 StaggerItems : label, titre, p1, p2, chiffres, valeurs+CTA) ; mot clé doré about.tGold en Shimmer ; visuel en Parallax (speed 0.2) > Reveal « scale » > Float (2 anneaux or spin-slower/spin-reverse, aria-hidden, hidden sm:block) ; image dans Beam (rounded-2xl) avec border-gold/30 + hover:scale-[1.03] duration-700 ; GoldBadge teamNote conservé ; nouveaux compteurs animés Counter to={7} (stats.years) et to={10} (stats.experts) — uniquement les nombres déjà présents dans le contenu et la section Chiffres existante, libellés issus des clés i18n existantes (aucune clé ajoutée) ; valeurs en Reveal échelonné (delay i×0.08) avec hover -translate-y-1 + titre group-hover:text-goldtext ; dl sémantique conservé ; handlers CTA (scrollToSection("contact") + trackCta("about","cta")) inchangés
+- ProjectsSection.tsx : grille en Stagger step 0.08 > StaggerItem (y=36) > Tilt (max 5) > SpotlightCard (380) > Beam > article card-lift « group » ; l'année réelle (seule donnée visuelle disponible — l'API ne renvoie aucune image, rien n'a été inventé) devient un filigrane serif outline [-webkit-text-stroke] text-transparent qui zoome au survol (group-hover:scale-105 duration-700), dégradé or montant (from-gold/15, opacity-0 > group-hover:opacity-100), GoldBadge secteur dans le bandeau ; titre group-hover:text-goldlight ; flèche ArrowUpRight group-hover:-translate-y-1 +translate-x-1 ; dl client/secteur et bouton CTA (trackCta + openForm("quote")) inchangés ; fetch/loading/empty EXACTEMENT conservés (return null si vide — pas de skeleton ajouté pour ne pas altérer la visibilité, règle §20.4)
+- JournalSection.tsx : même motif Stagger step 0.08 ; chaque article enveloppé dans Beam (rounded-xl) ; date en capitales espacées (tracking 0.16em) qui glisse (group-hover:translate-x-1) ; titre group-hover:text-goldlight ; flèche readMore group-hover:translate-x-1 ; DrawRule (w-40, mx-auto) en clôture de la liste — pas de CTA « tous les articles » créé car aucune clé i18n n'existe pour ce libellé (règle : ne pas inventer de contenu) ; Dialog de lecture inchangé ; pas d'image dans les cartes (PostRow ne contient aucun champ visuel)
+- PartnersSection.tsx : DrawRule pleine largeur au-dessus d'un ruban VelocityRow (baseVelocity 1.5) reprenant les logos/noms réels (grayscale > hover:grayscale-0 + scale-105, séparateurs points or aria-hidden) ; grille de cartes en Stagger step 0.09 > SpotlightCard (400) > article card-lift « group » ; logos grayscale > group-hover:grayscale-0 + scale-[1.04] (bloc typographique de repli inchangé, zoom équivalent) ; description + lien « Visiter le site » (rel noopener, trackCta) et CTA « Devenir partenaire » (trackCta + openForm("contact")) inchangés, ce dernier passé en magnetic
+- TestimonialsSection.tsx : Stagger step 0.1 > Tilt léger (max 4) > SpotlightCard (420) > figure ; guillemet décoratif serif géant (text-6xl/7xl text-gold/10) en PopIn ; étoiles (uniquement si rating réel 1–5, aria-label n/5 conservé) en PopIn cascade (delay 0.15 + n×0.07) ; monogramme-auteur = initiale réelle de authorName dans un disque bordé or, group-hover:scale-110 (aucun avatar en base, rien d'inventé) ; GoldBadge secteur et ton deep conservés
+- DocumentsSection.tsx : lignes en Reveal variant « left » avec delay i×0.06 (choregraphie latérale échelonnée équivalente Stagger) ; hover ligne : hover:translate-x-2 + border-l-2 border-l-gold/25 > hover:border-l-gold + hover:bg-surface2 + ombre douce (transition-all 300) ; icône group-hover:rotate-3 group-hover:scale-110 ; GoldBadge catégorie avec lueur or au survol (group-hover:shadow or) ; bouton télécharger (attributs, trackCta, cibles) inchangé et enveloppé dans Magnetic ; note documents.emptyNote conservée et révélée en Reveal
+- Qualité : lint ciblé sur les 6 fichiers → 0 erreur 0 avertissement ; tsc --noEmit → aucune erreur dans mes fichiers (seules les 4 erreurs préexistantes examples/ et skills/) ; dev.log → compilations OK, GET / 200, /api/projects|posts|testimonials|partners|documents 200, aucune erreur nouvelle ; aucun Math.random au rendu, aucun emoji, aucun bleu/indigo, or ≤ 8 % (filets, anneaux, badges, filigrane outline) ; fichiers interdits (globals.css, motion/*, kit.tsx, translations) NON modifiés ; dev server NON redémarré, pas de build, prisma/ intact
+
+Stage Summary:
+- Les 6 sections disposent désormais de la chorégraphie Obsidienne & Or complète : entrées Stagger/Reveal, parallaxe + lévitation (About), cartes 3D à halo et bordure or réactive (Projects/Testimonials/Partners), ruban réactif au scroll (Partners), lueur de téléchargement magnétique (Documents), compteurs animés sur données réelles (About)
+- Contraintes de données respectées : aucun champ image n'existe côté API (projects/posts) → les « zooms d'image » demandés sont rendus par le filigrane d'année réelle (projects) et omis (journal, rien d'inventé) ; l'état vide reste « section masquée » partout ; le CTA « tous les articles » n'existe pas faute de clé i18n (DrawRule décorative posée à la place)
+- Tous les handlers (trackCta, openForm, scrollToSection, setOpenId, liens externes), exports nommés + default, data-section-id et logique de fetch/loading/empty sont strictement conservés
+- Reste à l'attention de l'orchestrateur : 2 erreurs lint préexistantes dans src/components/motion/index.tsx (react-hooks/set-state-in-effect, lignes 365/721 — bibliothèque hors périmètre 12-d, écrite en tâche 11) à corriger dans une tâche dédiée si souhaité
+
+---
+Task ID: 13
+Agent: orchestrator (Z.ai Code)
+Task: Vérification navigateur complète + correction d'un bug critique de visibilité en mode light
+
+Work Log:
+- Vérification agent-browser de toutes les sections (desktop 1280px + mobile 390px) : hero, stats, services, process, pricing, faq, about, footer, marquee sectors
+- BUG CRITIQUE découvert : sur les appareils faibles (lightMode auto, ex. 2 cœurs), les branches light des primitives retournaient encore motion.* — React réutilisait le nœud DOM et les styles initiaux opacity:0 appliqués à l'hydratation persistaient → contenu définitivement invisible (16 éléments dans services seuls)
+- CORRECTION : ajout du composant Plain (élément HTML brut) dans src/components/motion/index.tsx — les branches lightMode de Reveal, Stagger, StaggerItem, PopIn retournent désormais un vrai <div>/<span>, forçant React à remonter un nœud propre
+- Fix lint : suppression des setState redondants dans Counter et CurtainIntro (règle react-hooks/set-state-in-effect)
+- Vérifications passées : 0 erreur ESLint sur tout le projet, 0 erreur console navigateur, 0 erreur dev.log
+- Compteurs animés 7/10/5/6 OK, accordéon FAQ animé OK, timeline process avec ping doré OK, carte vedette pricing en Beam permanent OK, marquee VelocityRow sectors OK, footer + retour en haut magnétique OK
+- Audit final : seuls éléments opacity:0 restants = 2 champs honeypot anti-spam (intentionnels)
+
+Stage Summary:
+- L'interface est maintenant très fortement animée : rideau d'ouverture, titres mot à mot, stagger spring des blocs, compteurs animés, filets d'or qui se dessinent, halos spotlight suivant le curseur, bordures or rotatives, parallaxe multi-couches, ruban réactif au scroll, navbar directionnelle
+- Sécurité d'affichage garantie : le contenu est toujours visible même sans animation (light mode / préférences système / appareil faible)
+- animations vérifiables dans le navigateur de test via localStorage eins-reduce-motion=0 (les appareils ≤ 4 cœurs basculent automatiquement en mode léger)

@@ -1,6 +1,6 @@
 "use client";
 
-import { Marquee, Reveal } from "@/components/motion";
+import { Reveal, VelocityRow } from "@/components/motion";
 import { Container, Section, SectionHeading } from "@/components/site/kit";
 import { useI18n } from "@/lib/i18n";
 
@@ -19,19 +19,23 @@ export function SectorsSection() {
           sub={t("sectors.sub")}
         />
 
-        <Reveal>
+        <Reveal variant="blur">
           <div className="relative">
-            <Marquee duration={45}>
+            {/* Ruban réactif : accélère et s'inverse avec la vitesse de défilement */}
+            <VelocityRow baseVelocity={1.8}>
               {items.map((label) => (
                 <span
                   key={label}
-                  className="mx-3 inline-flex items-center gap-3 rounded-full border border-line bg-surface px-6 py-3 text-sm text-mute"
+                  className="group mx-3 inline-flex cursor-default items-center gap-3 rounded-full border border-line bg-surface px-6 py-3 text-sm text-mute transition-all duration-300 hover:-translate-y-1 hover:border-gold/60 hover:text-goldtext"
                 >
-                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-gold" />
+                  <span
+                    aria-hidden
+                    className="h-1.5 w-1.5 rounded-full bg-gold transition-transform duration-300 group-hover:scale-[1.9]"
+                  />
                   {label}
                 </span>
               ))}
-            </Marquee>
+            </VelocityRow>
 
             {/* fondus latéraux discrets */}
             <div

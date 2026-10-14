@@ -7,111 +7,387 @@ import React, {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import {
+  animate,
+  motion,
+  useAnimationFrame,
+  useInView,
+  useMotionValue,
+  useScroll,
+  useSpring,
+  useTransform,
+  useVelocity,
+  type Variants,
+} from "framer-motion";
 import { useMotionMode } from "@/components/providers";
 
-const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+/* ── Courbes & ressorts partagés (design §22 / §32) ─────────── */
 
-/* ── Reveal : apparition au défilement (opacité + 24 px vers le haut) ── */
+export const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+export const EASE_INOUT: [number, number, number, number] = [0.76, 0, 0.24, 1];
+export const SPRING_SOFT = { type: "spring", stiffness: 120, damping: 20, mass: 0.9 } as const;
+export const SPRING_SNAPPY = { type: "spring", stiffness: 300, damping: 28, mass: 0.6 } as const;
+
+const MOTION_TAGS = {
+  div: motion.div,
+  span: motion.span,
+  section: motion.section,
+  article: motion.article,
+  li: motion.li,
+  p: motion.p,
+  h1: motion.h1,
+  h2: motion.h2,
+  h3: motion.h3,
+} as const;
+
+type MotionTag = keyof typeof MOTION_TAGS;
+
+/** Élément HTML brut — utilisé en mode light : change le type d'élément
+ *  par rapport à motion.*, ce qui force React à remonter un nœud propre
+ *  (les styles initiaux opacity:0 appliqués par framer-motion disparaissent). */
+function Plain({ tag, className, children }: { tag: MotionTag; className?: string; children: ReactNode }) {
+  const Tag = tag as keyof React.JSX.IntrinsicElements;
+  return <Tag className={className}>{children}</Tag>;
+}
+
+/* ── Reveal : entrée au défilement, 6 variantes riches ──────── */
+/* variantes : up | down | left | right | scale | blur           */
+
+const REVEAL_OFFSETS: Record<string, Record<string, number>> = {
+  up: { y: 36, x: 0, scale: 1 },
+  down: { y: -36, x: 0, scale: 1 },
+  left: { y: 0, x: -44, scale: 1 },
+  right: { y: 0, x: 44, scale: 1 },
+  scale: { y: 24, x: 0, scale: 0.92 },
+  blur: { y: 20, x: 0, scale: 1.01 },
+};
 
 export function Reveal({
   children,
   delay = 0,
   className = "",
-  as: Tag = "div",
+  as = "div",
   once = true,
-  y = 24,
-  duration = 700,
+  y = 36,
+  duration = 0.9,
+  variant = "up",
 }: {
   children: ReactNode;
   delay?: number;
   className?: string;
-  as?: keyof React.JSX.IntrinsicElements;
+  as?: MotionTag;
   once?: boolean;
   y?: number;
   duration?: number;
+  variant?: "up" | "down" | "left" | "right" | "scale" | "blur";
 }) {
-  const ref = useRef<HTMLElement | null>(null);
-  const [visible, setVisible] = useState(false);
   const { lightMode } = useMotionMode();
+  const Comp = MOTION_TAGS[as] ?? motion.div;
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || lightMode) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          if (once) io.disconnect();
-        } else if (!once) setVisible(false);
-      },
-      { threshold: 0.2 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [lightMode, once]);
+  if (lightMode) return <Plain tag={as} className={className}>{children}</Plain>;
 
-  const shown = visible || lightMode;
+  const base = REVEAL_OFFSETS[variant] ?? REVEAL_OFFSETS.up;
+  const offset = variant === "blur"
+    ? { opacity: 0, y: base.y, x: 0, scale: base.scale, filter: "blur(14px)" }
+    : { opacity: 0, y: y ?? base.y, x: base.x, scale: base.scale };
 
-  const style: CSSProperties = {
-    opacity: shown ? 1 : 0,
-    transform: shown ? "translateY(0)" : `translateY(${y}px)`,
-    transition: lightMode
-      ? "opacity .3s ease"
-      : `opacity ${duration}ms ${EASE} ${delay}ms, transform ${duration}ms ${EASE} ${delay}ms`,
-    willChange: "opacity, transform",
-  };
-
-  const Comp = Tag as React.ElementType;
   return (
-    <Comp ref={ref} className={className} style={style}>
+    <Comp
+      className={className}
+      initial={offset}
+      whileInView={{ opacity: 1, x: 0, y: 0, scale: 1, filter: "blur(0px)" }}
+      viewport={{ once, margin: "-60px" }}
+      transition={{ duration, ease: EASE, delay }}
+      style={{ willChange: "opacity, transform" }}
+    >
       {children}
     </Comp>
   );
 }
 
-/* ── Counter : compte animé 0 → valeur en 1,6 s ─────────────── */
+/* ── Stagger : orchestration des enfants (blocs) ────────────── */
+
+export function Stagger({
+  children,
+  className = "",
+  as = "div",
+  delay = 0,
+  step = 0.08,
+  once = true,
+}: {
+  children: ReactNode;
+  className?: string;
+  as?: MotionTag;
+  delay?: number;
+  step?: number;
+  once?: boolean;
+}) {
+  const { lightMode } = useMotionMode();
+  const Comp = MOTION_TAGS[as] ?? motion.div;
+
+  if (lightMode) return <Plain tag={as} className={className}>{children}</Plain>;
+
+  return (
+    <Comp
+      className={className}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once, margin: "-60px" }}
+      variants={{
+        hidden: {},
+        visible: { transition: { staggerChildren: step, delayChildren: delay } },
+      }}
+    >
+      {children}
+    </Comp>
+  );
+}
+
+export function StaggerItem({
+  children,
+  className = "",
+  as = "div",
+  y = 32,
+}: {
+  children: ReactNode;
+  className?: string;
+  as?: MotionTag;
+  y?: number;
+}) {
+  const { lightMode } = useMotionMode();
+  const Comp = MOTION_TAGS[as] ?? motion.div;
+
+  if (lightMode) return <Plain tag={as} className={className}>{children}</Plain>;
+
+  return (
+    <Comp
+      className={className}
+      variants={{
+        hidden: { opacity: 0, y, scale: 0.97, filter: "blur(6px)" },
+        visible: {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          filter: "blur(0px)",
+          transition: SPRING_SOFT,
+        },
+      }}
+      style={{ willChange: "opacity, transform" }}
+    >
+      {children}
+    </Comp>
+  );
+}
+
+/* ── Parallax : translation liée au défilement ──────────────── */
+
+export function Parallax({
+  children,
+  className = "",
+  speed = 0.25,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** 0 = figé, 0.5 = très mobile (±50 % de la hauteur traversée) */
+  speed?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { lightMode } = useMotionMode();
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+  const raw = useTransform(scrollYProgress, [0, 1], [speed * 120, speed * -120]);
+  const y = useSpring(raw, { stiffness: 55, damping: 22, mass: 0.6 });
+
+  if (lightMode) return <div ref={ref} className={className}>{children}</div>;
+
+  return (
+    <motion.div ref={ref} style={{ y }} className={className}>
+      {children}
+    </motion.div>
+  );
+}
+
+/* ── Float : lévitation continue (ornements, badges) ────────── */
+
+export function Float({
+  children,
+  className = "",
+  y = 12,
+  rotate = 0,
+  duration = 6,
+  delay = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  y?: number;
+  rotate?: number;
+  duration?: number;
+  delay?: number;
+}) {
+  const { lightMode } = useMotionMode();
+
+  if (lightMode) return <div className={className}>{children}</div>;
+
+  return (
+    <motion.div
+      className={className}
+      animate={{
+        y: [0, -y, 0],
+        rotate: rotate ? [0, rotate, 0] : 0,
+      }}
+      transition={{ duration, delay, repeat: Infinity, ease: "easeInOut" }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ── Shimmer : texte or animé (balayage lumineux) ───────────── */
+
+export function Shimmer({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const { lightMode } = useMotionMode();
+  return (
+    <span className={`shimmer-text ${lightMode ? "gold-text-gradient" : ""} ${className}`}>
+      {children}
+    </span>
+  );
+}
+
+/* ── Beam : bordure dorée animée (bandeau lumineux) ─────────── */
+
+export function Beam({
+  children,
+  className = "",
+  always = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  always?: boolean;
+}) {
+  return (
+    <div className={`beam-wrap ${always ? "beam-always" : ""} ${className}`}>{children}</div>
+  );
+}
+
+/* ── SpotlightCard : halo or suivant le curseur (cartes) ────── */
+
+export function SpotlightCard({
+  children,
+  className = "",
+  size = 460,
+}: {
+  children: ReactNode;
+  className?: string;
+  size?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { lightMode, desktop } = useMotionMode();
+
+  const onMove = (e: React.MouseEvent) => {
+    const el = ref.current;
+    if (!el || lightMode || !desktop) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", `${e.clientX - r.left}px`);
+    el.style.setProperty("--my", `${e.clientY - r.top}px`);
+    el.style.setProperty("--spot-op", "1");
+  };
+  const onLeave = () => {
+    const el = ref.current;
+    if (el) el.style.setProperty("--spot-op", "0");
+  };
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
+      className={`spot-card ${className}`}
+      style={{ "--spot-size": `${size}px` } as CSSProperties}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ── DrawRule : filet d'or qui se dessine à l'écran ─────────── */
+
+export function DrawRule({
+  className = "",
+  delay = 0,
+  duration = 1.1,
+}: {
+  className?: string;
+  delay?: number;
+  duration?: number;
+}) {
+  const { lightMode } = useMotionMode();
+
+  if (lightMode) return <div aria-hidden className={`gold-rule ${className}`} />;
+
+  return (
+    <motion.div
+      aria-hidden
+      className={`gold-rule ${className}`}
+      initial={{ scaleX: 0 }}
+      whileInView={{ scaleX: 1 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration, ease: EASE, delay }}
+      style={{ transformOrigin: "left center" }}
+    />
+  );
+}
+
+/* ── Counter : compte animé spring (chiffres clés) ──────────── */
 
 export function Counter({
   to,
-  duration = 1600,
+  duration = 2000,
   className = "",
+  prefix = "",
+  suffix = "",
+  decimals = 0,
 }: {
   to: number;
   duration?: number;
   className?: string;
+  prefix?: string;
+  suffix?: string;
+  decimals?: number;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const [value, setValue] = useState(0);
-  const started = useRef(false);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
   const { lightMode } = useMotionMode();
+  const [val, setVal] = useState(0);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el || lightMode) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !started.current) {
-          started.current = true;
-          const start = performance.now();
-          const tick = (now: number) => {
-            const p = Math.min(1, (now - start) / duration);
-            const eased = 1 - Math.pow(1 - p, 4);
-            setValue(Math.round(eased * to));
-            if (p < 1) requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.4 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [to, duration, lightMode]);
+    if (!inView || lightMode) return;
+    const controls = animate(0, to, {
+      duration: duration / 1000,
+      ease: EASE,
+      onUpdate: (v) => setVal(v),
+    });
+    return () => controls.stop();
+  }, [inView, to, duration, lightMode]);
+
+  const shown = lightMode ? to : val;
+  const formatted = new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(shown);
 
   return (
     <span ref={ref} className={className}>
-      {new Intl.NumberFormat("fr-FR").format(lightMode ? to : value)}
+      {prefix}
+      {formatted}
+      {suffix}
     </span>
   );
 }
@@ -148,6 +424,62 @@ export function Marquee({
   );
 }
 
+/* ── VelocityRow : ruban réactif à la vitesse de défilement ─── */
+
+const wrap = (min: number, max: number, v: number) => {
+  const range = max - min;
+  return ((((v - min) % range) + range) % range) + min;
+};
+
+export function VelocityRow({
+  children,
+  className = "",
+  baseVelocity = 2.2,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** % de largeur par seconde */
+  baseVelocity?: number;
+}) {
+  const { lightMode } = useMotionMode();
+  const baseX = useMotionValue(0);
+  const { scrollY } = useScroll();
+  const scrollVelocity = useVelocity(scrollY);
+  const smoothVelocity = useSpring(scrollVelocity, { damping: 50, stiffness: 400 });
+  const velocityFactor = useTransform(smoothVelocity, [0, 1200], [0, 4.5], { clamp: false });
+  const direction = useRef(1);
+  const x = useTransform(baseX, (v) => `${wrap(-50, 0, v)}%`);
+
+  useAnimationFrame((_t, delta) => {
+    if (lightMode) return;
+    let moveBy = direction.current * baseVelocity * (delta / 1000);
+    const vf = velocityFactor.get();
+    if (vf < 0) direction.current = -1;
+    else if (vf > 0) direction.current = 1;
+    moveBy += direction.current * moveBy * Math.abs(vf);
+    baseX.set(baseX.get() + moveBy);
+  });
+
+  if (lightMode) {
+    return (
+      <div className={`overflow-hidden ${className}`}>
+        <div className="flex w-max items-center">{children}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`overflow-hidden whitespace-nowrap ${className}`}>
+      <motion.div className="flex w-max items-center whitespace-nowrap" style={{ x }}>
+        {children}
+        {children}
+        {children}
+        {children}
+      </motion.div>
+    </div>
+  );
+}
+
 /* ── Magnetic : boutons magnétiques (ordinateur uniquement) ─── */
 
 export function Magnetic({ children, radius = 80 }: { children: ReactNode; radius?: number }) {
@@ -165,7 +497,7 @@ export function Magnetic({ children, radius = 80 }: { children: ReactNode; radiu
       const dy = e.clientY - cy;
       const dist = Math.hypot(dx, dy);
       if (dist < radius) {
-        el.style.transform = `translate(${dx * 0.25}px, ${dy * 0.25}px)`;
+        el.style.transform = `translate(${dx * 0.28}px, ${dy * 0.28}px)`;
       } else {
         el.style.transform = "translate(0,0)";
       }
@@ -178,19 +510,19 @@ export function Magnetic({ children, radius = 80 }: { children: ReactNode; radiu
     <span
       ref={ref}
       className="inline-block transition-transform duration-300"
-      style={{ transitionTimingFunction: EASE }}
+      style={{ transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)" }}
     >
       {children}
     </span>
   );
 }
 
-/* ── Tilt : inclinaison 3D des cartes (4° max, ordinateur) ──── */
+/* ── Tilt : inclinaison 3D des cartes (6° max, ordinateur) ──── */
 
 export function Tilt({
   children,
   className = "",
-  max = 4,
+  max = 6,
 }: {
   children: ReactNode;
   className?: string;
@@ -205,11 +537,11 @@ export function Tilt({
     const r = el.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width - 0.5;
     const py = (e.clientY - r.top) / r.height - 0.5;
-    el.style.transform = `perspective(900px) rotateX(${(-py * max).toFixed(2)}deg) rotateY(${(px * max).toFixed(2)}deg) translateZ(0)`;
+    el.style.transform = `perspective(1000px) rotateX(${(-py * max).toFixed(2)}deg) rotateY(${(px * max).toFixed(2)}deg) translateZ(0)`;
   };
   const onMouseLeave = () => {
     const el = ref.current;
-    if (el) el.style.transform = "perspective(900px) rotateX(0) rotateY(0)";
+    if (el) el.style.transform = "perspective(1000px) rotateX(0) rotateY(0)";
   };
 
   return (
@@ -218,7 +550,10 @@ export function Tilt({
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
       className={`transition-transform duration-500 ${className}`}
-      style={{ transitionTimingFunction: EASE, transformStyle: "preserve-3d" }}
+      style={{
+        transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
+        transformStyle: "preserve-3d",
+      }}
     >
       {children}
     </div>
@@ -228,33 +563,29 @@ export function Tilt({
 /* ── ScrollProgress : filet doré de lecture en haut ─────────── */
 
 export function ScrollProgress() {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const onScroll = () => {
-      const h = document.documentElement;
-      const p = h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight);
-      if (ref.current) ref.current.style.transform = `scaleX(${p})`;
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const { lightMode } = useMotionMode();
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4 });
+
+  if (lightMode) {
+    return <div aria-hidden className="fixed left-0 top-0 z-[70] h-[2px] w-full origin-left gold-fill" />;
+  }
   return (
-    <div
-      ref={ref}
+    <motion.div
       aria-hidden
       className="fixed left-0 top-0 z-[70] h-[2px] w-full origin-left gold-fill"
+      style={{ scaleX }}
     />
   );
 }
 
-/* ── WordMask : titre révélé mot par mot ────────────────────── */
+/* ── WordMask : titre révélé mot par mot (masque vertical) ──── */
 
 export function WordMask({
   text,
   className = "",
   delay = 0,
-  step = 60,
+  step = 0.07,
 }: {
   text: string;
   className?: string;
@@ -263,25 +594,204 @@ export function WordMask({
 }) {
   const { lightMode } = useMotionMode();
   const words = text.split(" ");
+
+  if (lightMode) return <span className={className}>{text}</span>;
+
   return (
     <span className={className}>
       {words.map((w, i) => (
-        <span key={i} className="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-bottom">
-          <span
-            className="inline-block"
-            style={{
-              transform: lightMode ? "none" : undefined,
-              animation: lightMode
-                ? "none"
-                : `word-up 900ms ${EASE} ${delay + i * step}ms both`,
-            }}
+        <span
+          key={i}
+          className="inline-block overflow-hidden pb-[0.1em] -mb-[0.1em] align-bottom"
+        >
+          <motion.span
+            className="inline-block will-change-transform"
+            initial={{ y: "115%", rotate: 5 }}
+            whileInView={{ y: "0%", rotate: 0 }}
+            viewport={{ once: true, margin: "-30px" }}
+            transition={{ duration: 0.85, ease: EASE, delay: delay + i * step }}
           >
             {w}
             {i < words.length - 1 ? "\u00A0" : ""}
-          </span>
+          </motion.span>
         </span>
       ))}
-      <style>{`@keyframes word-up { from { transform: translateY(110%); } to { transform: translateY(0); } }`}</style>
     </span>
   );
 }
+
+/* ── LettersReveal : mot lettre par lettre (pied de page, logo) */
+
+export function LettersReveal({
+  text,
+  className = "",
+  delay = 0,
+  step = 0.045,
+}: {
+  text: string;
+  className?: string;
+  delay?: number;
+  step?: number;
+}) {
+  const { lightMode } = useMotionMode();
+  const letters = Array.from(text);
+
+  if (lightMode) return <span className={className}>{text}</span>;
+
+  return (
+    <span className={className} aria-label={text}>
+      {letters.map((ch, i) => (
+        <motion.span
+          key={i}
+          aria-hidden
+          className="inline-block will-change-transform"
+          initial={{ opacity: 0, y: "0.6em", rotate: 8 }}
+          whileInView={{ opacity: 1, y: 0, rotate: 0 }}
+          viewport={{ once: true, margin: "-30px" }}
+          transition={{ duration: 0.7, ease: EASE, delay: delay + i * step }}
+        >
+          {ch === " " ? "\u00A0" : ch}
+        </motion.span>
+      ))}
+    </span>
+  );
+}
+
+/* ── PopIn : apparition élastique (icônes, pastilles) ───────── */
+
+export function PopIn({
+  children,
+  className = "",
+  delay = 0,
+  as = "div",
+}: {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+  as?: MotionTag;
+}) {
+  const { lightMode } = useMotionMode();
+  const Comp = MOTION_TAGS[as] ?? motion.div;
+
+  if (lightMode) return <Plain tag={as} className={className}>{children}</Plain>;
+
+  return (
+    <Comp
+      className={className}
+      initial={{ opacity: 0, scale: 0.4, rotate: -10 }}
+      whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ ...SPRING_SNAPPY, delay }}
+    >
+      {children}
+    </Comp>
+  );
+}
+
+/* ── PulseGlow : pulsation lumineuse continue (badge, CTA) ──── */
+
+export function PulseGlow({
+  children,
+  className = "",
+  duration = 3,
+}: {
+  children: ReactNode;
+  className?: string;
+  duration?: number;
+}) {
+  const { lightMode } = useMotionMode();
+
+  if (lightMode) return <span className={className}>{children}</span>;
+
+  return (
+    <motion.span
+      className={`inline-block ${className}`}
+      animate={{ opacity: [1, 0.75, 1], filter: ["brightness(1)", "brightness(1.18)", "brightness(1)"] }}
+      transition={{ duration, repeat: Infinity, ease: "easeInOut" }}
+    >
+      {children}
+    </motion.span>
+  );
+}
+
+/* ── CurtainIntro : rideau d'ouverture or & obsidienne ──────── */
+
+export function CurtainIntro({ brand = "EINSOF" }: { brand?: string }) {
+  const { lightMode } = useMotionMode();
+  const [gone, setGone] = useState(false);
+
+  useEffect(() => {
+    if (lightMode) return;
+    const t = setTimeout(() => setGone(true), 1500);
+    return () => clearTimeout(t);
+  }, [lightMode]);
+
+  if (lightMode || gone) return null;
+
+  return (
+    <motion.div
+      aria-hidden
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0a0a0a]"
+      initial={{ y: 0 }}
+      animate={{ y: "-100%" }}
+      transition={{ delay: 0.75, duration: 0.75, ease: EASE_INOUT }}
+    >
+      <motion.span
+        className="font-serif text-3xl tracking-[0.35em] gold-text-gradient md:text-4xl"
+        initial={{ opacity: 0, letterSpacing: "0.8em" }}
+        animate={{ opacity: 1, letterSpacing: "0.35em" }}
+        transition={{ duration: 0.9, ease: EASE }}
+      >
+        {brand}
+      </motion.span>
+      <motion.div
+        className="gold-rule mt-5 w-40"
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: 0.7, ease: EASE, delay: 0.15 }}
+      />
+    </motion.div>
+  );
+}
+
+/* ── AccordionMotion : panneau dépliant animé (hauteur auto) ── */
+
+export function CollapseMotion({
+  open,
+  children,
+  className = "",
+}: {
+  open: boolean;
+  children: ReactNode;
+  className?: string;
+}) {
+  const { lightMode } = useMotionMode();
+
+  if (lightMode) {
+    return open ? <div className={className}>{children}</div> : null;
+  }
+
+  return (
+    <motion.div
+      className={className}
+      initial={false}
+      animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }}
+      transition={{ duration: 0.45, ease: EASE }}
+      style={{ overflow: "hidden" }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ── Groupe de variantes exportées (utilisé par les sections) ── */
+
+export const staggerParent: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+
+export const staggerChild: Variants = {
+  hidden: { opacity: 0, y: 32, scale: 0.97 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: SPRING_SOFT },
+};

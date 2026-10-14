@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { Check, Clock, MapPin, MessageCircle } from "lucide-react";
+import { Check, Clock, Loader2, MapPin, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DrawRule,
+  Parallax,
+  PopIn,
+  Reveal,
+  SpotlightCard,
+  Stagger,
+  StaggerItem,
+  Tilt,
+} from "@/components/motion";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -127,9 +137,24 @@ export function ContactSection() {
     }
   }
 
+  const sideRows = [
+    { Icon: MessageCircle, text: t("contact.responseT") },
+    { Icon: Clock, text: t("contact.hoursT") },
+    { Icon: MapPin, text: t("contact.address") },
+  ];
+
   return (
     <Section id="contact" tone="surface">
-      <Container>
+      {/* Filigrane géant en parallaxe (décoratif) */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <Parallax speed={0.12} className="flex h-full items-center justify-center">
+          <span className="text-outline-faint select-none whitespace-nowrap font-serif text-[clamp(7rem,20vw,17rem)] leading-none tracking-[0.14em]">
+            EINSOF
+          </span>
+        </Parallax>
+      </div>
+
+      <Container className="relative">
         <SectionHeading
           label={t("contact.label")}
           title={t("contact.title")}
@@ -137,20 +162,24 @@ export function ContactSection() {
           sub={t("contact.sub")}
         />
 
-        <div className="grid gap-12 lg:grid-cols-[1fr_360px]">
+        <DrawRule className="w-full" delay={0.15} duration={1.4} />
+
+        <div className="mt-12 grid gap-12 lg:grid-cols-[1fr_360px]">
           {/* ── Formulaire ────────────────────────────────── */}
           <div className="rounded-2xl border border-line bg-bg p-6 md:p-8">
             {status === "success" ? (
               <div className="flex flex-col items-center gap-4 py-10 text-center">
-                <span className="gold-fill flex h-14 w-14 items-center justify-center rounded-full">
+                <PopIn className="gold-fill flex h-14 w-14 items-center justify-center rounded-full">
                   <Check className="h-7 w-7 text-ongold" strokeWidth={1.25} aria-hidden />
-                </span>
-                <p className="font-serif text-xl">{t("contact.success")}</p>
+                </PopIn>
+                <Reveal delay={0.15} y={14}>
+                  <p className="font-serif text-xl">{t("contact.success")}</p>
+                </Reveal>
               </div>
             ) : (
               <form onSubmit={handleSubmit} noValidate>
-                <div className="grid gap-5 md:grid-cols-2">
-                  <div>
+                <Stagger className="grid gap-5 md:grid-cols-2" step={0.05}>
+                  <StaggerItem>
                     <label htmlFor="contact-firstName" className={labelCls}>
                       {t("contact.firstName")}
                     </label>
@@ -165,9 +194,9 @@ export function ContactSection() {
                     {errors.firstName && (
                       <p className="mt-1 text-xs text-destructive">{errors.firstName}</p>
                     )}
-                  </div>
+                  </StaggerItem>
 
-                  <div>
+                  <StaggerItem>
                     <label htmlFor="contact-lastName" className={labelCls}>
                       {t("contact.lastName")}
                     </label>
@@ -182,9 +211,9 @@ export function ContactSection() {
                     {errors.lastName && (
                       <p className="mt-1 text-xs text-destructive">{errors.lastName}</p>
                     )}
-                  </div>
+                  </StaggerItem>
 
-                  <div>
+                  <StaggerItem>
                     <label htmlFor="contact-phone" className={labelCls}>
                       {t("contact.phone")}
                     </label>
@@ -200,9 +229,9 @@ export function ContactSection() {
                     {errors.phone && (
                       <p className="mt-1 text-xs text-destructive">{errors.phone}</p>
                     )}
-                  </div>
+                  </StaggerItem>
 
-                  <div>
+                  <StaggerItem>
                     <label htmlFor="contact-email" className={labelCls}>
                       {t("contact.email")}
                     </label>
@@ -214,9 +243,9 @@ export function ContactSection() {
                       value={fields.email}
                       onChange={(e) => setField("email", e.target.value)}
                     />
-                  </div>
+                  </StaggerItem>
 
-                  <div className="md:col-span-2">
+                  <StaggerItem className="md:col-span-2">
                     <label htmlFor="contact-company" className={labelCls}>
                       {t("contact.company")}
                     </label>
@@ -227,9 +256,9 @@ export function ContactSection() {
                       value={fields.company}
                       onChange={(e) => setField("company", e.target.value)}
                     />
-                  </div>
+                  </StaggerItem>
 
-                  <div className="md:col-span-2">
+                  <StaggerItem className="md:col-span-2">
                     <label htmlFor="contact-subject" className={labelCls}>
                       {t("contact.subject")}
                     </label>
@@ -261,9 +290,9 @@ export function ContactSection() {
                     {errors.subject && (
                       <p className="mt-1 text-xs text-destructive">{errors.subject}</p>
                     )}
-                  </div>
+                  </StaggerItem>
 
-                  <div className="md:col-span-2">
+                  <StaggerItem className="md:col-span-2">
                     <label htmlFor="contact-message" className={labelCls}>
                       {t("contact.message")}
                     </label>
@@ -278,76 +307,102 @@ export function ContactSection() {
                     {errors.message && (
                       <p className="mt-1 text-xs text-destructive">{errors.message}</p>
                     )}
+                  </StaggerItem>
+                </Stagger>
+
+                <Reveal delay={0.2} y={14}>
+                  <div className="mt-5">
+                    <label className="flex cursor-pointer items-start gap-2.5 text-sm text-mute">
+                      <Checkbox
+                        className="mt-0.5"
+                        checked={consent}
+                        onCheckedChange={(v) => {
+                          setConsent(v === true);
+                          setErrors((er) => ({ ...er, consent: undefined }));
+                        }}
+                      />
+                      <span>
+                        {t("contact.consent")}
+                        {errors.consent && (
+                          <span className="mt-1 block text-xs text-destructive">
+                            {errors.consent}
+                          </span>
+                        )}
+                      </span>
+                    </label>
                   </div>
-                </div>
+                </Reveal>
 
-                <div className="mt-5">
-                  <label className="flex cursor-pointer items-start gap-2.5 text-sm text-mute">
-                    <Checkbox
-                      className="mt-0.5"
-                      checked={consent}
-                      onCheckedChange={(v) => {
-                        setConsent(v === true);
-                        setErrors((er) => ({ ...er, consent: undefined }));
-                      }}
-                    />
-                    <span>
-                      {t("contact.consent")}
-                      {errors.consent && (
-                        <span className="mt-1 block text-xs text-destructive">
-                          {errors.consent}
-                        </span>
+                <Reveal delay={0.3} y={14}>
+                  <div className="mt-6">
+                    <GoldButton
+                      type="submit"
+                      magnetic
+                      className="w-full md:w-auto"
+                      disabled={status === "submitting"}
+                    >
+                      {status === "submitting" ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                          {t("contact.submitting")}
+                        </>
+                      ) : (
+                        t("contact.submit")
                       )}
-                    </span>
-                  </label>
-                </div>
-
-                <div className="mt-6">
-                  <GoldButton
-                    type="submit"
-                    className="w-full md:w-auto"
-                    disabled={status === "submitting"}
-                  >
-                    {status === "submitting" ? t("contact.submitting") : t("contact.submit")}
-                  </GoldButton>
-                </div>
+                    </GoldButton>
+                  </div>
+                </Reveal>
               </form>
             )}
           </div>
 
           {/* ── Panneau latéral ───────────────────────────── */}
           <aside className="space-y-8 lg:border-l lg:border-line lg:pl-10">
-            <h3 className="label-caps">{t("contact.sideT")}</h3>
+            <Reveal y={14} duration={0.6}>
+              <h3 className="label-caps">{t("contact.sideT")}</h3>
+            </Reveal>
 
-            <div className="flex items-start gap-3">
-              <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-gold" strokeWidth={1.25} aria-hidden />
-              <p className="text-sm text-mute">{t("contact.responseT")}</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <Clock className="mt-0.5 h-4 w-4 shrink-0 text-gold" strokeWidth={1.25} aria-hidden />
-              <p className="text-sm text-mute">{t("contact.hoursT")}</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold" strokeWidth={1.25} aria-hidden />
-              <p className="text-sm text-mute">{t("contact.address")}</p>
-            </div>
+            {/* Carte horaires / localisation : tilt léger + halo curseur */}
+            <Tilt max={3}>
+              <SpotlightCard className="rounded-xl border border-line bg-surface p-5">
+                <Stagger className="space-y-5" step={0.08}>
+                  {sideRows.map(({ Icon, text }) => (
+                    <StaggerItem key={text}>
+                      <div className="group flex items-start gap-3 transition-transform duration-300 ease-out hover:translate-x-1">
+                        <span className="mt-0.5 inline-flex transition-transform duration-300 group-hover:scale-110">
+                          <Icon className="h-4 w-4 shrink-0 text-gold" strokeWidth={1.25} aria-hidden />
+                        </span>
+                        <p className="text-sm text-mute">{text}</p>
+                      </div>
+                    </StaggerItem>
+                  ))}
+                </Stagger>
+              </SpotlightCard>
+            </Tilt>
 
-            <div>
-              <p className="text-sm font-medium text-ink">{t("contact.whatsappT")}</p>
-              <p className="text-sm text-mute">{t("contact.whatsappSoon")}</p>
-            </div>
+            <Reveal delay={0.1} y={18}>
+              <div>
+                <p className="text-sm font-medium text-ink">{t("contact.whatsappT")}</p>
+                <p className="text-sm text-mute">{t("contact.whatsappSoon")}</p>
+              </div>
+            </Reveal>
 
-            <GoldRule />
+            <Reveal delay={0.15} y={18}>
+              <GoldRule />
+            </Reveal>
 
-            <GoldButton
-              variant="ghost"
-              onClick={() => {
-                openChat();
-                trackCta("contact", "chat");
-              }}
-            >
-              {t("hero.ctaChat")}
-            </GoldButton>
+            <Reveal delay={0.2} y={18}>
+              <GoldButton
+                variant="ghost"
+                magnetic
+                onClick={() => {
+                  openChat();
+                  trackCta("contact", "chat");
+                }}
+              >
+                {t("hero.ctaChat")}
+              </GoldButton>
+            </Reveal>
           </aside>
         </div>
       </Container>

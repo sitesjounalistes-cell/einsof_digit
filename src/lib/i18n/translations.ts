@@ -397,6 +397,7 @@ const fr = {
     newsSuccess: "Inscription confirmée. À très vite !",
     newsError: "Inscription impossible. Vérifiez votre e-mail.",
     rights: "Tous droits réservés.",
+    backTop: "Retour en haut",
     admin: "Espace équipe",
     legal: {
       mentions: "Mentions légales",
@@ -911,6 +912,7 @@ const en: Dict = {
     newsSuccess: "Subscription confirmed. See you soon!",
     newsError: "Subscription failed. Please check your e-mail.",
     rights: "All rights reserved.",
+    backTop: "Back to top",
     admin: "Team area",
     legal: {
       mentions: "Legal notice",
@@ -1416,6 +1418,7 @@ const es: Dict = {
     newsSuccess: "Suscripción confirmada. ¡Hasta muy pronto!",
     newsError: "No se ha podido completar la suscripción. Verifica tu correo electrónico.",
     rights: "Todos los derechos reservados.",
+    backTop: "Volver arriba",
     admin: "Área de equipo",
     legal: {
       mentions: "Aviso legal",
@@ -1916,6 +1919,7 @@ const zh: Dict = {
     newsSuccess: "订阅已确认。敬请期待！",
     newsError: "订阅失败。请检查您的电子邮箱。",
     rights: "版权所有。",
+    backTop: "回到顶部",
     admin: "团队专区",
     legal: {
       mentions: "法律声明",
@@ -2416,6 +2420,7 @@ const de: Dict = {
     newsSuccess: "Anmeldung bestätigt. Bis bald!",
     newsError: "Anmeldung nicht möglich. Bitte prüfen Sie Ihre E-Mail.",
     rights: "Alle Rechte vorbehalten.",
+    backTop: "Nach oben",
     admin: "Teambereich",
     legal: {
       mentions: "Impressum",

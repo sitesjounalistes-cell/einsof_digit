@@ -1,7 +1,16 @@
 "use client";
 
 import { ArrowRight, Calendar } from "lucide-react";
-import { Reveal, Tilt } from "@/components/motion";
+import {
+  Beam,
+  DrawRule,
+  PopIn,
+  Reveal,
+  SpotlightCard,
+  Stagger,
+  StaggerItem,
+  Tilt,
+} from "@/components/motion";
 import { Container, GoldButton, PriceTag, Section, SectionHeading } from "@/components/site/kit";
 import { SAAS_PRODUCTS, type SaasProduct } from "@/lib/catalog";
 import { openForm, scrollToSection } from "@/lib/chat-bus";
@@ -24,7 +33,7 @@ const HOSPITAL_RANGE = "1 – 5\u00A0000\u00A0000\u00A0GNF";
 /** Maquette d'interface 100 % CSS — aucune image. */
 function DeviceMockup() {
   return (
-    <Tilt className="relative aspect-[16/9] bg-surface2 p-5">
+    <div className="relative aspect-[16/9] bg-surface2 p-5 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.02]">
       <div className="flex h-full flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-inner">
         {/* barre de fenêtre */}
         <div aria-hidden className="flex gap-1.5 border-b border-line p-2">
@@ -49,7 +58,7 @@ function DeviceMockup() {
           </div>
         </div>
       </div>
-    </Tilt>
+    </div>
   );
 }
 
@@ -66,69 +75,89 @@ export function SaasSection() {
           sub={t("saas.sub")}
         />
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Stagger className="grid gap-6 md:grid-cols-2 lg:grid-cols-3" step={0.06}>
           {SAAS_PRODUCTS.map((p, i) => {
             const itemKey = `saas.items.${SAAS_KEY[p.slug]}`;
             const isHospital = p.slug === "gestion-hospitaliere";
             const isSchool = p.slug === "gestion-ecole";
+            const isFeatured = p.offers[0]?.featured === true;
             return (
-              <Reveal key={p.slug} delay={(i % 3) * 80} className="h-full">
-                <article className="card-lift flex h-full flex-col overflow-hidden rounded-xl border border-line bg-bg">
-                  <DeviceMockup />
+              <StaggerItem key={p.slug} className="h-full">
+                <Tilt className="h-full">
+                  <Beam always={isFeatured} className="h-full rounded-xl">
+                    <SpotlightCard className="h-full rounded-xl">
+                      <article className="card-lift group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-bg">
+                        <span
+                          aria-hidden
+                          className="absolute right-4 top-4 z-10 font-serif text-5xl text-gold opacity-[0.07] transition-opacity duration-500 group-hover:opacity-[0.15]"
+                        >
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
 
-                  <div className="flex flex-1 flex-col p-6">
-                    <p className="label-caps">{t(`${itemKey}.tag`)}</p>
-                    <h3 className="display-3 mt-2">{p.name}</h3>
-                    <p className="mt-2 flex-1 text-sm text-mute">{t(`${itemKey}.desc`)}</p>
+                        <PopIn delay={i * 0.08}>
+                          <DeviceMockup />
+                        </PopIn>
 
-                    <div className="mt-4">
-                      {isHospital ? (
-                        <div>
-                          <p className="font-serif text-xl text-goldtext">
-                            {HOSPITAL_RANGE}{" "}
-                            <span className="font-sans text-xs text-mute">{t("pricing.perMonth")}</span>
-                          </p>
-                          <p className="mt-1 text-xs text-mute">{t("saas.hospitalNote")}</p>
+                        <div className="flex flex-1 flex-col p-6">
+                          <p className="label-caps">{t(`${itemKey}.tag`)}</p>
+                          <h3 className="display-3 mt-2">{p.name}</h3>
+                          <p className="mt-2 flex-1 text-sm text-mute">{t(`${itemKey}.desc`)}</p>
+
+                          <Reveal variant="scale" delay={0.2} className="mt-4">
+                            {isHospital ? (
+                              <div>
+                                <p className="font-serif text-xl text-goldtext">
+                                  {HOSPITAL_RANGE}{" "}
+                                  <span className="font-sans text-xs text-mute">
+                                    {t("pricing.perMonth")}
+                                  </span>
+                                </p>
+                                <p className="mt-1 text-xs text-mute">{t("saas.hospitalNote")}</p>
+                              </div>
+                            ) : (
+                              <>
+                                <PriceTag
+                                  offer={p.offers[0]}
+                                  fromLabel={t("pricing.fromLabel")}
+                                  perMonth={t("pricing.perMonth")}
+                                  perYear={t("pricing.perYear")}
+                                  quoteLabel={t("pricing.quoteLabel")}
+                                  billableNote={isSchool ? t("pricing.billableNote") : undefined}
+                                />
+                                {isSchool && (
+                                  <p className="mt-1 text-xs text-mute">{t("saas.schoolNote")}</p>
+                                )}
+                              </>
+                            )}
+                          </Reveal>
+
+                          <div className="mt-5">
+                            <GoldButton
+                              variant="outline"
+                              ariaLabel={`${t("saas.book")} — ${p.name}`}
+                              onClick={() => {
+                                openForm("demo", {
+                                  subject: "Démo",
+                                  message: `Je souhaite une démonstration de ${p.name}.`,
+                                });
+                                trackCta("saas", p.slug);
+                              }}
+                            >
+                              <Calendar className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                              {t("saas.book")}
+                            </GoldButton>
+                          </div>
                         </div>
-                      ) : (
-                        <>
-                          <PriceTag
-                            offer={p.offers[0]}
-                            fromLabel={t("pricing.fromLabel")}
-                            perMonth={t("pricing.perMonth")}
-                            perYear={t("pricing.perYear")}
-                            quoteLabel={t("pricing.quoteLabel")}
-                            billableNote={isSchool ? t("pricing.billableNote") : undefined}
-                          />
-                          {isSchool && (
-                            <p className="mt-1 text-xs text-mute">{t("saas.schoolNote")}</p>
-                          )}
-                        </>
-                      )}
-                    </div>
-
-                    <div className="mt-5">
-                      <GoldButton
-                        variant="outline"
-                        ariaLabel={`${t("saas.book")} — ${p.name}`}
-                        onClick={() => {
-                          openForm("demo", {
-                            subject: "Démo",
-                            message: `Je souhaite une démonstration de ${p.name}.`,
-                          });
-                          trackCta("saas", p.slug);
-                        }}
-                      >
-                        <Calendar className="h-4 w-4" strokeWidth={1.25} aria-hidden />
-                        {t("saas.book")}
-                      </GoldButton>
-                    </div>
-                  </div>
-                </article>
-              </Reveal>
+                      </article>
+                    </SpotlightCard>
+                  </Beam>
+                </Tilt>
+              </StaggerItem>
             );
           })}
-        </div>
+        </Stagger>
+
+        <DrawRule className="mt-14 h-px w-full" delay={0.1} />
 
         <div className="mt-10 text-center">
           <GoldButton variant="ghost" onClick={() => scrollToSection("trial")}>

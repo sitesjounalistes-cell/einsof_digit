@@ -1,7 +1,7 @@
 "use client";
 
 import React, { type ReactNode } from "react";
-import { Magnetic } from "@/components/motion";
+import { DrawRule, Magnetic, Reveal, WordMask } from "@/components/motion";
 import { BRAND_INITIAL } from "@/lib/brand";
 import { type PriceOffer, formatGNF } from "@/lib/catalog";
 
@@ -49,7 +49,7 @@ export function Container({
   );
 }
 
-/* ── SectionHeading : libellé numéroté + titre serif ────────── */
+/* ── SectionHeading : libellé numéroté + titre serif animé ──── */
 
 export function SectionHeading({
   label,
@@ -66,12 +66,26 @@ export function SectionHeading({
 }) {
   return (
     <div className={`mb-12 md:mb-16 ${align === "center" ? "text-center" : ""}`}>
-      <p className="label-caps mb-4">{label}</p>
+      <Reveal y={14} duration={0.6}>
+        <p className="label-caps mb-4">{label}</p>
+      </Reveal>
       <h2 className="display-2 max-w-3xl">
-        {title}{" "}
-        {gold && <em className="gold-text-gradient not-italic font-serif italic">{gold}</em>}
+        <WordMask text={title} />{" "}
+        {gold && (
+          <em className="gold-text-gradient font-serif italic">
+            <WordMask text={gold} delay={0.22} />
+          </em>
+        )}
       </h2>
-      {sub && <p className={`lead-text mt-5 max-w-2xl ${align === "center" ? "mx-auto" : ""}`}>{sub}</p>}
+      <DrawRule
+        className={`mt-6 h-px w-24 ${align === "center" ? "mx-auto" : ""}`}
+        delay={0.35}
+      />
+      {sub && (
+        <Reveal delay={0.3} y={18} duration={0.8}>
+          <p className={`lead-text mt-5 max-w-2xl ${align === "center" ? "mx-auto" : ""}`}>{sub}</p>
+        </Reveal>
+      )}
     </div>
   );
 }
@@ -106,7 +120,7 @@ export function GoldButton({
 
   const styles: Record<ButtonVariant, string> = {
     primary:
-      "gold-fill btn-sheen text-ongold hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(212,175,55,0.25)] active:scale-[0.98]",
+      "gold-fill btn-sheen text-ongold hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_0_50px_rgba(212,175,55,0.35)] active:scale-[0.97] shadow-[0_0_0_rgba(212,175,55,0)] transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
     outline:
       "border border-gold/60 text-goldtext hover:text-ongold overflow-hidden group hover:border-gold active:scale-[0.98]",
     ghost:
@@ -160,10 +174,16 @@ export function Monogram({ size = 40, className = "" }: { size?: number; classNa
   );
 }
 
-/* ── Séparateur avec filet d'or ─────────────────────────────── */
+/* ── Séparateur avec filet d'or (statique) ──────────────────── */
 
 export function GoldRule({ className = "" }: { className?: string }) {
   return <div aria-hidden className={`gold-rule w-full ${className}`} />;
+}
+
+/* ── GoldRuleDraw : filet d'or qui se dessine au défilement ─── */
+
+export function GoldRuleDraw({ className = "" }: { className?: string }) {
+  return <DrawRule className={`w-full ${className}`} />;
 }
 
 /* ── PriceTag : affichage de prix GNF normalisé ─────────────── */

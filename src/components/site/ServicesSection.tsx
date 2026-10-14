@@ -11,7 +11,17 @@ import {
   Target,
   type LucideIcon,
 } from "lucide-react";
-import { Reveal, Tilt } from "@/components/motion";
+import {
+  Beam,
+  DrawRule,
+  Parallax,
+  PopIn,
+  PulseGlow,
+  SpotlightCard,
+  Stagger,
+  StaggerItem,
+  Tilt,
+} from "@/components/motion";
 import { Container, GoldBadge, GoldButton, Section, SectionHeading } from "@/components/site/kit";
 import { useI18n } from "@/lib/i18n";
 import { openForm } from "@/lib/chat-bus";
@@ -83,63 +93,91 @@ export function ServicesSection() {
           sub={t("services.sub")}
         />
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((s, i) => {
-            const Icon = SERVICE_ICONS[s.key];
-            const price = priceFor(s.key);
-            return (
-              <Reveal key={s.key} delay={i * 80} className="h-full">
-                <Tilt className="h-full">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      openForm("quote", { subject: s.name });
-                      trackCta("services", s.key);
-                    }}
-                    className="block h-full w-full cursor-pointer text-left"
-                  >
-                    <article
-                      className={`card-lift group relative h-full overflow-hidden rounded-xl border border-line bg-surface p-6 ${
-                        s.key === "strategy" ? "opacity-80" : ""
-                      }`}
+        <div className="relative">
+          {/* Filigrane géant derrière la grille — parallaxe lente au défilement */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-y-8 inset-x-0 flex items-center justify-center overflow-hidden"
+          >
+            <Parallax speed={0.25} className="w-full">
+              <span className="block select-none whitespace-nowrap text-center font-serif text-[11vw] leading-none text-outline-faint md:text-[8rem] lg:text-[9.5rem]">
+                {t("services.tGold")}
+              </span>
+            </Parallax>
+          </div>
+
+          <Stagger
+            className="relative z-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            step={0.08}
+          >
+            {items.map((s, i) => {
+              const Icon = SERVICE_ICONS[s.key];
+              const price = priceFor(s.key);
+              const isStrategy = s.key === "strategy";
+              return (
+                <StaggerItem key={s.key} className="h-full">
+                  <Tilt className="h-full">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openForm("quote", { subject: s.name });
+                        trackCta("services", s.key);
+                      }}
+                      className="block h-full w-full cursor-pointer text-left"
                     >
-                      <span
-                        aria-hidden
-                        className="absolute -top-2 right-3 font-serif text-7xl text-gold opacity-[0.07]"
-                      >
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
+                      <Beam always={isStrategy} className="h-full rounded-xl">
+                        <SpotlightCard className="h-full rounded-xl">
+                          <article
+                            className={`card-lift group relative h-full overflow-hidden rounded-xl border border-line bg-surface p-6 ${
+                              isStrategy ? "opacity-80" : ""
+                            }`}
+                          >
+                            <span
+                              aria-hidden
+                              className="absolute -top-2 right-3 font-serif text-7xl text-gold opacity-[0.07] transition-opacity duration-500 group-hover:opacity-[0.15]"
+                            >
+                              {String(i + 1).padStart(2, "0")}
+                            </span>
 
-                      <span className="inline-flex w-fit rounded-full border border-gold/30 p-3 text-gold">
-                        <Icon size={24} strokeWidth={1.25} aria-hidden />
-                      </span>
+                            <PopIn delay={i * 0.08}>
+                              <span className="inline-flex w-fit rounded-full border border-gold/30 p-3 text-gold transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110">
+                                <Icon size={24} strokeWidth={1.25} aria-hidden />
+                              </span>
+                            </PopIn>
 
-                      <h3 className="display-3 mt-5">{s.name}</h3>
-                      <p className="mt-2 text-sm leading-relaxed text-mute">{s.desc}</p>
+                            <h3 className="display-3 mt-5">{s.name}</h3>
+                            <p className="mt-2 text-sm leading-relaxed text-mute">{s.desc}</p>
 
-                      <div className="mt-4">
-                        {price ? (
-                          <p className="text-[0.8125rem] font-medium text-goldtext">{price}</p>
-                        ) : (
-                          <GoldBadge>{t("services.items.strategy.badge")}</GoldBadge>
-                        )}
-                      </div>
+                            <div className="mt-4">
+                              {price ? (
+                                <p className="text-[0.8125rem] font-medium text-goldtext">{price}</p>
+                              ) : (
+                                <PulseGlow>
+                                  <GoldBadge>{t("services.items.strategy.badge")}</GoldBadge>
+                                </PulseGlow>
+                              )}
+                            </div>
 
-                      <ArrowUpRight
-                        size={20}
-                        strokeWidth={1.25}
-                        aria-hidden
-                        className="absolute bottom-6 right-6 text-gold transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1"
-                      />
-                    </article>
-                  </button>
-                </Tilt>
-              </Reveal>
-            );
-          })}
+                            <ArrowUpRight
+                              size={20}
+                              strokeWidth={1.25}
+                              aria-hidden
+                              className="absolute bottom-6 right-6 text-gold transition-[transform,color] duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-goldlight"
+                            />
+                          </article>
+                        </SpotlightCard>
+                      </Beam>
+                    </button>
+                  </Tilt>
+                </StaggerItem>
+              );
+            })}
+          </Stagger>
         </div>
 
-        <div className="mt-12 text-center">
+        <DrawRule className="mt-14 h-px w-full" delay={0.1} />
+
+        <div className="mt-10 text-center">
           <GoldButton
             onClick={() => {
               openForm("quote");

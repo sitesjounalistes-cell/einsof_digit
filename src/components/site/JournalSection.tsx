@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Section, Container, SectionHeading } from "@/components/site/kit";
-import { GoldBadge } from "@/components/site/kit";
-import { Reveal } from "@/components/motion";
+import { Section, Container, SectionHeading, GoldBadge } from "@/components/site/kit";
+import { Beam, DrawRule, Stagger, StaggerItem } from "@/components/motion";
 import { useI18n } from "@/lib/i18n";
 import { pickLocale, type LocaleMap } from "@/lib/locale-json";
 import {
@@ -40,6 +39,8 @@ function fmtDate(iso: string | null, lang: string): string {
 /**
  * Journal (spécification §23 : /blog) — articles éditoriaux de l'agence.
  * Section masquée tant qu'aucun article n'est publié (règle §20.4).
+ * Chorégraphie (task 12-d) : Stagger (step 0.08), Beam hover sur chaque article,
+ * date en capitales qui glisse au survol, titre qui s'embrase, filet doré en clôture.
  */
 export function JournalSection() {
   const { lang, t, tr } = useI18n();
@@ -77,47 +78,54 @@ export function JournalSection() {
           sub={t("journal.sub")}
         />
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {posts.map((p, i) => (
-            <Reveal key={p.id} delay={i * 80}>
-              <article
-                role="button"
-                tabIndex={0}
-                aria-label={`${pickLocale(p.title, lang)} — ${t("journal.readMore")}`}
-                onClick={() => setOpenId(p.id)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setOpenId(p.id);
-                  }
-                }}
-                className="card-lift flex h-full cursor-pointer flex-col rounded-xl border border-line bg-surface p-6 text-left focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <GoldBadge>{catLabel(p.category)}</GoldBadge>
-                  <span className="text-xs text-mute">{fmtDate(p.publishedAt, lang)}</span>
-                </div>
-                <h3 className="mt-4 font-serif text-xl leading-snug">
-                  {pickLocale(p.title, lang)}
-                </h3>
-                <p className="mt-3 line-clamp-3 flex-1 text-sm text-mute">
-                  {pickLocale(p.excerpt, lang)}
-                </p>
-                <p className="mt-5 inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold uppercase tracking-[0.12em] text-goldtext">
-                  {t("journal.readMore")}
-                  <ArrowUpRight
-                    className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5"
-                    strokeWidth={1.25}
-                    aria-hidden
-                  />
-                </p>
-                <span className="mt-1 text-[0.6875rem] text-mute">
-                  {p.readingMin} {t("journal.readingMin")}
-                </span>
-              </article>
-            </Reveal>
+        <Stagger className="grid gap-6 md:grid-cols-2 lg:grid-cols-3" step={0.08} delay={0.05}>
+          {posts.map((p) => (
+            <StaggerItem key={p.id} y={36} className="h-full">
+              <Beam className="h-full rounded-xl">
+                <article
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${pickLocale(p.title, lang)} — ${t("journal.readMore")}`}
+                  onClick={() => setOpenId(p.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setOpenId(p.id);
+                    }
+                  }}
+                  className="card-lift group flex h-full cursor-pointer flex-col rounded-xl border border-line bg-surface p-6 text-left focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
+                >
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <GoldBadge>{catLabel(p.category)}</GoldBadge>
+                    <span className="text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-mute transition-transform duration-300 group-hover:translate-x-1">
+                      {fmtDate(p.publishedAt, lang)}
+                    </span>
+                  </div>
+                  <h3 className="mt-4 font-serif text-xl leading-snug transition-colors duration-300 group-hover:text-goldlight">
+                    {pickLocale(p.title, lang)}
+                  </h3>
+                  <p className="mt-3 line-clamp-3 flex-1 text-sm text-mute">
+                    {pickLocale(p.excerpt, lang)}
+                  </p>
+                  <p className="mt-5 inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold uppercase tracking-[0.12em] text-goldtext">
+                    {t("journal.readMore")}
+                    <ArrowUpRight
+                      className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+                      strokeWidth={1.25}
+                      aria-hidden
+                    />
+                  </p>
+                  <span className="mt-1 text-[0.6875rem] text-mute">
+                    {p.readingMin} {t("journal.readingMin")}
+                  </span>
+                </article>
+              </Beam>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
+
+        {/* Filet doré qui se dessine en clôture de la liste */}
+        <DrawRule className="mx-auto mt-14 h-px w-40" delay={0.1} />
       </Container>
 
       {/* Lecture d'un article — la lecture complète remplace la navigation hors route */}
