@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { ArrowUp, Lock, Waves, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -18,9 +19,21 @@ import { useMotionMode } from "@/components/providers";
 import { BRAND } from "@/lib/brand";
 import { submitNewsletter } from "@/lib/api-client";
 import { subscribePush } from "@/lib/push-client";
-import { scrollToSection, toggleAdmin } from "@/lib/chat-bus";
+import { toggleAdmin } from "@/lib/chat-bus";
 
-const NAV_IDS = ["services", "saas", "pricing", "faq", "about", "contact"] as const;
+/* Navigation multi-pages (toutes les pages du site) */
+const NAV_ROUTES = [
+  { id: "services", path: "/services" },
+  { id: "logiciels", path: "/logiciels" },
+  { id: "secteurs", path: "/secteurs" },
+  { id: "methode", path: "/methode" },
+  { id: "tarifs", path: "/tarifs" },
+  { id: "realisations", path: "/realisations" },
+  { id: "blog", path: "/blog" },
+  { id: "a-propos", path: "/a-propos" },
+  { id: "faq", path: "/faq" },
+  { id: "contact", path: "/contact" },
+] as const;
 const LEGAL_DOCS = ["mentions", "privacy", "terms"] as const;
 type LegalDoc = (typeof LEGAL_DOCS)[number];
 
@@ -112,11 +125,11 @@ export function Footer() {
           <nav aria-label={t("footer.navT")}>
             <h4 className="label-caps">{t("footer.navT")}</h4>
             <ul className="mt-4 space-y-2.5">
-              {NAV_IDS.map((id) => (
+              {NAV_ROUTES.map(({ id, path }) => (
                 <li key={id}>
-                  <button type="button" className={footerLinkCls} onClick={() => scrollToSection(id)}>
+                  <Link href={path} className={footerLinkCls}>
                     {t(`nav.${id}`)}
-                  </button>
+                  </Link>
                 </li>
               ))}
             </ul>

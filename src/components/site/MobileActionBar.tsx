@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { GoldButton } from "@/components/site/kit";
-import { onChatOpen, scrollToSection } from "@/lib/chat-bus";
+import { onChatOpen } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
 
 /**
@@ -61,20 +61,16 @@ export function MobileActionBar() {
       <GoldButton
         variant="primary"
         className="min-h-11 flex-1 px-3! text-xs!"
-        onClick={() => {
-          scrollToSection("trial");
-          trackCta("mobilebar", "trial");
-        }}
+        href="/logiciels#section-trial"
+        onClick={() => trackCta("mobilebar", "trial")}
       >
         {t("mobilebar.trial")}
       </GoldButton>
       <GoldButton
         variant="outline"
         className="min-h-11 flex-1 px-3! text-xs!"
-        onClick={() => {
-          scrollToSection("contact");
-          trackCta("mobilebar", "quote");
-        }}
+        href="/contact"
+        onClick={() => trackCta("mobilebar", "quote")}
       >
         {t("mobilebar.quote")}
       </GoldButton>

@@ -38,6 +38,15 @@ export function navigateToSection(sectionId: string) {
   window.dispatchEvent(new CustomEvent(NAVIGATE, { detail: { sectionId } }));
 }
 
+/**
+ * Navigation intelligente multi-pages : l'événement est intercepté par
+ * SiteShell qui change de route si la section vit sur une autre page
+ * (voir SECTION_ROUTES dans lib/routes.ts), sinon défile sur place.
+ */
+export function navigateSmart(sectionId: string) {
+  navigateToSection(sectionId);
+}
+
 export function onNavigate(handler: (sectionId: string) => void) {
   const fn = (e: Event) =>
     handler((e as CustomEvent).detail?.sectionId as string);

@@ -12,7 +12,7 @@ import React, {
 import { useI18n, LANGS, type Lang } from "@/lib/i18n";
 import { useTheme } from "next-themes";
 import { useConsent, getVisitorId } from "@/lib/consent";
-import { scrollToSection, openForm, type OpenFormType } from "@/lib/chat-bus";
+import { scrollToSection, navigateSmart, openForm, type OpenFormType } from "@/lib/chat-bus";
 import { track } from "@/lib/analytics";
 import { SECTIONS } from "@/lib/sections-registry";
 
@@ -171,7 +171,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       switch (tool) {
         case "navigate": {
           const section = String(args.section ?? "");
-          scrollToSection(section);
+          navigateSmart(section);
           break;
         }
         case "open_form": {

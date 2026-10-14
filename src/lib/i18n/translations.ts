@@ -16,15 +16,24 @@ export const LANGS: { code: Lang; name: string }[] = [
 ];
 
 const fr = {
+  pages: { home: "Accueil" },
   brand: {
     tagline: "Agence digitale premium — Guinée",
   },
   nav: {
+    home: "Accueil",
     services: "Services",
+    logiciels: "Logiciels",
+    secteurs: "Secteurs",
+    methode: "Méthode",
     saas: "SaaS",
     pricing: "Tarifs",
+    tarifs: "Tarifs",
+    realisations: "Réalisations",
+    blog: "Journal",
     faq: "FAQ",
     about: "À propos",
+    "a-propos": "À propos",
     contact: "Contact",
     cta: "Démarrer un projet",
     menuOpen: "Ouvrir le menu",
@@ -534,13 +543,22 @@ const fr = {
 export type Dict = typeof fr;
 
 const en: Dict = {
+  pages: { home: "Home" },
   brand: { tagline: "Premium digital agency — Guinea" },
   nav: {
+    home: "Home",
     services: "Services",
+    logiciels: "Software",
+    secteurs: "Sectors",
+    methode: "Method",
     saas: "SaaS",
     pricing: "Pricing",
+    tarifs: "Pricing",
+    realisations: "Work",
+    blog: "Journal",
     faq: "FAQ",
     about: "About",
+    "a-propos": "About",
     contact: "Contact",
     cta: "Start a project",
     menuOpen: "Open menu",
@@ -1041,13 +1059,22 @@ const en: Dict = {
 
 /** es — complete (tú register), fallback to fr kept as safety net (spec §25). TODO-HUMAN (H-09): review. */
 const es: Dict = {
+  pages: { home: "Inicio" },
   brand: { tagline: "Agencia digital premium — Guinea" },
   nav: {
+    home: "Inicio",
     services: "Servicios",
+    logiciels: "Software",
+    secteurs: "Sectores",
+    methode: "Método",
     saas: "SaaS",
     pricing: "Precios",
+    tarifs: "Precios",
+    realisations: "Realizaciones",
+    blog: "Diario",
     faq: "FAQ",
     about: "Nosotros",
+    "a-propos": "Nosotros",
     contact: "Contacto",
     cta: "Iniciar un proyecto",
     menuOpen: "Abrir menú",
@@ -1542,13 +1569,22 @@ const es: Dict = {
 
 /** zh — complete (simplified Chinese, formal 您), fallback to fr kept as safety net (spec §25). TODO-HUMAN (H-09): review. */
 const zh: Dict = {
+  pages: { home: "首页" },
   brand: { tagline: "高端数字机构 — 几内亚" },
   nav: {
+    home: "首页",
     services: "服务",
+    logiciels: "软件",
+    secteurs: "行业",
+    methode: "方法论",
     saas: "SaaS",
     pricing: "价格",
+    tarifs: "价格",
+    realisations: "案例",
+    blog: "日志",
     faq: "常见问题",
     about: "关于我们",
+    "a-propos": "关于我们",
     contact: "联系我们",
     cta: "启动项目",
     menuOpen: "打开菜单",
@@ -2043,13 +2079,22 @@ const zh: Dict = {
 
 /** de — complete (Sie register), fallback to fr kept as safety net (spec §25). TODO-HUMAN (H-09): review. */
 const de: Dict = {
+  pages: { home: "Startseite" },
   brand: { tagline: "Premium-Digitalagentur — Guinea" },
   nav: {
+    home: "Startseite",
     services: "Leistungen",
+    logiciels: "Software",
+    secteurs: "Branchen",
+    methode: "Methode",
     saas: "SaaS",
     pricing: "Preise",
+    tarifs: "Preise",
+    realisations: "Referenzen",
+    blog: "Journal",
     faq: "FAQ",
     about: "Über uns",
+    "a-propos": "Über uns",
     contact: "Kontakt",
     cta: "Projekt starten",
     menuOpen: "Menü öffnen",

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import {
   AnimatePresence,
   motion,
@@ -13,27 +15,50 @@ import { EASE, PulseGlow } from "@/components/motion";
 import { useMotionMode } from "@/components/providers";
 import { LANGS, useI18n } from "@/lib/i18n";
 import { GoldButton, Monogram } from "@/components/site/kit";
-import { scrollToSection } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
 import { BRAND } from "@/lib/brand";
 
-const NAV_IDS = ["services", "saas", "pricing", "faq", "about", "contact"] as const;
-type NavId = (typeof NAV_IDS)[number];
+/* ── Navigation multi-pages ─────────────────────────────────
+   6 liens au ≥ lg, 8 au ≥ xl, tous dans le tiroir mobile. */
+const NAV_MAIN = ["services", "logiciels", "tarifs", "faq", "a-propos", "contact"] as const;
+const NAV_XL = ["realisations", "blog"] as const;
+const NAV_DRAWER = [
+  "services",
+  "logiciels",
+  "secteurs",
+  "methode",
+  "tarifs",
+  "realisations",
+  "blog",
+  "a-propos",
+  "faq",
+  "contact",
+] as const;
+type NavId = (typeof NAV_DRAWER)[number];
+
+const ROUTES: Record<NavId, string> = {
+  services: "/services",
+  logiciels: "/logiciels",
+  secteurs: "/secteurs",
+  methode: "/methode",
+  tarifs: "/tarifs",
+  realisations: "/realisations",
+  blog: "/blog",
+  "a-propos": "/a-propos",
+  faq: "/faq",
+  contact: "/contact",
+};
 
 /* Abonnement factice — lecture d'une valeur « snapshot » uniquement */
 const subscribeNoop = () => () => {};
 
 /* ── Marque : monogramme (rotation au survol) + nom ────────── */
-function BrandMark({ onClick }: { onClick: () => void }) {
+function BrandMark() {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex min-h-[44px] items-center gap-3"
-    >
+    <Link href="/" className="group flex min-h-[44px] items-center gap-3" aria-label={BRAND}>
       <Monogram size={36} className="transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:rotate-12" />
       <span className="font-serif text-lg tracking-[0.18em] text-ink">{BRAND}</span>
-    </button>
+    </Link>
   );
 }
 
@@ -78,9 +103,9 @@ function ThemeToggle() {
 export function Navbar() {
   const { t, lang, setLang } = useI18n();
   const { lightMode } = useMotionMode();
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const [active, setActive] = useState<NavId | null>(null);
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
@@ -100,25 +125,11 @@ export function Navbar() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  /* Section active via IntersectionObserver sur section-<id> */
-  useEffect(() => {
-    const els = NAV_IDS.map((id) => document.getElementById(`section-${id}`)).filter(
-      (el): el is HTMLElement => el !== null
-    );
-    if (els.length === 0) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActive(entry.target.id.replace("section-", "") as NavId);
-          }
-        }
-      },
-      { rootMargin: "-40% 0px -55% 0px" }
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
+  /* Lien actif selon la route courante (pathname ou préfixe, ex. /blog/article) */
+  const isActive = (id: NavId) => {
+    const path = ROUTES[id];
+    return pathname === path || (path !== "/" && pathname.startsWith(`${path}/`));
+  };
 
   /* Fermeture du sélecteur de langue (clic extérieur / Échap) */
   useEffect(() => {
@@ -152,21 +163,32 @@ export function Navbar() {
     };
   }, [open]);
 
-  const goTo = (id: NavId, fromDrawer = false) => {
-    setActive(id);
-    if (fromDrawer) {
-      /* petit délai : laisser l'effet rendre le flux avant de défiler */
-      setOpen(false);
-      window.setTimeout(() => scrollToSection(id), 80);
-    } else {
-      scrollToSection(id);
-    }
-  };
+  const desktopIds: readonly NavId[] = NAV_MAIN;
+  const xlIds: readonly NavId[] = NAV_XL;
 
-  const navCta = () => {
-    trackCta("hero", "nav-cta");
-    scrollToSection("contact");
-  };
+  const navLinkCls = (activeFlag: boolean) =>
+    `relative flex min-h-[44px] items-center px-1 text-sm transition-all duration-300 hover:-translate-y-0.5 ${
+      activeFlag ? "text-ink" : "text-mute hover:text-ink"
+    }`;
+
+  const navItems = (ids: readonly NavId[], extraCls = "") =>
+    ids.map((id) => (
+      <Link
+        key={id}
+        href={ROUTES[id]}
+        aria-current={isActive(id) ? "page" : undefined}
+        className={`${extraCls} ${navLinkCls(isActive(id))}`}
+        onClick={() => setOpen(false)}
+      >
+        <span className="link-gold">{t(`nav.${id}`)}</span>
+        <span
+          aria-hidden
+          className={`absolute bottom-2 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-gold transition-opacity duration-300 ${
+            isActive(id) ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      </Link>
+    ));
 
   /* ── Contenus partagés (barre + tiroir) ─────────────────── */
   const hideBar = hidden && !open;
@@ -178,29 +200,12 @@ export function Navbar() {
 
   const headerInner = (
     <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-5 md:h-20 md:px-8 lg:px-12">
-      <BrandMark onClick={() => scrollToSection("hero")} />
+      <BrandMark />
 
       {/* Liens centraux (≥ lg) : soulignement or + micro-lift */}
-      <nav className="hidden items-center gap-6 lg:flex">
-        {NAV_IDS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => goTo(id)}
-            aria-current={active === id ? "true" : undefined}
-            className={`relative flex min-h-[44px] items-center px-1 text-sm transition-all duration-300 hover:-translate-y-0.5 ${
-              active === id ? "text-ink" : "text-mute hover:text-ink"
-            }`}
-          >
-            <span className="link-gold">{t(`nav.${id}`)}</span>
-            <span
-              aria-hidden
-              className={`absolute bottom-2 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-gold transition-opacity duration-300 ${
-                active === id ? "opacity-100" : "opacity-0"
-              }`}
-            />
-          </button>
-        ))}
+      <nav className="hidden items-center gap-4 lg:flex xl:gap-6">
+        {navItems(desktopIds)}
+        {navItems(xlIds, "hidden xl:flex")}
       </nav>
 
       <div className="flex items-center gap-1">
@@ -254,7 +259,9 @@ export function Navbar() {
           </div>
           <ThemeToggle />
           <PulseGlow duration={4} className="ml-1">
-            <GoldButton onClick={navCta}>{t("nav.cta")}</GoldButton>
+            <GoldButton href="/contact" onClick={() => trackCta("hero", "nav-cta")}>
+              {t("nav.cta")}
+            </GoldButton>
           </PulseGlow>
         </div>
 
@@ -281,12 +288,10 @@ export function Navbar() {
 
   const drawerTop = (
     <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-5 md:h-20 md:px-8">
-      <BrandMark
-        onClick={() => {
-          setOpen(false);
-          window.setTimeout(() => scrollToSection("hero"), 80);
-        }}
-      />
+      <Link href="/" onClick={() => setOpen(false)} className="flex min-h-[44px] items-center gap-3" aria-label={BRAND}>
+        <Monogram size={36} />
+        <span className="font-serif text-lg tracking-[0.18em] text-ink">{BRAND}</span>
+      </Link>
       <button
         type="button"
         onClick={() => setOpen(false)}
@@ -319,9 +324,10 @@ export function Navbar() {
       <div className="mt-6 flex items-center justify-between gap-4">
         <ThemeToggle />
         <GoldButton
+          href="/contact"
           onClick={() => {
             setOpen(false);
-            window.setTimeout(navCta, 80);
+            trackCta("hero", "nav-cta");
           }}
         >
           {t("nav.cta")}
@@ -344,18 +350,18 @@ export function Navbar() {
         {open && (
           <div className="glass-panel fixed inset-0 z-50 flex flex-col lg:hidden">
             {drawerTop}
-            <nav className="flex flex-1 flex-col justify-center gap-1 px-8">
-              {NAV_IDS.map((id) => (
-                <button
+            <nav className="flex flex-1 flex-col justify-center gap-1 overflow-y-auto px-8">
+              {NAV_DRAWER.map((id) => (
+                <Link
                   key={id}
-                  type="button"
-                  onClick={() => goTo(id, true)}
+                  href={ROUTES[id]}
+                  onClick={() => setOpen(false)}
                   className={`min-h-[52px] text-left font-serif text-3xl ${
-                    active === id ? "text-goldtext" : "text-ink"
+                    isActive(id) ? "text-goldtext" : "text-ink"
                   }`}
                 >
                   {t(`nav.${id}`)}
-                </button>
+                </Link>
               ))}
             </nav>
             <div className="border-t border-line px-8 py-6">{drawerBottomInner}</div>
@@ -390,21 +396,24 @@ export function Navbar() {
           >
             {drawerTop}
 
-            <nav className="flex flex-1 flex-col justify-center gap-1 px-8">
-              {NAV_IDS.map((id, i) => (
-                <motion.button
+            <nav className="flex flex-1 flex-col justify-center gap-1 overflow-y-auto px-8">
+              {NAV_DRAWER.map((id, i) => (
+                <motion.div
                   key={id}
-                  type="button"
-                  onClick={() => goTo(id, true)}
                   initial={{ opacity: 0, y: 26 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + i * 0.05, duration: 0.5, ease: EASE }}
-                  className={`min-h-[52px] text-left font-serif text-3xl ${
-                    active === id ? "text-goldtext" : "text-ink"
-                  }`}
+                  transition={{ delay: 0.05 + i * 0.04, duration: 0.5, ease: EASE }}
                 >
-                  {t(`nav.${id}`)}
-                </motion.button>
+                  <Link
+                    href={ROUTES[id]}
+                    onClick={() => setOpen(false)}
+                    className={`block min-h-[48px] text-left font-serif text-2xl leading-[48px] ${
+                      isActive(id) ? "text-goldtext" : "text-ink"
+                    }`}
+                  >
+                    {t(`nav.${id}`)}
+                  </Link>
+                </motion.div>
               ))}
             </nav>
 
@@ -412,7 +421,7 @@ export function Navbar() {
               className="border-t border-line px-8 py-6"
               initial={{ opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + NAV_IDS.length * 0.05, duration: 0.5, ease: EASE }}
+              transition={{ delay: 0.1 + NAV_DRAWER.length * 0.04, duration: 0.5, ease: EASE }}
             >
               {drawerBottomInner}
             </motion.div>

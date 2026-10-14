@@ -12,7 +12,6 @@ import {
   StaggerItem,
 } from "@/components/motion";
 import { Container, GoldBadge, GoldButton, Section } from "@/components/site/kit";
-import { scrollToSection } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
 import { useI18n } from "@/lib/i18n";
 
@@ -126,8 +125,8 @@ export function AboutSection() {
             <StaggerItem y={22}>
               <div className="mt-9 flex flex-wrap items-center gap-4">
                 <GoldButton
+                  href="/contact"
                   onClick={() => {
-                    scrollToSection("contact");
                     trackCta("about", "cta");
                   }}
                 >

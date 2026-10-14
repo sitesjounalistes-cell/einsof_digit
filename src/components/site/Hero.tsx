@@ -7,7 +7,7 @@ import { Container, GoldBadge, GoldButton } from "@/components/site/kit";
 import { Float, Parallax, PulseGlow, Stagger, StaggerItem, WordMask } from "@/components/motion";
 import { GoldParticles, Spotlight } from "@/components/motion/gold-particles";
 import { useI18n } from "@/lib/i18n";
-import { openChat, scrollToSection } from "@/lib/chat-bus";
+import { openChat } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
 
 /* Abonnement factice — lecture d'une valeur « snapshot » uniquement */
@@ -147,9 +147,9 @@ export function Hero() {
                   variant="primary"
                   magnetic
                   className="glow-pulse"
+                  href="/contact"
                   onClick={() => {
                     trackCta("hero", "cta-primary");
-                    scrollToSection("contact");
                   }}
                 >
                   {t("hero.ctaPrimary")}
