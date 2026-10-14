@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import {
   Counter,
   DrawRule,
-  Parallax,
   PopIn,
   Reveal,
   Stagger,
@@ -47,18 +46,6 @@ export function StatsSection() {
 
   return (
     <Section id="stats" tone="surface" className="overflow-hidden">
-      {/* filigrane géant — les quatre chiffres réels, contour pâle, parallaxe */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden"
-      >
-        <Parallax speed={0.3}>
-          <span className="text-outline-faint select-none whitespace-nowrap font-serif text-[20vw] font-semibold leading-none">
-            7 · 10 · 5 · 6
-          </span>
-        </Parallax>
-      </div>
-
       <Container className="relative">
         {/* filets d'or qui se dessinent, au-dessus et en-dessous du bloc */}
         <DrawRule className="h-px w-full" duration={1.3} />

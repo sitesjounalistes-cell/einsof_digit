@@ -14,7 +14,6 @@ import {
 import {
   Beam,
   DrawRule,
-  Parallax,
   PopIn,
   PulseGlow,
   SpotlightCard,
@@ -94,18 +93,6 @@ export function ServicesSection() {
         />
 
         <div className="relative">
-          {/* Filigrane géant derrière la grille — parallaxe lente au défilement */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -inset-y-8 inset-x-0 flex items-center justify-center overflow-hidden"
-          >
-            <Parallax speed={0.25} className="w-full">
-              <span className="block select-none whitespace-nowrap text-center font-serif text-[11vw] leading-none text-outline-faint md:text-[8rem] lg:text-[9.5rem]">
-                {t("services.tGold")}
-              </span>
-            </Parallax>
-          </div>
-
           <Stagger
             className="relative z-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
             step={0.08}

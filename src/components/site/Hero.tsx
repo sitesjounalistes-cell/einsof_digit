@@ -50,18 +50,6 @@ export function Hero() {
       <GoldParticles />
       <Spotlight />
 
-      {/* (c2) filigrane géant — mot doré du titre, contour pâle, parallaxe propre */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 hidden select-none items-center overflow-hidden pr-[3vw] opacity-70 lg:flex"
-      >
-        <Parallax speed={0.3}>
-          <p className="text-outline-faint max-w-[40vw] text-right font-serif text-[10vw] font-semibold italic leading-[0.95]">
-            {t("hero.tGold")}
-          </p>
-        </Parallax>
-      </div>
-
       {/* (c3) anneaux dorés décoratifs — rotation lente opposée, lévitation, pulsation */}
       <div
         aria-hidden

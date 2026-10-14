@@ -579,8 +579,13 @@ export function ScrollProgress() {
   );
 }
 
-/* ── WordMask : titre révélé mot par mot (masque vertical) ──── */
-
+/* ── WordMask : titre révélé mot par mot (masque vertical) ────
+   FIABILITÉ : l'observation se fait UNE SEULE FOIS sur l'enveloppe
+   (élément jamais transformé ni masqué) puis l'animation est propagée
+   à chaque mot. L'ancienne version observait chaque mot individuellement
+   alors qu'il était déjà déplacé de 115 % DANS un masque overflow-hidden :
+   l'IntersectionObserver ne voyait aucune intersection pour les mots
+   courts → ils restaient invisibles pour toujours (phrases incomplètes). */
 export function WordMask({
   text,
   className = "",
@@ -593,22 +598,25 @@ export function WordMask({
   step?: number;
 }) {
   const { lightMode } = useMotionMode();
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
   const words = text.split(" ");
 
   if (lightMode) return <span className={className}>{text}</span>;
 
   return (
-    <span className={className}>
+    <span ref={ref} className={className}>
       {words.map((w, i) => (
+        /* Masque par mot : léger débord de clip (px/-mx, pb/-mb) pour que
+           les italiques, accents et jambages ne soient jamais rognés. */
         <span
           key={i}
-          className="inline-block overflow-hidden pb-[0.1em] -mb-[0.1em] align-bottom"
+          className="inline-block overflow-hidden align-bottom px-[0.06em] -mx-[0.06em] pb-[0.12em] -mb-[0.12em]"
         >
           <motion.span
             className="inline-block will-change-transform"
-            initial={{ y: "115%", rotate: 5 }}
-            whileInView={{ y: "0%", rotate: 0 }}
-            viewport={{ once: true, margin: "-30px" }}
+            initial={{ y: "130%" }}
+            animate={inView ? { y: "0%" } : { y: "130%" }}
             transition={{ duration: 0.85, ease: EASE, delay: delay + i * step }}
           >
             {w}

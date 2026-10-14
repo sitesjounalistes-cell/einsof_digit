@@ -5,7 +5,6 @@ import { Check, Clock, Loader2, MapPin, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   DrawRule,
-  Parallax,
   PopIn,
   Reveal,
   SpotlightCard,
@@ -145,15 +144,6 @@ export function ContactSection() {
 
   return (
     <Section id="contact" tone="surface">
-      {/* Filigrane géant en parallaxe (décoratif) */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <Parallax speed={0.12} className="flex h-full items-center justify-center">
-          <span className="text-outline-faint select-none whitespace-nowrap font-serif text-[clamp(7rem,20vw,17rem)] leading-none tracking-[0.14em]">
-            EINSOF
-          </span>
-        </Parallax>
-      </div>
-
       <Container className="relative">
         <SectionHeading
           label={t("contact.label")}
