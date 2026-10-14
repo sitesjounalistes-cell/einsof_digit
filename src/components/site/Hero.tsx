@@ -127,11 +127,11 @@ export function Hero() {
               </p>
             </StaggerItem>
 
-            {/* 3 — titre mot à mot (masques verticaux) */}
+            {/* 3 — titre mot à mot (masques verticaux, dégradé or par mot) */}
             <h1 className="display-1 mt-4">
               <WordMask text={t("hero.t1")} delay={1.15} step={0.09} />
-              <em className="gold-text-gradient mt-1 block font-serif italic">
-                <WordMask text={t("hero.tGold")} delay={1.75} step={0.1} />
+              <em className="mt-1 block font-serif italic">
+                <WordMask text={t("hero.tGold")} gold delay={1.75} step={0.1} />
               </em>
             </h1>
 

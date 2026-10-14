@@ -90,8 +90,8 @@ export function TrialSection() {
               </Reveal>
               <h2 className="display-2 mt-3">
                 <WordMask text={t("trial.title")} />{" "}
-                <em className="gold-text-gradient font-serif italic">
-                  <WordMask text={t("trial.tGold")} delay={0.22} />
+                <em className="font-serif italic">
+                  <WordMask text={t("trial.tGold")} gold delay={0.22} />
                 </em>
               </h2>
               <Reveal delay={0.3} y={18} duration={0.8}>

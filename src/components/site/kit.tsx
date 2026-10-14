@@ -72,8 +72,11 @@ export function SectionHeading({
       <h2 className="display-2 max-w-3xl">
         <WordMask text={title} />{" "}
         {gold && (
-          <em className="gold-text-gradient font-serif italic">
-            <WordMask text={gold} delay={0.22} />
+          /* Le dégradé or est posé mot par mot (prop `gold`) — un
+             background-clip:text sur ce parent peindrait un texte
+             invisible au-dessus de descendants transformés (Chrome). */
+          <em className="font-serif italic">
+            <WordMask text={gold} gold delay={0.22} />
           </em>
         )}
       </h2>

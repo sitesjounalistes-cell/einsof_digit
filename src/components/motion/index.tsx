@@ -580,29 +580,51 @@ export function ScrollProgress() {
 }
 
 /* ── WordMask : titre révélé mot par mot (masque vertical) ────
-   FIABILITÉ : l'observation se fait UNE SEULE FOIS sur l'enveloppe
-   (élément jamais transformé ni masqué) puis l'animation est propagée
-   à chaque mot. L'ancienne version observait chaque mot individuellement
-   alors qu'il était déjà déplacé de 115 % DANS un masque overflow-hidden :
-   l'IntersectionObserver ne voyait aucune intersection pour les mots
-   courts → ils restaient invisibles pour toujours (phrases incomplètes). */
+   FIABILITÉ (v3) :
+   1. L'observation se fait UNE SEULE FOIS sur l'enveloppe (élément
+      jamais transformé ni masqué) puis l'animation est propagée à
+      chaque mot — aucun IntersectionObserver sur un élément caché.
+   2. Filet de sécurité : si l'observation échoue (iframe, quirk
+      navigateur…), un temporisateur force l'affichage complet —
+      un texte ne peut plus rester invisible pour toujours.
+   3. `gold` : le dégradé doré est posé SUR CHAQUE MOT (l'élément
+      animé lui-même) et JAMAIS sur un parent en background-clip:text.
+      Chrome ne peint pas le dégradé d'un ancêtre à travers des
+      descendants transformés → texte doré entièrement invisible. */
 export function WordMask({
   text,
   className = "",
   delay = 0,
   step = 0.07,
+  gold = false,
 }: {
   text: string;
   className?: string;
   delay?: number;
   step?: number;
+  gold?: boolean;
 }) {
   const { lightMode } = useMotionMode();
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-40px" });
+  const [forceShown, setForceShown] = useState(false);
   const words = text.split(" ");
 
-  if (lightMode) return <span className={className}>{text}</span>;
+  /* Filet de sécurité : quel que soit l'environnement, le texte
+     s'affiche intégralement au plus tard 4 s après le montage. */
+  useEffect(() => {
+    if (lightMode) return;
+    const t = setTimeout(() => setForceShown(true), 4000);
+    return () => clearTimeout(t);
+  }, [lightMode]);
+
+  if (lightMode) {
+    return (
+      <span className={`${gold ? "gold-text-gradient " : ""}${className}`}>{text}</span>
+    );
+  }
+
+  const shown = inView || forceShown;
 
   return (
     <span ref={ref} className={className}>
@@ -614,9 +636,9 @@ export function WordMask({
           className="inline-block overflow-hidden align-bottom px-[0.06em] -mx-[0.06em] pb-[0.12em] -mb-[0.12em]"
         >
           <motion.span
-            className="inline-block will-change-transform"
+            className={`inline-block will-change-transform ${gold ? "gold-text-gradient" : ""}`}
             initial={{ y: "130%" }}
-            animate={inView ? { y: "0%" } : { y: "130%" }}
+            animate={shown ? { y: "0%" } : { y: "130%" }}
             transition={{ duration: 0.85, ease: EASE, delay: delay + i * step }}
           >
             {w}

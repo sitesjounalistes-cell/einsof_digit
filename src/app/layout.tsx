@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   applicationName: BRAND,
   authors: [{ name: BRAND }],
   openGraph: {
-    title: `${BRAND} — Votre présence digitale, portée à l'excellence`,
+    title: `${BRAND} — Votre présence digitale, notre métier`,
     description:
       "Agence digitale guinéenne : sites web, logiciels, SaaS de gestion, réseaux sociaux et acquisition client.",
     siteName: BRAND,
