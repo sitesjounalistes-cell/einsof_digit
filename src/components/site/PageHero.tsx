@@ -36,8 +36,8 @@ export function PageHero({
 }) {
   const { t } = useI18n();
   return (
-    <header className="relative overflow-hidden border-b border-line bg-[#0D0D0D] pt-28 pb-14 md:pt-36 md:pb-20">
-      {/* Visuel de fond + voiles sombres (lisibilité) */}
+    <header className="relative overflow-hidden border-b border-line bg-deep pt-28 pb-14 md:pt-36 md:pb-20">
+      {/* Visuel de fond + voiles (couleur du thème courant — lisibilité) */}
       {image && (
         <div aria-hidden className="absolute inset-0">
           <Image
@@ -46,12 +46,12 @@ export function PageHero({
             fill
             priority
             sizes="100vw"
-            className="object-cover object-center opacity-55"
+            className="object-cover object-center opacity-40 dark:opacity-55"
           />
           {/* voile principal : bas → haut, garantit le contraste du texte */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/78 to-[#0A0A0A]/35" />
+          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/80 to-bg/45" />
           {/* voile latéral gauche : renforce la zone de texte */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A]/85 via-[#0A0A0A]/35 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-bg/85 via-bg/40 to-transparent" />
         </div>
       )}
       {/* halo radial discret, aucun texte décoratif en arrière-plan */}

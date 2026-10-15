@@ -98,7 +98,7 @@ export function SaasDetailPage({ slug }: { slug: SaasSlug }) {
           <Reveal variant="scale" duration={0.9}>
             <div className="mx-auto w-full lg:w-3/4">
               <Beam always className="rounded-xl">
-                <div className="group relative aspect-video overflow-hidden rounded-xl border border-line bg-[#0D0D0D]">
+                <div className="group relative aspect-video overflow-hidden rounded-xl border border-line bg-deep">
                   {embedUrl ? (
                     <iframe
                       src={embedUrl}
@@ -126,7 +126,7 @@ export function SaasDetailPage({ slug }: { slug: SaasSlug }) {
                       />
                       <div
                         aria-hidden
-                        className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A]/90 via-[#0A0A0A]/40 to-transparent"
+                        className="absolute inset-0 bg-gradient-to-t from-bg/90 via-bg/40 to-transparent"
                       />
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                         <PopIn>

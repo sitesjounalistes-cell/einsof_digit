@@ -28,7 +28,7 @@ export function PillarsSection() {
   const { t } = useI18n();
 
   return (
-    <Section id="pillars" tone="deep" className="text-[#f5f2ea]">
+    <Section id="pillars" tone="deep">
       <Container>
         <SectionHeading
           label={t("pillars.label")}

@@ -48,7 +48,7 @@ export function TestimonialsSection() {
   if (!items || items.length === 0) return null;
 
   return (
-    <Section id="testimonials" tone="deep" className="text-[#f5f2ea]">
+    <Section id="testimonials" tone="deep">
       <Container>
         <SectionHeading
           label={t("testimonials.label")}
@@ -66,7 +66,7 @@ export function TestimonialsSection() {
               <StaggerItem key={r.id} y={34} className="h-full">
                 <Tilt max={4} className="h-full">
                   <SpotlightCard size={420} className="h-full rounded-xl">
-                    <figure className="card-lift group flex h-full flex-col rounded-xl border border-gold/15 bg-[#111111] p-6 md:p-8">
+                    <figure className="card-lift group flex h-full flex-col rounded-xl border border-gold/15 bg-surface p-6 md:p-8">
                       <PopIn delay={0.1}>
                         <span
                           aria-hidden

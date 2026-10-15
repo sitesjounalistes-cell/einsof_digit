@@ -1,19 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { ArrowRight, Images } from "lucide-react";
 import {
   Beam,
   DrawRule,
   Reveal,
   SpotlightCard,
-  Stagger,
-  StaggerItem,
-  Tilt,
 } from "@/components/motion";
 import { Container, GoldButton, PriceTag, Section, SectionHeading } from "@/components/site/kit";
-import { ScrollCarousel } from "@/components/site/ScrollCarousel";
+import { CoverflowCarousel } from "@/components/site/CoverflowCarousel";
 import { SAAS_PRODUCTS, type SaasProduct } from "@/lib/catalog";
 import { scrollToSection } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
@@ -57,96 +53,103 @@ export function SaasSection({ heading = true }: { heading?: boolean }) {
           />
         )}
 
-        {/* Carrousel défilant : chaque carte ouvre la page dédiée du logiciel */}
-        <ScrollCarousel ariaLabel={t("saas.title")} speed={22} tone="surface">
-          {SAAS_PRODUCTS.map((p, i) => {
+        {/* Carrousel coverflow : la carte centrale s'impose, un clic ouvre la page dédiée */}
+        <CoverflowCarousel
+          ariaLabel={t("saas.title")}
+          viewportClassName="h-[560px] sm:h-[600px]"
+          items={SAAS_PRODUCTS.map((p) => ({
+            key: p.slug,
+            href: `/logiciels/${p.slug}`,
+            ariaLabel: `${p.name} — ${t("saas.discover")}`,
+          }))}
+          renderItem={(item, { active }) => {
+            const p = SAAS_PRODUCTS.find((x) => x.slug === item.key)!;
+            const i = SAAS_PRODUCTS.indexOf(p);
             const itemKey = `saas.items.${SAAS_KEY[p.slug]}`;
             const isHospital = p.slug === "gestion-hospitaliere";
             const isSchool = p.slug === "gestion-ecole";
             const isFeatured = p.offers[0]?.featured === true;
             return (
-              <Tilt key={p.slug} className="w-[300px] shrink-0 snap-start sm:w-[340px]">
-                <Beam always={isFeatured} className="h-full rounded-xl">
-                  <SpotlightCard className="h-full rounded-xl">
-                    <Link
-                      href={`/logiciels/${p.slug}`}
-                      aria-label={`${p.name} — ${t("saas.discover")}`}
-                      className="card-lift group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-bg focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
+              <Beam always={active || isFeatured} className="h-full rounded-xl">
+                <SpotlightCard className="h-full rounded-xl">
+                  <div
+                    className={`card-lift group relative flex h-full flex-col overflow-hidden rounded-xl border bg-bg transition-colors duration-500 ${
+                      active ? "border-gold/50" : "border-line"
+                    }`}
+                  >
+                    <span
+                      aria-hidden
+                      className="absolute right-4 top-4 z-10 font-serif text-5xl text-gold opacity-[0.18] transition-opacity duration-500 group-hover:opacity-30"
                     >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+
+                    {/* Visuel produit */}
+                    <div className="relative aspect-[16/10] shrink-0 overflow-hidden">
+                      <Image
+                        src={SAAS_IMAGE[p.slug]}
+                        alt=""
+                        fill
+                        sizes="(max-width: 640px) 80vw, 350px"
+                        className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
+                      />
+                      <div
+                        aria-hidden
+                        className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent"
+                      />
+                    </div>
+
+                    <div className="flex flex-1 flex-col p-6">
+                      <p className="label-caps">{t(`${itemKey}.tag`)}</p>
+                      <h3 className="display-3 mt-2">{p.name}</h3>
+                      <p className="mt-2 text-sm text-mute">{t(`${itemKey}.desc`)}</p>
+
+                      <Reveal variant="scale" delay={0.15} className="mt-4">
+                        {isHospital ? (
+                          <div>
+                            <p className="font-serif text-xl text-goldtext">
+                              {HOSPITAL_RANGE}{" "}
+                              <span className="font-sans text-xs text-mute">
+                                {t("pricing.perMonth")}
+                              </span>
+                            </p>
+                            <p className="mt-1 text-xs text-mute">{t("saas.hospitalNote")}</p>
+                          </div>
+                        ) : (
+                          <>
+                            <PriceTag
+                              offer={p.offers[0]}
+                              fromLabel={t("pricing.fromLabel")}
+                              perMonth={t("pricing.perMonth")}
+                              perYear={t("pricing.perYear")}
+                              quoteLabel={t("pricing.quoteLabel")}
+                              billableNote={isSchool ? t("pricing.billableNote") : undefined}
+                            />
+                            {isSchool && (
+                              <p className="mt-1 text-xs text-mute">{t("saas.schoolNote")}</p>
+                            )}
+                          </>
+                        )}
+                      </Reveal>
+
                       <span
                         aria-hidden
-                        className="absolute right-4 top-4 z-10 font-serif text-5xl text-gold opacity-[0.18] transition-opacity duration-500 group-hover:opacity-30"
+                        className="mt-auto inline-flex items-center gap-2 pt-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-goldtext"
                       >
-                        {String(i + 1).padStart(2, "0")}
+                        {t("saas.discover")}
+                        <ArrowRight
+                          size={14}
+                          strokeWidth={1.5}
+                          className="transition-transform duration-300 group-hover:translate-x-1"
+                        />
                       </span>
-
-                      {/* Visuel produit */}
-                      <div className="relative aspect-[16/10] overflow-hidden">
-                        <Image
-                          src={SAAS_IMAGE[p.slug]}
-                          alt=""
-                          fill
-                          sizes="(max-width: 640px) 300px, 340px"
-                          className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
-                        />
-                        <div
-                          aria-hidden
-                          className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent"
-                        />
-                      </div>
-
-                      <div className="flex flex-1 flex-col p-6">
-                        <p className="label-caps">{t(`${itemKey}.tag`)}</p>
-                        <h3 className="display-3 mt-2">{p.name}</h3>
-                        <p className="mt-2 flex-1 text-sm text-mute">{t(`${itemKey}.desc`)}</p>
-
-                        <Reveal variant="scale" delay={0.15} className="mt-4">
-                          {isHospital ? (
-                            <div>
-                              <p className="font-serif text-xl text-goldtext">
-                                {HOSPITAL_RANGE}{" "}
-                                <span className="font-sans text-xs text-mute">
-                                  {t("pricing.perMonth")}
-                                </span>
-                              </p>
-                              <p className="mt-1 text-xs text-mute">{t("saas.hospitalNote")}</p>
-                            </div>
-                          ) : (
-                            <>
-                              <PriceTag
-                                offer={p.offers[0]}
-                                fromLabel={t("pricing.fromLabel")}
-                                perMonth={t("pricing.perMonth")}
-                                perYear={t("pricing.perYear")}
-                                quoteLabel={t("pricing.quoteLabel")}
-                                billableNote={isSchool ? t("pricing.billableNote") : undefined}
-                              />
-                              {isSchool && (
-                                <p className="mt-1 text-xs text-mute">{t("saas.schoolNote")}</p>
-                              )}
-                            </>
-                          )}
-                        </Reveal>
-
-                        <span
-                          aria-hidden
-                          className="mt-5 inline-flex items-center gap-2 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-goldtext"
-                        >
-                          {t("saas.discover")}
-                          <ArrowRight
-                            size={14}
-                            strokeWidth={1.5}
-                            className="transition-transform duration-300 group-hover:translate-x-1"
-                          />
-                        </span>
-                      </div>
-                    </Link>
-                  </SpotlightCard>
-                </Beam>
-              </Tilt>
+                    </div>
+                  </div>
+                </SpotlightCard>
+              </Beam>
             );
-          })}
-        </ScrollCarousel>
+          }}
+        />
 
         <DrawRule className="mt-14 h-px w-full" delay={0.1} />
 

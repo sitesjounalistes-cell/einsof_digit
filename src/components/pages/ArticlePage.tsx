@@ -97,7 +97,7 @@ export function ArticlePage({ slug }: { slug: string }) {
   if (!post) {
     return (
       <>
-        <header className="border-b border-line bg-[#0D0D0D] pt-28 pb-12 md:pt-36 md:pb-16">
+        <header className="border-b border-line bg-deep pt-28 pb-12 md:pt-36 md:pb-16">
           <Container>
             <div
               role="status"
@@ -133,7 +133,7 @@ export function ArticlePage({ slug }: { slug: string }) {
   return (
     <>
       {/* Bandeau d'ouverture de l'article */}
-      <header className="relative overflow-hidden border-b border-line bg-[#0D0D0D] pt-28 pb-12 md:pt-36 md:pb-16">
+      <header className="relative overflow-hidden border-b border-line bg-deep pt-28 pb-12 md:pt-36 md:pb-16">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_0%,rgba(212,175,55,0.07),transparent_70%)]"

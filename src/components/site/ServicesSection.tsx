@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -17,13 +16,11 @@ import {
 import {
   Beam,
   DrawRule,
-  PopIn,
   PulseGlow,
   SpotlightCard,
-  Tilt,
 } from "@/components/motion";
 import { Container, GoldBadge, GoldButton, Section, SectionHeading } from "@/components/site/kit";
-import { ScrollCarousel } from "@/components/site/ScrollCarousel";
+import { CoverflowCarousel } from "@/components/site/CoverflowCarousel";
 import { useI18n } from "@/lib/i18n";
 import { openForm } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
@@ -108,72 +105,77 @@ export function ServicesSection({ heading = true }: { heading?: boolean }) {
           />
         )}
 
-        {/* Carrousel défilant : chaque carte ouvre la page du pôle */}
-        <ScrollCarousel ariaLabel={t("services.title")} speed={24}>
-          {items.map((s, i) => {
+        {/* Carrousel coverflow : la carte centrale s'impose, un clic ouvre la page du pôle */}
+        <CoverflowCarousel
+          ariaLabel={t("services.title")}
+          viewportClassName="h-[480px] sm:h-[520px]"
+          items={items.map((s) => ({
+            key: s.key,
+            href: SERVICE_HREF[s.key],
+            ariaLabel: `${s.name} — ${t("services.discover")}`,
+          }))}
+          renderItem={(item, { active }) => {
+            const s = items.find((x) => x.key === item.key)!;
+            const i = items.indexOf(s);
             const Icon = SERVICE_ICONS[s.key];
             const price = priceFor(s.key);
             const isStrategy = s.key === "strategy";
             return (
-              <Tilt key={s.key} className="w-[300px] shrink-0 snap-start sm:w-[340px]">
-                <Beam always={isStrategy} className="h-full rounded-xl">
-                  <SpotlightCard className="h-full rounded-xl">
-                    <Link
-                      href={SERVICE_HREF[s.key]}
-                      aria-label={`${s.name} — ${t("services.discover")}`}
-                      className="card-lift group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface p-6 focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
+              <Beam always={active || isStrategy} className="h-full rounded-xl">
+                <SpotlightCard className="h-full rounded-xl">
+                  <div
+                    className={`card-lift group relative flex h-full flex-col overflow-hidden rounded-xl border bg-surface p-6 transition-colors duration-500 ${
+                      active ? "border-gold/50" : "border-line"
+                    }`}
+                  >
+                    <span
+                      aria-hidden
+                      className="absolute -top-2 right-3 font-serif text-7xl text-gold opacity-[0.07] transition-opacity duration-500 group-hover:opacity-[0.15]"
                     >
-                      <span
-                        aria-hidden
-                        className="absolute -top-2 right-3 font-serif text-7xl text-gold opacity-[0.07] transition-opacity duration-500 group-hover:opacity-[0.15]"
-                      >
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
 
-                      <PopIn delay={i * 0.05}>
-                        <span className="inline-flex w-fit rounded-full border border-gold/30 p-3 text-gold transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110">
-                          <Icon size={24} strokeWidth={1.25} aria-hidden />
-                        </span>
-                      </PopIn>
+                    <span className="inline-flex w-fit rounded-full border border-gold/30 p-3 text-gold transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110">
+                      <Icon size={24} strokeWidth={1.25} aria-hidden />
+                    </span>
 
-                      <h3 className="display-3 mt-5">{s.name}</h3>
-                      <p className="mt-2 text-sm leading-relaxed text-mute">{s.desc}</p>
+                    <h3 className="display-3 mt-5">{s.name}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-mute">{s.desc}</p>
 
-                      <div className="mt-4">
-                        {price ? (
-                          <p className="text-[0.8125rem] font-medium text-goldtext">{price}</p>
-                        ) : (
-                          <PulseGlow>
-                            <GoldBadge>{t("services.items.strategy.badge")}</GoldBadge>
-                          </PulseGlow>
-                        )}
-                      </div>
+                    <div className="mt-4">
+                      {price ? (
+                        <p className="text-[0.8125rem] font-medium text-goldtext">{price}</p>
+                      ) : (
+                        <PulseGlow>
+                          <GoldBadge>{t("services.items.strategy.badge")}</GoldBadge>
+                        </PulseGlow>
+                      )}
+                    </div>
 
-                      {/* Pied de carte : invitation à ouvrir la page du pôle */}
-                      <span
-                        aria-hidden
-                        className="mt-6 inline-flex items-center gap-2 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-goldtext"
-                      >
-                        {t("services.discover")}
-                        <ArrowRight
-                          size={14}
-                          strokeWidth={1.5}
-                          className="transition-transform duration-300 group-hover:translate-x-1"
-                        />
-                      </span>
-                      <ArrowUpRight
-                        size={20}
-                        strokeWidth={1.25}
-                        aria-hidden
-                        className="absolute bottom-6 right-6 text-gold opacity-0 transition-[opacity,transform] duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:opacity-100"
+                    {/* Pied de carte : invitation à ouvrir la page du pôle */}
+                    <span
+                      aria-hidden
+                      className="mt-auto inline-flex items-center gap-2 pt-6 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-goldtext"
+                    >
+                      {t("services.discover")}
+                      <ArrowRight
+                        size={14}
+                        strokeWidth={1.5}
+                        className="transition-transform duration-300 group-hover:translate-x-1"
                       />
-                    </Link>
-                  </SpotlightCard>
-                </Beam>
-              </Tilt>
+                    </span>
+                    <ArrowUpRight
+                      size={20}
+                      strokeWidth={1.25}
+                      aria-hidden
+                      className="absolute bottom-6 right-6 text-gold opacity-0 transition-[opacity,transform] duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:opacity-100"
+                    />
+                  </div>
+                </SpotlightCard>
+              </Beam>
             );
-          })}
-        </ScrollCarousel>
+          }}
+        />
 
         <DrawRule className="mt-14 h-px w-full" delay={0.1} />
 

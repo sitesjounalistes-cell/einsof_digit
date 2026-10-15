@@ -29,7 +29,7 @@ export function CtaBanner({
   secondaryHref?: string;
 }) {
   return (
-    <section className="relative overflow-hidden border-y border-line bg-[#0D0D0D] py-16 md:py-24">
+    <section className="relative overflow-hidden border-y border-line bg-deep py-16 md:py-24">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(55%_60%_at_50%_100%,rgba(212,175,55,0.09),transparent_70%)]"

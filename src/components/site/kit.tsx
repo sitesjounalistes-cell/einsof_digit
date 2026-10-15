@@ -23,7 +23,7 @@ export function Section({
     tone === "surface"
       ? "bg-surface"
       : tone === "deep"
-        ? "bg-[#0D0D0D] dark:bg-[#0D0D0D]"
+        ? "bg-deep"
         : "bg-bg";
   return (
     <section

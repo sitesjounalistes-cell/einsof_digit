@@ -761,7 +761,7 @@ export function CurtainIntro({ brand = "EINSOF" }: { brand?: string }) {
   return (
     <motion.div
       aria-hidden
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0a0a0a]"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-bg"
       initial={{ y: 0 }}
       animate={{ y: "-100%" }}
       transition={{ delay: 0.75, duration: 0.75, ease: EASE_INOUT }}

@@ -67,7 +67,7 @@ const fr = {
     sub: "Sept pôles d'expertise qui se complètent : un seul interlocuteur pour votre site, vos logiciels, vos réseaux sociaux et votre croissance.",
     cta: "Demander un devis",
     discover: "Découvrir le pôle",
-    carouselHint: "Faites défiler — chaque carte ouvre la page détaillée du pôle.",
+    carouselHint: "Glissez, utilisez les flèches — un clic sur la carte centrale ouvre la page détaillée du pôle.",
     detail: {
       factsLabel: "Points-clés",
       otherServices: "Les autres pôles",
@@ -128,7 +128,7 @@ const fr = {
     trial: "Essai gratuit de 7 jours",
     schoolNote: "9 mois payés par an — les 3 mois de vacances sont offerts.",
     discover: "Découvrir le logiciel",
-    carouselHint: "Faites défiler — chaque carte ouvre la page détaillée du logiciel.",
+    carouselHint: "Glissez, utilisez les flèches — un clic sur la carte centrale ouvre la page détaillée du logiciel.",
     videoSoonBadge: "Vidéo bientôt disponible",
     hospitalNote: "Trois forfaits selon la taille de votre établissement.",
     items: {
@@ -602,7 +602,7 @@ const en: Dict = {
     sub: "Seven complementary areas of expertise: a single point of contact for your website, software, social media and growth.",
     cta: "Request a quote",
     discover: "Explore this service",
-    carouselHint: "Keep scrolling — each card opens the service's detail page.",
+    carouselHint: "Drag, use the arrows — clicking the centre card opens the service's detail page.",
     detail: {
       factsLabel: "Key facts",
       otherServices: "Other services",
@@ -663,7 +663,7 @@ const en: Dict = {
     trial: "Free 7-day trial",
     schoolNote: "9 months paid per year — the 3 months of holidays are free.",
     discover: "Explore the software",
-    carouselHint: "Keep scrolling — each card opens the software's detail page.",
+    carouselHint: "Drag, use the arrows — clicking the centre card opens the software's detail page.",
     videoSoonBadge: "Video coming soon",
     hospitalNote: "Three plans depending on the size of your facility.",
     items: {
@@ -1128,7 +1128,7 @@ const es: Dict = {
     sub: "Siete áreas de especialización que se complementan: un solo interlocutor para tu sitio web, tu software, tus redes sociales y tu crecimiento.",
     cta: "Solicitar un presupuesto",
     discover: "Descubrir el servicio",
-    carouselHint: "Desliza — cada tarjeta abre la página detallada del servicio.",
+    carouselHint: "Desliza o usa las flechas — un clic en la tarjeta central abre la página detallada del servicio.",
     detail: {
       factsLabel: "Puntos clave",
       otherServices: "Otros servicios",
@@ -1189,7 +1189,7 @@ const es: Dict = {
     trial: "Prueba gratuita de 7 días",
     schoolNote: "9 meses pagados al año — los 3 meses de vacaciones son gratuitos.",
     discover: "Descubrir el software",
-    carouselHint: "Desliza — cada tarjeta abre la página detallada del software.",
+    carouselHint: "Desliza o usa las flechas — un clic en la tarjeta central abre la página detallada del software.",
     videoSoonBadge: "Video próximamente",
     hospitalNote: "Tres planes según el tamaño de tu establecimiento.",
     items: {
@@ -1648,7 +1648,7 @@ const zh: Dict = {
     sub: "七大互补的专业领域：网站、软件、社交媒体与增长，只需一个对接人。",
     cta: "索取报价",
     discover: "了解该服务",
-    carouselHint: "滑动浏览——每张卡片都可打开该服务的详情页。",
+    carouselHint: "拖动或使用箭头——点击中间卡片即可打开该服务的详情页。",
     detail: {
       factsLabel: "要点",
       otherServices: "其他服务",
@@ -1709,7 +1709,7 @@ const zh: Dict = {
     trial: "7天免费试用",
     schoolNote: "每年支付9个月——3个月假期免费。",
     discover: "了解该软件",
-    carouselHint: "滑动浏览——每张卡片都可打开该软件的详情页。",
+    carouselHint: "拖动或使用箭头——点击中间卡片即可打开该软件的详情页。",
     videoSoonBadge: "视频即将上线",
     hospitalNote: "根据机构规模提供三档套餐。",
     items: {
@@ -2168,7 +2168,7 @@ const de: Dict = {
     sub: "Sieben sich ergänzende Kompetenzbereiche: ein einziger Ansprechpartner für Ihre Website, Ihre Software, Ihre Social Media und Ihr Wachstum.",
     cta: "Angebot anfordern",
     discover: "Service entdecken",
-    carouselHint: "Weiter scrollen — jede Karte öffnet die Detailseite des Service.",
+    carouselHint: "Ziehen oder Pfeile nutzen — ein Klick auf die mittlere Karte öffnet die Detailseite des Service.",
     detail: {
       factsLabel: "Kernpunkte",
       otherServices: "Weitere Leistungen",
@@ -2229,7 +2229,7 @@ const de: Dict = {
     trial: "Kostenloser 7-Tage-Test",
     schoolNote: "9 Monate pro Jahr bezahlt — die 3 Ferienmonate sind gratis.",
     discover: "Software entdecken",
-    carouselHint: "Weiter scrollen — jede Karte öffnet die Detailseite der Software.",
+    carouselHint: "Ziehen oder Pfeile nutzen — ein Klick auf die mittlere Karte öffnet die Detailseite der Software.",
     videoSoonBadge: "Video folgt in Kürze",
     hospitalNote: "Drei Tarife je nach Größe Ihrer Einrichtung.",
     items: {
