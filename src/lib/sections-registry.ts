@@ -1,7 +1,7 @@
 /**
  * Sections registry — stable ids used by the chatbot navigation (data-section-id)
- * and by analytics. Single-page architecture (sandbox constraint): sections are
- * anchors of the home route.
+ * and by analytics. Multi-page architecture: each section lives on a dedicated
+ * route (see SECTION_ROUTES in lib/routes.ts for section → page mapping).
  */
 export interface SectionDef {
   id: string;

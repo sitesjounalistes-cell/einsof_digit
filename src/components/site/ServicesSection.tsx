@@ -57,7 +57,7 @@ const SERVICE_ICONS: Record<ServiceKey, LucideIcon> = {
 };
 
 /* Tarifs EXACTS du cahier des charges (§19) — formatGNF seul autorisé. */
-export function ServicesSection() {
+export function ServicesSection({ heading = true }: { heading?: boolean }) {
   const { t, tr } = useI18n();
 
   const priceFor = (key: ServiceKey): string | null => {
@@ -85,12 +85,16 @@ export function ServicesSection() {
   return (
     <Section id="services">
       <Container>
-        <SectionHeading
+        {heading && (
+
+          <SectionHeading
           label={t("services.label")}
           title={t("services.title")}
           gold={t("services.tGold")}
           sub={t("services.sub")}
         />
+
+        )}
 
         <div className="relative">
           <Stagger

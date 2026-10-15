@@ -1,6 +1,7 @@
 "use client";
 
 import React, { type ReactNode } from "react";
+import Link from "next/link";
 import { DrawRule, Magnetic, Reveal, WordMask } from "@/components/motion";
 import { BRAND_INITIAL } from "@/lib/brand";
 import { type PriceOffer, formatGNF } from "@/lib/catalog";
@@ -146,9 +147,10 @@ export function GoldButton({
   const cls = `${base} ${styles[variant]} ${className}`;
 
   const comp = href ? (
-    <a href={href} onClick={onClick} className={cls} aria-label={ariaLabel}>
+    /* next/link : navigation client (SPA) au lieu d'un <a> natif qui rechargerait la page */
+    <Link href={href} onClick={onClick} className={cls} aria-label={ariaLabel}>
       {inner}
-    </a>
+    </Link>
   ) : (
     <button type={type} onClick={onClick} disabled={disabled} className={cls} aria-label={ariaLabel}>
       {inner}

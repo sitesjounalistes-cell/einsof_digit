@@ -8,7 +8,7 @@ import { useMotionMode } from "@/components/providers";
 import { Container, Section, SectionHeading } from "@/components/site/kit";
 import { useI18n } from "@/lib/i18n";
 
-export function FaqSection() {
+export function FaqSection({ heading = true }: { heading?: boolean }) {
   const { t, tr } = useI18n();
   const { lightMode } = useMotionMode();
   const [open, setOpen] = useState<number | null>(null);
@@ -17,12 +17,16 @@ export function FaqSection() {
   return (
     <Section id="faq" tone="surface">
       <Container>
-        <SectionHeading
+        {heading && (
+
+          <SectionHeading
           label={t("faq.label")}
           title={t("faq.title")}
           gold={t("faq.tGold")}
           sub={t("faq.sub")}
         />
+
+        )}
 
         {/* Accordéon custom : chevron rotatif + panneau à hauteur animée */}
         <Stagger className="mx-auto max-w-3xl" step={0.07}>

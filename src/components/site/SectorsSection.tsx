@@ -4,20 +4,22 @@ import { Reveal, VelocityRow } from "@/components/motion";
 import { Container, Section, SectionHeading } from "@/components/site/kit";
 import { useI18n } from "@/lib/i18n";
 
-export function SectorsSection() {
+export function SectorsSection({ heading = true }: { heading?: boolean }) {
   const { t, tr } = useI18n();
   const items = tr<string[]>("sectors.items") ?? [];
 
   return (
     <Section id="sectors">
       <Container>
-        <SectionHeading
-          align="center"
-          label={t("sectors.label")}
-          title={t("sectors.title")}
-          gold={t("sectors.tGold")}
-          sub={t("sectors.sub")}
-        />
+        {heading && (
+          <SectionHeading
+            align="center"
+            label={t("sectors.label")}
+            title={t("sectors.title")}
+            gold={t("sectors.tGold")}
+            sub={t("sectors.sub")}
+          />
+        )}
 
         <Reveal variant="blur">
           <div className="relative">

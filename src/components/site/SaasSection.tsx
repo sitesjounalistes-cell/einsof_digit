@@ -62,18 +62,22 @@ function DeviceMockup() {
   );
 }
 
-export function SaasSection() {
+export function SaasSection({ heading = true }: { heading?: boolean }) {
   const { t } = useI18n();
 
   return (
     <Section id="saas" tone="surface">
       <Container>
-        <SectionHeading
+        {heading && (
+
+          <SectionHeading
           label={t("saas.label")}
           title={t("saas.title")}
           gold={t("saas.tGold")}
           sub={t("saas.sub")}
         />
+
+        )}
 
         <Stagger className="grid gap-6 md:grid-cols-2 lg:grid-cols-3" step={0.06}>
           {SAAS_PRODUCTS.map((p, i) => {

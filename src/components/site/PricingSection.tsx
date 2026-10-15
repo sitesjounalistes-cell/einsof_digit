@@ -88,7 +88,7 @@ function PriceCard({ offer, featured = false }: { offer: PriceOffer; featured?: 
   );
 }
 
-export function PricingSection() {
+export function PricingSection({ heading = true }: { heading?: boolean }) {
   const { t, tr } = useI18n();
   const included = tr<string[]>("pricing.included.items") ?? [];
   const notes = tr<string[]>("pricing.notes.items") ?? [];
@@ -96,12 +96,16 @@ export function PricingSection() {
   return (
     <Section id="pricing">
       <Container>
-        <SectionHeading
+        {heading && (
+
+          <SectionHeading
           label={t("pricing.label")}
           title={t("pricing.title")}
           gold={t("pricing.tGold")}
           sub={t("pricing.sub")}
         />
+
+        )}
 
         <Reveal delay={0.1} y={20}>
           <Tabs defaultValue="web">

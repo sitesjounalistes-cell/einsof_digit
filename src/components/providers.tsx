@@ -6,6 +6,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
 } from "react";
 import { ThemeProvider } from "next-themes";
@@ -90,8 +91,6 @@ function deviceInfo(): DeviceInfo {
   return deviceCache;
 }
 
-const emptySubscribe = () => () => {};
-
 const DEVICE_SERVER_SNAPSHOT: DeviceInfo = { weak: false, desktop: false };
 
 interface MotionContextValue {
@@ -122,17 +121,19 @@ function MotionProvider({ children }: { children: React.ReactNode }) {
     () => getReduceMq()?.matches ?? false,
     () => false
   );
-  const device = useSyncExternalStore(
-    emptySubscribe,
-    () => deviceInfo(),
-    () => DEVICE_SERVER_SNAPSHOT
-  );
-
-  const lightMode = override !== null ? override : reduced || device.weak;
+  /* Capacités matérielles : état post-montage (un store statique ne
+     notifie jamais — avec useSyncExternalStore la valeur client n'était
+     jamais réappliquée après hydratation, le mode léger auto restait
+     inactif sur les appareils faibles). */
+  const [device, setDevice] = useState<DeviceInfo>(DEVICE_SERVER_SNAPSHOT);
 
   useEffect(() => {
     loadOverride();
+    const raf = requestAnimationFrame(() => setDevice(deviceInfo()));
+    return () => cancelAnimationFrame(raf);
   }, []);
+
+  const lightMode = override !== null ? override : reduced || device.weak;
 
   useEffect(() => {
     document.documentElement.classList.toggle("reduce-motion", lightMode);

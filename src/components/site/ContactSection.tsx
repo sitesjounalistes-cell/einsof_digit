@@ -60,7 +60,7 @@ const EMPTY_FIELDS: Fields = {
   message: "",
 };
 
-export function ContactSection() {
+export function ContactSection({ heading = true }: { heading?: boolean }) {
   const { t, lang } = useI18n();
   const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
   const [consent, setConsent] = useState(false);
@@ -145,12 +145,14 @@ export function ContactSection() {
   return (
     <Section id="contact" tone="surface">
       <Container className="relative">
-        <SectionHeading
-          label={t("contact.label")}
-          title={t("contact.title")}
-          gold={t("contact.tGold")}
-          sub={t("contact.sub")}
-        />
+        {heading && (
+          <SectionHeading
+            label={t("contact.label")}
+            title={t("contact.title")}
+            gold={t("contact.tGold")}
+            sub={t("contact.sub")}
+          />
+        )}
 
         <DrawRule className="w-full" delay={0.15} duration={1.4} />
 

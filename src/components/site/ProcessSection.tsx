@@ -38,19 +38,23 @@ function StepBody({ n, title, desc }: { n: string; title: string; desc: string }
   );
 }
 
-export function ProcessSection() {
+export function ProcessSection({ heading = true }: { heading?: boolean }) {
   const { t, tr } = useI18n();
   const steps = tr<ProcessStep[]>("process.steps") ?? [];
 
   return (
     <Section id="process">
       <Container>
-        <SectionHeading
+        {heading && (
+
+          <SectionHeading
           label={t("process.label")}
           title={t("process.title")}
           gold={t("process.tGold")}
           sub={t("process.sub")}
         />
+
+        )}
 
         {/* Bureau : filet d'or qui se dessine de gauche à droite derrière les nœuds */}
         <div className="relative hidden lg:block">

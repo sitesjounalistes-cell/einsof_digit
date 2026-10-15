@@ -2,20 +2,18 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { ChatProvider } from "@/components/chat/chat-context";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { OmnisOverlay } from "@/components/chat/OmnisOverlay";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
-import { ScrollProgress, CurtainIntro, EASE } from "@/components/motion";
+import { ScrollProgress, CurtainIntro } from "@/components/motion";
 import { ConsentBanner } from "@/components/site/ConsentBanner";
 import { PwaPrompt } from "@/components/site/PwaPrompt";
 import { MobileActionBar } from "@/components/site/MobileActionBar";
 import { CustomCursor } from "@/components/site/CustomCursor";
 import { AdminOverlay } from "@/components/admin/AdminOverlay";
 import { RegisterServiceWorker } from "@/components/site/RegisterSW";
-import { useMotionMode } from "@/components/providers";
 import { onNavigate, scrollToSection } from "@/lib/chat-bus";
 import { SECTION_ROUTES } from "@/lib/routes";
 
@@ -41,7 +39,6 @@ function scrollToSectionWhenReady(sectionId: string, deadline = 2500) {
 
 export function SiteShell({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { lightMode } = useMotionMode();
   /* Rideau d'ouverture : une seule fois par session (multi-pages) */
   const [curtain, setCurtain] = useState(false);
 
@@ -76,19 +73,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
     [router]
   );
 
-  const mainContent = lightMode ? (
-    <main className="flex-1">{children}</main>
-  ) : (
-    <motion.main
-      className="flex-1"
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: EASE }}
-    >
-      {children}
-    </motion.main>
-  );
-
+  /* main sans animation : chaque section anime sa propre entrée —
+     un fondu d'entrée sur <main> risquerait de laisser la page entière
+     invisible si les rAF sont gelés (onglet arrière-plan, capture, etc.) */
   return (
     <ChatProvider>
       <div className="flex min-h-screen flex-col">
@@ -96,7 +83,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <ScrollProgress />
         <CustomCursor />
         <Navbar />
-        {mainContent}
+        <main className="flex-1">{children}</main>
         <Footer />
         <ChatWidget />
         <OmnisOverlay />
