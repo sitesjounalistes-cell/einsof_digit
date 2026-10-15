@@ -665,3 +665,21 @@ Stage Summary:
 - Le site est entièrement multipage : 7 pages de pôles + 6 pages SaaS dédiées, toutes uniques, détaillées et en 5 langues ; carrousels défilants sur /services et /logiciels ; accueil recentré (plus de grille de cartes, plus de section journal)
 - Visuels cohérents « Obsidienne & Or » partout (23 images), aucune régression d'accessibilité/réduced-motion
 - Reste côté client : URLs des vidéos à intégrer (champ videoUrl par produit), contenu FAQ à restructurer avec la ressource que le client fournira
+
+---
+Task ID: 13
+Agent: Z.ai Code (principal)
+Task: Retour client itération 2 — (1) remplacer les carrousels « trop lents » par des coverflows dynamiques à carte centrale en emphase ; (2) corriger les incohérences light/dark.
+
+Work Log:
+- Audit : ScrollCarousel (marquee continu) identifié comme cause du manque de punch ; grep des couleurs codées en dur (#0D0D0D, #0A0A0A, #111111, #f5f2ea) → 9 fichiers touchés
+- Créé `src/components/site/CoverflowCarousel.tsx` : coverflow 3D (x/z/rotateY/scale/opacity/brightness via useTransform sur une MotionValue partagée), ressort stiffness 420, drag 1:1 + flick + élastique, autoplay 5 s (pauses survol/focus/drag/onglet), flèches + pastilles + compteur animé + clavier, repli rail reduced-motion avec liens
+- Intégré dans ServicesSection (7 pôles) et SaasSection (6 SaaS) ; supprimé ScrollCarousel.tsx ; hints réécrits en 5 langues
+- Thème : nouveau token `--deep` + `bg-deep` (kit.tsx Section, PageBlocks CtaBanner, PageHero, ArticlePage ×2, SaasDetailPage) ; voiles PageHero/SaasDetail tokenisés (from-bg) avec opacité d'image adaptative dark:opacity-55 ; PillarsSection/TestimonialsSection text-[#f5f2ea]→ink, bg-[#111111]→bg-surface ; préchargeur bg-bg ; themeColor adaptatif
+- Fix au passage : cartes du repli reduced-motion non cliquables (lien manquant) + suivi de position du rail pour les pastilles
+- Vérification Agent Browser : coverflow desktop+mobile sombre/clair, clic latéral=centrage, clic central=navigation (/services/web, /logiciels/gestion-hospitaliere), drag 480px=2 cartes, autoplay+pause+rebobinage 6→0, flèches+clavier ; balayage 7 pages en clair et sombre ; lint 0 erreur ; commits conventionnels (feat + docs)
+
+Stage Summary:
+- Carrousels Services/SaaS = coverflow punchy à emphase centrale, interaction riche (drag/flick/autoplay/clavier), navigation conservée vers les pages de détail
+- Thème clair désormais cohérent de bout en bout (bandes profondes ivoire, voiles adaptés) ; sombre inchangé visuellement
+- En attente client : URLs vidéos produits, ressource FAQ ; blog à approfondir ensuite
