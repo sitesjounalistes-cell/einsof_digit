@@ -91,3 +91,26 @@
 - **Flux formulaires multi-pages** : démo / devis / essai lancés depuis n'importe quelle page → sessionStorage → /contact prérempli (sujet + message) ; fix Radix Select (sujet prérempli + crash SelectValue)
 - **Qualité** : tsc 0 erreur, lint 0 erreur, 15 routes 200, vérification Agent Browser desktop + mobile, console sans erreur
 - **En attente client** : URLs des vidéos produits (champ `videoUrl`), ressource FAQ pour restructurer la page
+
+## 🎠 Coverflow dynamique + cohérence thématique clair/sombre (15/10/2026, itération 2)
+
+### Carrousel coverflow (remplace ScrollCarousel — retour client « trop lent, trop mou »)
+- Nouveau `CoverflowCarousel` : carte centrale en emphase (pleine échelle, bordure or, Beam actif, halo radial doré, z-index dominant), cartes latérales réduites (×0.87/×0.74), assombries (brightness), repoussées en profondeur (translateZ) et inclinées (rotateY 13°) — perspective 1500 px
+- Dynamique : ressort vif (stiffness 420 / damping 29, léger dépassement), glisser-déposer 1:1 au pointeur avec flick (impulsion > 48 px = avance d'au moins une carte), élastique aux extrémités, snap précis (480 px ≈ 2 cartes vérifié)
+- Autoplay 5 s : pause au survol/focus/pendant le glissement/onglet masqué, temporisation 3,6 s après interaction, rebobinage fluide en fin de cycle (6→0 vérifié)
+- Commandes : flèches rondes (press punchy), pastilles or (active allongée + lueur), compteur serif animé « 01 / 07 » (rebond vertical), clavier ←/→/Début/Fin
+- Comportement clic : carte latérale → centrage ; carte centrale → navigation vers la page du pôle/du logiciel (vérifié : /services/web, /services/software, /logiciels/gestion-hospitaliere)
+- Repli « animations réduites » : rail snap avec liens (bug corrigé : cartes non cliquables) + suivi de position au défilement pour les pastilles
+- Appliqué à /services (7 pôles) et /logiciels (6 SaaS) — utilisé aussi en page d'accueil via les mêmes sections
+
+### Incohérences light/dark corrigées (retour client « problème fonction light et sombre »)
+- Nouveau token `--deep` (dark #0d0d0d / light ivoire profond #f0e8d5) + `bg-deep` : Section tone=deep, CtaBanner, PageHero, headers d'article, bloc vidéo des pages SaaS — les bandes noires codées en dur qui tranchaient avec le thème ivoire sont éliminées
+- Voiles des images de fond pilotés par les tokens (`from-bg via-bg/80 to-bg/45`) au lieu de `#0A0A0A` : lisibilité garantie dans les deux thèmes, opacité d'image adaptée (40 % clair / 55 % sombre)
+- Textes ivoire en dur (`#f5f2ea`) et cartes `#111111` (témoignages) remplacés par `ink`/`surface` ; préchargeur en `bg-bg` ; themeColor meta adaptatif clair/sombre
+- Hints carrousel réécrits pour la nouvelle interaction (fr/en/es/zh/de)
+
+### Vérification Agent Browser (15/10/2026)
+- Coverflow sombre + clair : emphase centrale, cartes latérales, pastilles, compteur (desktop 1280 px et mobile 390 px)
+- Interactions : clic carte latérale → centrage ; clic carte centrale → navigation (lien conservé) ; glisser 480 px → 2 cartes exactement ; autoplay + pause au survol + rebobinage ; flèches ; clavier ArrowRight
+- Thèmes : balayage accueil/services/logiciels/tarifs/FAQ/à propos/détail SaaS en clair ET sombre — plus aucune bande incohérente, headers ivoire lisibles
+- Lint 0 erreur, dev.log sans erreur runtime
