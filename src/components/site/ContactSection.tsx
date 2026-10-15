@@ -18,10 +18,9 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { Container, GoldButton, GoldRule, Section, SectionHeading } from "@/components/site/kit";
-import { openChat, onOpenForm } from "@/lib/chat-bus";
+import { openChat, onOpenForm, consumePendingForm } from "@/lib/chat-bus";
 import { submitContact } from "@/lib/api-client";
 import { track, trackCta } from "@/lib/analytics";
 import { useI18n } from "@/lib/i18n";
@@ -74,16 +73,30 @@ export function ContactSection({ heading = true }: { heading?: boolean }) {
     }
   };
 
-  /* Pré-remplissage depuis le bus (démo / devis) + défilement vers la section */
+  /* Pré-remplissage : (a) depuis le bus (démo / devis lancés depuis
+     /contact même) et (b) demande déposée depuis une autre page
+     (sessionStorage — voir chat-bus.openForm), consommée au montage. */
   useEffect(() => {
-    const off = onOpenForm((type, prefill) => {
+    const apply = (type: string, prefill?: Record<string, string>) => {
       if (type === "demo") {
         setStatus("idle");
         setFields((f) => ({ ...f, subject: "Démo", message: prefill?.message ?? "" }));
         setErrors({});
+      } else if (type === "trial") {
+        setStatus("idle");
+        setFields((f) => ({
+          ...f,
+          subject: "Essai gratuit",
+          message: prefill?.subject ? `Essai gratuit — ${prefill.subject}.` : (prefill?.message ?? ""),
+        }));
+        setErrors({});
       } else if (type === "quote") {
         setStatus("idle");
-        setFields((f) => ({ ...f, subject: t("contact.subjects.quote") }));
+        setFields((f) => ({
+          ...f,
+          subject: t("contact.subjects.quote"),
+          message: prefill?.subject ? `${t("contact.subjects.quote")} — ${prefill.subject}.` : "",
+        }));
         setErrors({});
       } else {
         return;
@@ -92,7 +105,12 @@ export function ContactSection({ heading = true }: { heading?: boolean }) {
       window.setTimeout(() => {
         document.getElementById("contact-firstName")?.focus({ preventScroll: true });
       }, 650);
-    });
+    };
+
+    const pending = consumePendingForm();
+    if (pending) apply(pending.type, pending.prefill);
+
+    const off = onOpenForm((type, prefill) => apply(type, prefill));
     return off;
   }, [t]);
 
@@ -254,20 +272,25 @@ export function ContactSection({ heading = true }: { heading?: boolean }) {
                     <label htmlFor="contact-subject" className={labelCls}>
                       {t("contact.subject")}
                     </label>
-                    <Select
-                      value={fields.subject || undefined}
-                      onValueChange={(v) => setField("subject", v)}
-                    >
+                    <Select onValueChange={(v) => setField("subject", v)}>
                       <SelectTrigger
                         id="contact-subject"
                         className={selectTriggerCls}
                         aria-invalid={!!errors.subject}
                       >
-                        <SelectValue placeholder={t("contact.subject")} />
+                        {/* Texte affiché manuellement : le sujet peut être
+                            prérempli par programme depuis une autre page,
+                            même quand l'item correspondant n'est pas monté. */}
+                        <span className={fields.subject ? "" : "opacity-50"}>
+                          {fields.subject || t("contact.subject")}
+                        </span>
                       </SelectTrigger>
                       <SelectContent>
                         {fields.subject === "Démo" && (
                           <SelectItem value="Démo">Démo</SelectItem>
+                        )}
+                        {fields.subject === "Essai gratuit" && (
+                          <SelectItem value="Essai gratuit">Essai gratuit</SelectItem>
                         )}
                         {SUBJECT_OPTIONS.map((opt) => (
                           <SelectItem

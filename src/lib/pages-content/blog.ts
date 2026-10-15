@@ -57,7 +57,7 @@ export interface BlogContent {
 export const BLOG: Localized<BlogContent> = {
   fr: {
     hero: {
-      label: "10 — Journal",
+      label: "10 — Blog",
       title: "Actualités et",
       gold: "conseils d'experts.",
       sub: "Les articles de fond de l'agence, écrits à partir de projets réellement livrés en Guinée. Des conseils concrets pour réussir votre transformation digitale, sans jargon inutile.",
@@ -123,7 +123,7 @@ export const BLOG: Localized<BlogContent> = {
   },
   en: {
     hero: {
-      label: "10 — Journal",
+      label: "10 — Blog",
       title: "News and",
       gold: "expert advice.",
       sub: "In-depth articles from the agency, written from projects actually delivered in Guinea. Practical advice to make your digital transformation a success, with no useless jargon.",
@@ -189,7 +189,7 @@ export const BLOG: Localized<BlogContent> = {
   },
   es: {
     hero: {
-      label: "10 — Diario",
+      label: "10 — Blog",
       title: "Noticias y",
       gold: "consejos de expertos.",
       sub: "Los artículos de fondo de la agencia, escritos a partir de proyectos realmente entregados en Guinea. Consejos concretos para lograr su transformación digital, sin jerga innecesaria.",
@@ -255,7 +255,7 @@ export const BLOG: Localized<BlogContent> = {
   },
   zh: {
     hero: {
-      label: "10 — 日志",
+      label: "10 — 博客",
       title: "公司动态与",
       gold: "专家建议。",
       sub: "所有深度文章均取材于我们在几内亚实际交付的项目。用切实可行的建议助您完成数字化转型，没有无用的行业术语。",
@@ -321,7 +321,7 @@ export const BLOG: Localized<BlogContent> = {
   },
   de: {
     hero: {
-      label: "10 — Journal",
+      label: "10 — Blog",
       title: "News und",
       gold: "Expertenrat.",
       sub: "Die ausführlichen Artikel der Agentur, geschrieben aus Projekten, die tatsächlich in Guinea umgesetzt wurden. Konkrete Ratschläge für eine erfolgreiche digitale Transformation — ohne unnötiges Fachchinesisch.",

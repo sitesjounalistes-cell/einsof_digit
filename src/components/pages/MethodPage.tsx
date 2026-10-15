@@ -30,6 +30,7 @@ export function MethodPage() {
         gold={t("process.tGold")}
         sub={t("process.sub")}
         chips={c.heroChips}
+        image="/images/headers/header-methode.png"
       />
 
       {/* Les 5 étapes (frise or) — section partagée existante */}

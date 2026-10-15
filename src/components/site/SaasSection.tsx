@@ -1,10 +1,11 @@
 "use client";
 
-import { ArrowRight, Calendar } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Images } from "lucide-react";
 import {
   Beam,
   DrawRule,
-  PopIn,
   Reveal,
   SpotlightCard,
   Stagger,
@@ -12,8 +13,9 @@ import {
   Tilt,
 } from "@/components/motion";
 import { Container, GoldButton, PriceTag, Section, SectionHeading } from "@/components/site/kit";
+import { ScrollCarousel } from "@/components/site/ScrollCarousel";
 import { SAAS_PRODUCTS, type SaasProduct } from "@/lib/catalog";
-import { openForm, scrollToSection } from "@/lib/chat-bus";
+import { scrollToSection } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
 import { useI18n } from "@/lib/i18n";
 
@@ -27,40 +29,18 @@ const SAAS_KEY: Record<SaasProduct["slug"], string> = {
   "gestion-pharmacie": "pharma",
 };
 
+/* Visuel produit généré (obsidienne & or) — cohérence sur les cartes. */
+const SAAS_IMAGE: Record<SaasProduct["slug"], string> = {
+  "factura-pro": "/images/saas/saas-factura.png",
+  "gestion-comptable": "/images/saas/saas-compta.png",
+  "gestion-hospitaliere": "/images/saas/saas-hosp.png",
+  "gestion-ecole": "/images/saas/saas-ecole.png",
+  "gestion-immobiliere": "/images/saas/saas-immo.png",
+  "gestion-pharmacie": "/images/saas/saas-pharma.png",
+};
+
 /* Forfait hôpital : bornes exactes du catalogue (1 000 000 → 5 000 000 GNF / mois) */
 const HOSPITAL_RANGE = "1 – 5\u00A0000\u00A0000\u00A0GNF";
-
-/** Maquette d'interface 100 % CSS — aucune image. */
-function DeviceMockup() {
-  return (
-    <div className="relative aspect-[16/9] bg-surface2 p-5 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.02]">
-      <div className="flex h-full flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-inner">
-        {/* barre de fenêtre */}
-        <div aria-hidden className="flex gap-1.5 border-b border-line p-2">
-          <span className="h-2 w-2 rounded-full bg-gold" />
-          <span className="h-2 w-2 rounded-full bg-line" />
-          <span className="h-2 w-2 rounded-full bg-line" />
-        </div>
-        <div className="flex min-h-0 flex-1">
-          {/* barre latérale */}
-          <div aria-hidden className="flex w-1/4 flex-col gap-2 border-r border-line p-2">
-            <span className="h-1.5 rounded bg-gold/60" />
-            <span className="h-1.5 rounded bg-line" />
-            <span className="h-1.5 rounded bg-line" />
-            <span className="h-1.5 rounded bg-line" />
-          </div>
-          {/* zone principale */}
-          <div aria-hidden className="grid flex-1 grid-cols-2 gap-2 p-3">
-            <span className="rounded bg-surface2" />
-            <span className="rounded border border-gold/30 bg-gold/15" />
-            <span className="rounded bg-surface2" />
-            <span className="rounded bg-surface2" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function SaasSection({ heading = true }: { heading?: boolean }) {
   const { t } = useI18n();
@@ -69,105 +49,116 @@ export function SaasSection({ heading = true }: { heading?: boolean }) {
     <Section id="saas" tone="surface">
       <Container>
         {heading && (
-
           <SectionHeading
-          label={t("saas.label")}
-          title={t("saas.title")}
-          gold={t("saas.tGold")}
-          sub={t("saas.sub")}
-        />
-
+            label={t("saas.label")}
+            title={t("saas.title")}
+            gold={t("saas.tGold")}
+            sub={t("saas.sub")}
+          />
         )}
 
-        <Stagger className="grid gap-6 md:grid-cols-2 lg:grid-cols-3" step={0.06}>
+        {/* Carrousel défilant : chaque carte ouvre la page dédiée du logiciel */}
+        <ScrollCarousel ariaLabel={t("saas.title")} speed={22} tone="surface">
           {SAAS_PRODUCTS.map((p, i) => {
             const itemKey = `saas.items.${SAAS_KEY[p.slug]}`;
             const isHospital = p.slug === "gestion-hospitaliere";
             const isSchool = p.slug === "gestion-ecole";
             const isFeatured = p.offers[0]?.featured === true;
             return (
-              <StaggerItem key={p.slug} className="h-full">
-                <Tilt className="h-full">
-                  <Beam always={isFeatured} className="h-full rounded-xl">
-                    <SpotlightCard className="h-full rounded-xl">
-                      <article className="card-lift group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-bg">
+              <Tilt key={p.slug} className="w-[300px] shrink-0 snap-start sm:w-[340px]">
+                <Beam always={isFeatured} className="h-full rounded-xl">
+                  <SpotlightCard className="h-full rounded-xl">
+                    <Link
+                      href={`/logiciels/${p.slug}`}
+                      aria-label={`${p.name} — ${t("saas.discover")}`}
+                      className="card-lift group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-bg focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
+                    >
+                      <span
+                        aria-hidden
+                        className="absolute right-4 top-4 z-10 font-serif text-5xl text-gold opacity-[0.18] transition-opacity duration-500 group-hover:opacity-30"
+                      >
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+
+                      {/* Visuel produit */}
+                      <div className="relative aspect-[16/10] overflow-hidden">
+                        <Image
+                          src={SAAS_IMAGE[p.slug]}
+                          alt=""
+                          fill
+                          sizes="(max-width: 640px) 300px, 340px"
+                          className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
+                        />
+                        <div
+                          aria-hidden
+                          className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent"
+                        />
+                      </div>
+
+                      <div className="flex flex-1 flex-col p-6">
+                        <p className="label-caps">{t(`${itemKey}.tag`)}</p>
+                        <h3 className="display-3 mt-2">{p.name}</h3>
+                        <p className="mt-2 flex-1 text-sm text-mute">{t(`${itemKey}.desc`)}</p>
+
+                        <Reveal variant="scale" delay={0.15} className="mt-4">
+                          {isHospital ? (
+                            <div>
+                              <p className="font-serif text-xl text-goldtext">
+                                {HOSPITAL_RANGE}{" "}
+                                <span className="font-sans text-xs text-mute">
+                                  {t("pricing.perMonth")}
+                                </span>
+                              </p>
+                              <p className="mt-1 text-xs text-mute">{t("saas.hospitalNote")}</p>
+                            </div>
+                          ) : (
+                            <>
+                              <PriceTag
+                                offer={p.offers[0]}
+                                fromLabel={t("pricing.fromLabel")}
+                                perMonth={t("pricing.perMonth")}
+                                perYear={t("pricing.perYear")}
+                                quoteLabel={t("pricing.quoteLabel")}
+                                billableNote={isSchool ? t("pricing.billableNote") : undefined}
+                              />
+                              {isSchool && (
+                                <p className="mt-1 text-xs text-mute">{t("saas.schoolNote")}</p>
+                              )}
+                            </>
+                          )}
+                        </Reveal>
+
                         <span
                           aria-hidden
-                          className="absolute right-4 top-4 z-10 font-serif text-5xl text-gold opacity-[0.07] transition-opacity duration-500 group-hover:opacity-[0.15]"
+                          className="mt-5 inline-flex items-center gap-2 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-goldtext"
                         >
-                          {String(i + 1).padStart(2, "0")}
+                          {t("saas.discover")}
+                          <ArrowRight
+                            size={14}
+                            strokeWidth={1.5}
+                            className="transition-transform duration-300 group-hover:translate-x-1"
+                          />
                         </span>
-
-                        <PopIn delay={i * 0.08}>
-                          <DeviceMockup />
-                        </PopIn>
-
-                        <div className="flex flex-1 flex-col p-6">
-                          <p className="label-caps">{t(`${itemKey}.tag`)}</p>
-                          <h3 className="display-3 mt-2">{p.name}</h3>
-                          <p className="mt-2 flex-1 text-sm text-mute">{t(`${itemKey}.desc`)}</p>
-
-                          <Reveal variant="scale" delay={0.2} className="mt-4">
-                            {isHospital ? (
-                              <div>
-                                <p className="font-serif text-xl text-goldtext">
-                                  {HOSPITAL_RANGE}{" "}
-                                  <span className="font-sans text-xs text-mute">
-                                    {t("pricing.perMonth")}
-                                  </span>
-                                </p>
-                                <p className="mt-1 text-xs text-mute">{t("saas.hospitalNote")}</p>
-                              </div>
-                            ) : (
-                              <>
-                                <PriceTag
-                                  offer={p.offers[0]}
-                                  fromLabel={t("pricing.fromLabel")}
-                                  perMonth={t("pricing.perMonth")}
-                                  perYear={t("pricing.perYear")}
-                                  quoteLabel={t("pricing.quoteLabel")}
-                                  billableNote={isSchool ? t("pricing.billableNote") : undefined}
-                                />
-                                {isSchool && (
-                                  <p className="mt-1 text-xs text-mute">{t("saas.schoolNote")}</p>
-                                )}
-                              </>
-                            )}
-                          </Reveal>
-
-                          <div className="mt-5">
-                            <GoldButton
-                              variant="outline"
-                              ariaLabel={`${t("saas.book")} — ${p.name}`}
-                              onClick={() => {
-                                openForm("demo", {
-                                  subject: "Démo",
-                                  message: `Je souhaite une démonstration de ${p.name}.`,
-                                });
-                                trackCta("saas", p.slug);
-                              }}
-                            >
-                              <Calendar className="h-4 w-4" strokeWidth={1.25} aria-hidden />
-                              {t("saas.book")}
-                            </GoldButton>
-                          </div>
-                        </div>
-                      </article>
-                    </SpotlightCard>
-                  </Beam>
-                </Tilt>
-              </StaggerItem>
+                      </div>
+                    </Link>
+                  </SpotlightCard>
+                </Beam>
+              </Tilt>
             );
           })}
-        </Stagger>
+        </ScrollCarousel>
 
         <DrawRule className="mt-14 h-px w-full" delay={0.1} />
 
-        <div className="mt-10 text-center">
+        <div className="mt-10 flex flex-col items-center gap-3 text-center">
           <GoldButton variant="ghost" onClick={() => scrollToSection("trial")}>
             {t("saas.trial")}
             <ArrowRight className="h-4 w-4" strokeWidth={1.25} aria-hidden />
           </GoldButton>
+          <p className="inline-flex items-center gap-2 text-xs text-mute">
+            <Images size={14} strokeWidth={1.25} aria-hidden className="text-gold" />
+            {t("saas.carouselHint")}
+          </p>
         </div>
       </Container>
     </Section>

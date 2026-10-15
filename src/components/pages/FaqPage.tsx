@@ -31,6 +31,7 @@ export function FaqPage() {
         gold={c.hero.gold}
         sub={c.hero.sub}
         chips={c.hero.chips}
+        image="/images/headers/header-faq.png"
       />
 
       {/* Questions courantes (section existante, réutilisée telle quelle) */}

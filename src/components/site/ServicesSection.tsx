@@ -1,12 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import {
+  ArrowRight,
   ArrowUpRight,
   Boxes,
   Code2,
   Compass,
   Globe,
   GraduationCap,
+  Images,
   Megaphone,
   Target,
   type LucideIcon,
@@ -17,11 +20,10 @@ import {
   PopIn,
   PulseGlow,
   SpotlightCard,
-  Stagger,
-  StaggerItem,
   Tilt,
 } from "@/components/motion";
 import { Container, GoldBadge, GoldButton, Section, SectionHeading } from "@/components/site/kit";
+import { ScrollCarousel } from "@/components/site/ScrollCarousel";
 import { useI18n } from "@/lib/i18n";
 import { openForm } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
@@ -56,9 +58,20 @@ const SERVICE_ICONS: Record<ServiceKey, LucideIcon> = {
   strategy: Compass,
 };
 
+/* Slugs des pages de détail /services/[slug] */
+const SERVICE_HREF: Record<ServiceKey, string> = {
+  web: "/services/web",
+  software: "/services/software",
+  saas: "/services/saas",
+  community: "/services/community",
+  acquisition: "/services/acquisition",
+  training: "/services/training",
+  strategy: "/services/strategy",
+};
+
 /* Tarifs EXACTS du cahier des charges (§19) — formatGNF seul autorisé. */
 export function ServicesSection({ heading = true }: { heading?: boolean }) {
-  const { t, tr } = useI18n();
+  const { t } = useI18n();
 
   const priceFor = (key: ServiceKey): string | null => {
     switch (key) {
@@ -78,97 +91,93 @@ export function ServicesSection({ heading = true }: { heading?: boolean }) {
   };
 
   const items = SERVICE_KEYS.map((key) => {
-    const data = tr<{ name: string; desc: string }>(`services.items.${key}`);
-    return data ? { key, name: data.name, desc: data.desc } : null;
+    const data = t(`services.items.${key}.name`);
+    const desc = t(`services.items.${key}.desc`);
+    return data ? { key, name: data, desc } : null;
   }).filter((v): v is { key: ServiceKey; name: string; desc: string } => v !== null);
 
   return (
     <Section id="services">
       <Container>
         {heading && (
-
           <SectionHeading
-          label={t("services.label")}
-          title={t("services.title")}
-          gold={t("services.tGold")}
-          sub={t("services.sub")}
-        />
-
+            label={t("services.label")}
+            title={t("services.title")}
+            gold={t("services.tGold")}
+            sub={t("services.sub")}
+          />
         )}
 
-        <div className="relative">
-          <Stagger
-            className="relative z-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-            step={0.08}
-          >
-            {items.map((s, i) => {
-              const Icon = SERVICE_ICONS[s.key];
-              const price = priceFor(s.key);
-              const isStrategy = s.key === "strategy";
-              return (
-                <StaggerItem key={s.key} className="h-full">
-                  <Tilt className="h-full">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        openForm("quote", { subject: s.name });
-                        trackCta("services", s.key);
-                      }}
-                      className="block h-full w-full cursor-pointer text-left"
+        {/* Carrousel défilant : chaque carte ouvre la page du pôle */}
+        <ScrollCarousel ariaLabel={t("services.title")} speed={24}>
+          {items.map((s, i) => {
+            const Icon = SERVICE_ICONS[s.key];
+            const price = priceFor(s.key);
+            const isStrategy = s.key === "strategy";
+            return (
+              <Tilt key={s.key} className="w-[300px] shrink-0 snap-start sm:w-[340px]">
+                <Beam always={isStrategy} className="h-full rounded-xl">
+                  <SpotlightCard className="h-full rounded-xl">
+                    <Link
+                      href={SERVICE_HREF[s.key]}
+                      aria-label={`${s.name} — ${t("services.discover")}`}
+                      className="card-lift group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface p-6 focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
                     >
-                      <Beam always={isStrategy} className="h-full rounded-xl">
-                        <SpotlightCard className="h-full rounded-xl">
-                          <article
-                            className={`card-lift group relative h-full overflow-hidden rounded-xl border border-line bg-surface p-6 ${
-                              isStrategy ? "opacity-80" : ""
-                            }`}
-                          >
-                            <span
-                              aria-hidden
-                              className="absolute -top-2 right-3 font-serif text-7xl text-gold opacity-[0.07] transition-opacity duration-500 group-hover:opacity-[0.15]"
-                            >
-                              {String(i + 1).padStart(2, "0")}
-                            </span>
+                      <span
+                        aria-hidden
+                        className="absolute -top-2 right-3 font-serif text-7xl text-gold opacity-[0.07] transition-opacity duration-500 group-hover:opacity-[0.15]"
+                      >
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
 
-                            <PopIn delay={i * 0.08}>
-                              <span className="inline-flex w-fit rounded-full border border-gold/30 p-3 text-gold transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110">
-                                <Icon size={24} strokeWidth={1.25} aria-hidden />
-                              </span>
-                            </PopIn>
+                      <PopIn delay={i * 0.05}>
+                        <span className="inline-flex w-fit rounded-full border border-gold/30 p-3 text-gold transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110">
+                          <Icon size={24} strokeWidth={1.25} aria-hidden />
+                        </span>
+                      </PopIn>
 
-                            <h3 className="display-3 mt-5">{s.name}</h3>
-                            <p className="mt-2 text-sm leading-relaxed text-mute">{s.desc}</p>
+                      <h3 className="display-3 mt-5">{s.name}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-mute">{s.desc}</p>
 
-                            <div className="mt-4">
-                              {price ? (
-                                <p className="text-[0.8125rem] font-medium text-goldtext">{price}</p>
-                              ) : (
-                                <PulseGlow>
-                                  <GoldBadge>{t("services.items.strategy.badge")}</GoldBadge>
-                                </PulseGlow>
-                              )}
-                            </div>
+                      <div className="mt-4">
+                        {price ? (
+                          <p className="text-[0.8125rem] font-medium text-goldtext">{price}</p>
+                        ) : (
+                          <PulseGlow>
+                            <GoldBadge>{t("services.items.strategy.badge")}</GoldBadge>
+                          </PulseGlow>
+                        )}
+                      </div>
 
-                            <ArrowUpRight
-                              size={20}
-                              strokeWidth={1.25}
-                              aria-hidden
-                              className="absolute bottom-6 right-6 text-gold transition-[transform,color] duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-goldlight"
-                            />
-                          </article>
-                        </SpotlightCard>
-                      </Beam>
-                    </button>
-                  </Tilt>
-                </StaggerItem>
-              );
-            })}
-          </Stagger>
-        </div>
+                      {/* Pied de carte : invitation à ouvrir la page du pôle */}
+                      <span
+                        aria-hidden
+                        className="mt-6 inline-flex items-center gap-2 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-goldtext"
+                      >
+                        {t("services.discover")}
+                        <ArrowRight
+                          size={14}
+                          strokeWidth={1.5}
+                          className="transition-transform duration-300 group-hover:translate-x-1"
+                        />
+                      </span>
+                      <ArrowUpRight
+                        size={20}
+                        strokeWidth={1.25}
+                        aria-hidden
+                        className="absolute bottom-6 right-6 text-gold opacity-0 transition-[opacity,transform] duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:opacity-100"
+                      />
+                    </Link>
+                  </SpotlightCard>
+                </Beam>
+              </Tilt>
+            );
+          })}
+        </ScrollCarousel>
 
         <DrawRule className="mt-14 h-px w-full" delay={0.1} />
 
-        <div className="mt-10 text-center">
+        <div className="mt-10 flex flex-col items-center gap-3 text-center">
           <GoldButton
             onClick={() => {
               openForm("quote");
@@ -177,6 +186,10 @@ export function ServicesSection({ heading = true }: { heading?: boolean }) {
           >
             {t("services.cta")}
           </GoldButton>
+          <p className="inline-flex items-center gap-2 text-xs text-mute">
+            <Images size={14} strokeWidth={1.25} aria-hidden className="text-gold" />
+            {t("services.carouselHint")}
+          </p>
         </div>
       </Container>
     </Section>

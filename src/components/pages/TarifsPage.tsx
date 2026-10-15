@@ -70,6 +70,7 @@ export function TarifsPage() {
         gold={c.hero.gold}
         sub={c.hero.sub}
         chips={c.hero.chips}
+        image="/images/headers/header-tarifs.png"
       />
 
       <PricingSection heading={false} />

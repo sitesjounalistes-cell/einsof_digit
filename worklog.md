@@ -563,3 +563,105 @@ Stage Summary:
 - Site entièrement multipage : 11 pages dédiées détaillées + hub d'accueil, 5 langues complètes
 - Garantie de visibilité renforcée : plus aucun fondu global ; le mode léger auto fonctionne vraiment (filet de sécurité UI-FIX-1 opérationnel)
 - Commits : feat(site) backbone MP-1 + feat(site) pages MP-2/MP-3
+
+---
+Task ID: 7-a
+Agent: general-purpose
+Task: Traduction EN de service-details et saas-details
+
+Work Log:
+- Lecture du worklog (tâches 1→8-9-10, MP-1→MP-3), des types.ts des deux modules, des fr.ts sources (520 + 458 lignes), de index.ts (registre Record<Lang, …> déjà écrit) et de page-content.tsx (Localized<T> = Record<Lang, T>) avant d'écrire
+- CORRECTIF BLOQUANT partagé : types.ts des DEUX modules déclarait `LocalizedServiceDetails = Localized<ServiceDetailsContent>` (= Record<Lang, …>) alors que fr.ts et index.ts utilisent le contenu d'UNE langue par fichier (fr.ts = contenu brut ; index.ts = Record<Lang, LocalizedServiceDetails>) → fr.ts ne compilait pas (TS2353 sur chaque slug). Alias corrigé en `LocalizedServiceDetails = ServiceDetailsContent` (resp. `SaasDetailsContent`) + commentaire explicatif ; import `Localized` devenu inutile retiré. Interfaces ServiceDetail/SaasDetail, slugs et champs : INTACTS. Les agents es/zh/de qui suivent le même gabarit (export : LocalizedServiceDetails) compilent sans rien toucher d'autre
+- Créé src/lib/pages-content/service-details/en.ts — SERVICE_DETAILS_EN : 7 pôles (web/software/saas/community/acquisition/training/strategy), structure et ordre de clés identiques au fr ; ton premium, phrases courtes, scission title/gold conservée partout (ex. « Un site qui travaille / pour vous, jour et nuit. » → « A website that works / for you, day and night. ») ; noms imposés : Websites, Software & applications, Business SaaS, Community management, Client acquisition, Training, Business strategy
+- Créé src/lib/pages-content/saas-details/en.ts — SAAS_DETAILS_EN : 6 produits, vidéo "soonNote" traduite (videoUrl reste null), FAQ 3 Q/R par produit ; noms imposés : Factura Pro (marque), Accounting management, Hospital management, School management, Real-estate management, Pharmacy management ; labels hero « Business SaaS — Invoicing/Accounting/Healthcare/Education/Real estate/Pharmacy »
+- Règles respectées : slugs, chemins /images/..., priceRef (web/software/saas/null) et videoUrl null inchangés ; montants GNF au format officiel identique au fr (« 1 500 000 GNF », « 100 000 GNF / month », « 7 000 000 GNF / year », « 1 – 5 000 000 GNF » — séparateurs espace conservés, AUCUN format anglo-saxon) ; aucun prix ni fonctionnalité inventés (fidèle au fr, vérifié champ par champ) ; guillemets « dépannage » → “getting by” en typographie EN
+- Vérifications : script bun d'égalité structurelle fr↔en (clés, types, longueurs de tableaux, slug/image/priceRef/videoUrl préservés, mapping des name, montants GNF identiques de part et d'autre, heuristique anti-français résiduel) → ALL CHECKS PASSED ; bunx tsc --noEmit → 0 erreur dans mes fichiers (les TS2353 de fr.ts sont résolus par le correctif types.ts ; restent 4 erreurs préexistantes examples//skills/ + les modules es/de encore absents, livrés par les agents parallèles) ; bun run lint → 0 erreur
+
+Stage Summary:
+- 2 fichiers créés : src/lib/pages-content/service-details/en.ts (7 pôles) et src/lib/pages-content/saas-details/en.ts (6 SaaS) — anglais premium, mêmes slugs/clés/structure que le fr, prêts pour le branchement index.ts (déjà câblé : `en: SERVICE_DETAILS_EN` / `en: SAAS_DETAILS_EN`)
+- 1 correctif partagé : alias de type `LocalizedServiceDetails`/`LocalizedSaasDetails` = contenu d'UNE langue (au lieu de Record<Lang, …>) — fr.ts compile de nouveau ; les traductions es/zh/de doivent suivre le même gabarit (objet plat, clés = slugs)
+- Montants : format GNF officiel préservé à l'identique du fr (espaces, « / month » et « / year » remplacent uniquement l'unité) — la bande tarifaire reste alimentée par priceRef + catalogue, rien n'est réinventé
+
+---
+Task ID: 7-c
+Agent: general-purpose
+Task: Traduction ZH de service-details et saas-details
+
+Work Log:
+- Lecture du worklog, des types (service-details/types.ts, saas-details/types.ts) et des sources françaises (fr.ts ×2) avant d'écrire
+- Créé src/lib/pages-content/service-details/zh.ts — SERVICE_DETAILS_ZH : mêmes clés/slug/images/priceRef que fr (7 pôles), noms imposés (网站建设, 软件与应用, 业务管理SaaS, 社群运营, 客户获取, 培训服务, 企业战略), scissions title/gold adaptées au chinois (title + fin emphatique dorée), ponctuation pleine largeur （，。：——「」）
+- Créé src/lib/pages-content/saas-details/zh.ts — SAAS_DETAILS_ZH : 6 produits, videoUrl:null inchangé, noms imposés (Factura Pro inchangé, 会计管理, 医院管理, 学校管理, 物业管理, 药店管理), FAQ 3 Q/R par produit
+- Montants GNF strictement conservés : « / mois »→« / 月 », « / an »→« / 年 », « par an »→« / 年 », « dès X GNF »→« X GNF 起 », école « 每年支付9个月 » ; aucun prix ni fonctionnalité inventés
+- Vérification bun : arbres de clés identiques au fr (427 feuilles service-details, 348 saas-details), slugs/images/videoUrl/priceRef identiques, montants GNF bijectif fr↔zh (0 perdu, 0 inventé), aucun reste de français, seuls tokens latins = GNF/SEO/SaaS/Factura Pro/100% + chemins/slugs intacts
+- bunx tsc --noEmit : 0 erreur dans mes 2 fichiers (au 1er passage, types.ts définissait encore LocalizedServiceDetails = Localized<ServiceDetailsContent> ce qui faisait échouer fr.ts ET zh.ts ; l'alias a été corrigé en parallèle vers ServiceDetailsContent — mes fichiers sont conformes à cette forme). Erreurs restantes du projet : 4 préexistantes (examples/, skills/) + ./es et ./de manquants côté saas-details (agents parallèles 7-a/7-b/7-d)
+
+Stage Summary:
+- 2 fichiers créés : src/lib/pages-content/service-details/zh.ts (SERVICE_DETAILS_ZH) et src/lib/pages-content/saas-details/zh.ts (SAAS_DETAILS_ZH) — chinois simplifié premium (vous de politesse 您), ton court et percutant « Obsidienne & Or », prêts pour l'index Record<Lang, …> (fallback fr intact)
+- Zéro écart de structure vs fr : mêmes slugs, mêmes images, videoUrl null, priceRef inchangés, tous les montants GNF exacts au format d'origine (1 500 000 GNF, 100 000 GNF / 月, 1 – 5 000 000 GNF / 月, 7 000 000 GNF / 年…)
+- Fichiers compilants (bunx tsc : aucune erreur sur zh.ts ×2) ; attention orchestrateur : saas-details/index.ts attend encore ./es et ./de (en cours chez les agents parallèles)
+---
+Task ID: 7-d
+Agent: general-purpose
+Task: Traduction DE de service-details et saas-details
+
+Work Log:
+- Lecture worklog.md, types.ts + fr.ts des deux modules, types.ts saas-details, dictionnaire i18n existant (section `de` de translations.ts) pour aligner la terminologie (Leistungen, Demo buchen, Kostenloser 7-Tage-Test, Angebot anfordern, / Monat, / Jahr, „Auf Angebot", etc.)
+- Création src/lib/pages-content/service-details/de.ts : SERVICE_DETAILS_DE (7 pôles : web, software, saas, community, acquisition, training, strategy) — structure et clés strictement identiques à fr.ts
+- Création src/lib/pages-content/saas-details/de.ts : SAAS_DETAILS_DE (6 produits : factura-pro, gestion-comptable, gestion-hospitaliere, gestion-ecole, gestion-immobiliere, gestion-pharmacie) — structure identique à fr.ts
+- Noms imposés respectés : Websites, Software & Anwendungen, Verwaltungs-SaaS, Community-Management, Kundengewinnung, Schulungen, Unternehmensstrategie ; Factura Pro (marque inchangée), Rechnungswesen, Klinikverwaltung, Schulverwaltung, Immobilienverwaltung, Apothekenverwaltung
+- Montants GNF inchangés et formats respectés : «/ mois»→«/ Monat», «/ an»→«/ Jahr», «par mois/par an»→«pro Monat/pro Jahr», «Dès»→«Ab», «Sur devis»→«Auf Angebot» ; slugs, images, videoUrl (null) et priceRef intacts
+- Scissions title/gold conservées et adaptées au rythme allemand (ex. «Eine Website, die arbeitet / für Sie — Tag und Nacht.») ; ton premium, phrases courtes, Sie-Form implicite
+- Note type : fr.ts annotait les fichiers langue avec LocalizedServiceDetails (= Record<Lang, …>) alors que chaque fichier ne contient qu'UNE langue → TS2353 préexistant sur fr.ts. J'ai d'abord annoté avec ServiceDetailsContent/SaasDetailsContent ; un agent parallèle a ensuite converti types.ts en alias (LocalizedServiceDetails = ServiceDetailsContent) ; j'ai aligné mes deux fichiers sur LocalizedServiceDetails/LocalizedSaasDetails (identique désormais), comment à jour
+- Vérifs : comparaison programmatique des formes fr/de (bun) → structure identique, slugs/images/videoUrl/priceRef identiques, 12 + 23 montants GNF identiques un à un ; tsc --noEmit → 0 erreur dans src/ (restent 4 erreurs préexistantes hors site : examples/websocket ×2, skills/image-edit, skills/stock-analysis)
+
+Stage Summary:
+- Modules service-details et saas-details désormais complets en 5 langues : de.ts ajouté des deux côtés, conforme au contrat de structure du fr (mêmes slugs/clés/types)
+- Terminologie DE alignée sur le dictionnaire existant (translations.ts section de) : aucune invention de prix ni de fonctionnalité, libellés CTA cohérents avec le site (Demo buchen, Angebot anfordern, Preise ansehen, Kontakt aufnehmen)
+- tsc : 0 erreur liée aux fichiers livrés ; fichiers de.ts prêts pour la consommation par index.ts (imports ./de déjà en place)
+---
+Task ID: 7-b
+Agent: general-purpose
+Task: Traduction ES de service-details et saas-details
+
+Work Log:
+- Lectures préalables : worklog.md (contexte tâches 1→7), types.ts + fr.ts des deux modules, index.ts, page-content.tsx (Localized), conventions des autres modules pages-content
+- Constat au départ : index.ts importait ./es inexistant (les 5 langues) ; en parallèle 7-c/7-d/7-e ont créé en/zh/de et le typage LocalizedServiceDetails a été corrigé dans types.ts (= ServiceDetailsContent par langue, agrégation Record<Lang,…> dans index.ts) — mes fichiers suivent ce contrat final
+- Création src/lib/pages-content/service-details/es.ts : SERVICE_DETAILS_ES, 7 pôles (web, software, saas, community, acquisition, training, strategy), structure 1:1 avec fr.ts (hero/overview/included/process/audience/cta, priceRef inchangés)
+- Création src/lib/pages-content/saas-details/es.ts : SAAS_DETAILS_ES, 6 produits (factura-pro, gestion-comptable, gestion-hospitaliere, gestion-ecole, gestion-immobiliere, gestion-pharmacie), videoUrl: null conservé, structure 1:1 (hero/video/overview/features/audience/cta/faq)
+- Noms imposés respectés : Sitios web, Software y aplicaciones, SaaS de gestión, Community management, Adquisición de clientes, Formaciones, Estrategia empresarial ; Factura Pro (marque), Gestión contable/hospitalaria/escolar/inmobiliaria/de farmacia
+- Règles montants : tous les montants GNF repris à l'identique en format français (1 500 000 GNF, 20 000 000 GNF, 7 000 000 GNF…) ; unités traduites « / mois »→« / mes », « / an »→« / año » sans toucher aux chiffres ; aucune fonctionnalité ni prix inventés
+- Ton : espagnol neutre professionnel (usted), phrases courtes premium, scission title + gold conservée sur tous les blocs (rendu italique doré), équivalents idiomatiques choisis (« a la primera », « al pie de la letra », « sin noches en vela », « al último comprimido ») ; guillemets « » conservés
+- Vérifications automatisées (bun) : arbres de clés identiques fr↔es (service-details 427 feuilles/423 chaînes ; saas-details 348 feuilles/342 chaînes, 0 clé manquante, 0 extra) ; slugs, images, videoUrl, priceRef identiques ; tous les montants GNF identiques fr↔es ; grep anti-restes-français → rien
+- bunx tsc --noEmit -p tsconfig.json → 0 erreur dans src/ (seules subsistent les 4 erreurs préexistantes examples/ + skills/, hors périmètre)
+
+Stage Summary:
+- es.ts créé dans les 2 modules et câblé par index.ts existant (SERVICE_DETAILS.es / SAAS_DETAILS.es) : le site EINSOF dispose désormais de pages services + SaaS complètes en espagnol
+- Contraintes respectées : mêmes slugs/chemins/priceRef/videoUrl null, montants GNF intacts, aucun tarif ni feature inventé, TypeScript strict OK
+- Note pour l'orchestrateur : néant côté es — le typage par langue (LocalizedServiceDetails = ServiceDetailsContent dans types.ts) est désormais homogène et compile ; prochaine étape possible : relecture native ES par le client
+
+---
+Task ID: 8 (orchestrateur)
+Agent: Z.ai Code (principal)
+Task: Corrections UI demandées par le client — suppression grille « Explorer le site », carrousels défilants Services & Logiciels, pages de détail dédiées (services + SaaS), images de fond dans tous les bandeaux, meilleure mise en scène
+
+Work Log:
+- Accueil : suppression de HubGrid (« Explorer le site — Chaque sujet mérite sa page ») et de JournalSection (le blog vit désormais dans le menu « Blog » + page /blog) ; HomePage = Hero + Stats + CTA final ; fichiers HubGrid.tsx / JournalSection.tsx / pages-content/hub.ts supprimés
+- PageHero : nouveau prop `image` (next/image fill + double voile dégradé sombre, lisibilité garantie) et prop `parent` (fil d'Ariane Accueil / Services / …)
+- Nouveau composant ScrollCarousel : carrousel défilant infini (useAnimationFrame, boucle modulo sur largeur mesurée par ResizeObserver, pause au survol/focus/touch, fondus de bords, fallback « animations réduites » = rail scrollable snap)
+- ServicesSection réécrite : carrousel des 7 pôles, chaque carte = Link vers /services/[slug] (web, software, saas, community, acquisition, training, strategy) avec tarifs §19 exacts et indication « Découvrir le pôle »
+- SaasSection réécrite : carrousel des 6 logiciels, visuels produits générés (images), chaque carte = Link vers /logiciels/[slug]
+- 23 images générées via z-ai-web-dev-sdk (scripts/gen-images.mjs) : 10 bandeaux de pages (1536×640), 7 visuels de pôles + 6 visuels SaaS (1344×768), style « Obsidienne & Or », aucun texte dans les images
+- Nouveau module de contenu src/lib/pages-content/service-details/ (types + fr + en/es/zh/de via 4 sous-agents parallèles) : vue d'ensemble + points-clés, inclus (8), méthode (4 étapes), pour qui (3), bande tarifaire (références catalogue uniquement), CTA
+- Nouveau module src/lib/pages-content/saas-details/ (idem 5 langues) : présentation, vidéo (videoUrl null → affiche élégante « Vidéo bientôt disponible », iframe YouTube/Vimeo ou MP4 déjà implémentés pour plus tard), 10 caractéristiques, pour qui + 3 cas, tarif catalogue, CTA démo + essai, mini-FAQ, autres logiciels
+- Composants ServiceDetailPage + SaasDetailPage ; routes statiques /services/[slug] et /logiciels/[slug] (generateStaticParams + generateMetadata, notFound si slug inconnu)
+- ServicesPage : PageHero imagé + carrousel + promesses + CTA + liens croisés ; la section « Chaque pôle en détail » a été retirée (le détail vit sur chaque page de pôle) — idem « Détail des produits » retirée de LogicielsPage (détail sur chaque page produit)
+- Images de fond ajoutées aux 10 PageHero (tarifs, faq, a-propos, contact, blog, réalisations, secteurs, méthode + services + logiciels)
+- Traductions : nav.blog « Journal »→« Blog » (5 langues), clés services.discover/carouselHint, services.detail.factsLabel/otherServices, saas.discover/carouselHint/videoSoonBadge, pricing.popularLabel ; label bandeau blog « 10 — Journal »→« 10 — Blog » (5 langues)
+- FIX multi-pages openForm : depuis une page sans formulaire, la demande (démo/devis/essai) est mémorisée en sessionStorage puis /contact est ouvert ; ContactSection consomme la demande au montage et préremplit sujet + message (types demo/quote/trial)
+- FIX Radix Select : sujet prérempli ne s'affichait pas (SelectValue sans item monté) → texte affiché manuellement dans SelectTrigger, Select non contrôlé ; correction d'un crash client (ref + children sur SelectValue) détecté au test navigateur
+- Vérifications : tsc 0 erreur (src), lint 0 erreur, 15 routes en 200, Agent Browser (desktop 1440 + mobile 390) : accueil allégé vérifié, carrousels actifs (7 + 6 cartes cliquables), pages de détail complètes, flux démo/essai/devis → /contact préremplis, FAQ accordéon OK, console 0 erreur, footer naturel sur pages longues
+
+Stage Summary:
+- Le site est entièrement multipage : 7 pages de pôles + 6 pages SaaS dédiées, toutes uniques, détaillées et en 5 langues ; carrousels défilants sur /services et /logiciels ; accueil recentré (plus de grille de cartes, plus de section journal)
+- Visuels cohérents « Obsidienne & Or » partout (23 images), aucune régression d'accessibilité/réduced-motion
+- Reste côté client : URLs des vidéos à intégrer (champ videoUrl par produit), contenu FAQ à restructurer avec la ressource que le client fournira

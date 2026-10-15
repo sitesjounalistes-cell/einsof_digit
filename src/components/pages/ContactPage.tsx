@@ -41,6 +41,7 @@ export function ContactPage() {
         gold={c.hero.gold}
         sub={c.hero.sub}
         chips={c.hero.chips}
+        image="/images/headers/header-contact.png"
       />
 
       {/* Formulaire complet + coordonnées (section existante, titre déjà dans le PageHero) */}

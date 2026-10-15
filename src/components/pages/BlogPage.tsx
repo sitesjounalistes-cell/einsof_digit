@@ -44,11 +44,11 @@ function fmtDate(iso: string | null, lang: string): string {
 const TOPIC_ICONS = [Boxes, Globe, Target] as const;
 
 /**
- * Page /blog — Journal complet de l'agence.
- * Différence clé avec JournalSection (accueil) : le clic sur un article
- * déclenche une vraie navigation (next/link vers /blog/[slug]),
- * pas une boîte de dialogue. Les articles viennent de la vraie base
- * (/api/posts) — aucun article n'est fabriqué côté client.
+ * Page /blog — Blog complet de l'agence.
+ * Le clic sur un article déclenche une vraie navigation
+ * (next/link vers /blog/[slug]), pas une boîte de dialogue.
+ * Les articles viennent de la vraie base (/api/posts) —
+ * aucun article n'est fabriqué côté client.
  */
 export function BlogPage() {
   const { lang, t, tr } = useI18n();
@@ -81,6 +81,7 @@ export function BlogPage() {
         gold={c.hero.gold}
         sub={c.hero.sub}
         chips={c.hero.chips}
+        image="/images/headers/header-blog.png"
       />
 
       {/* Grille complète des articles */}

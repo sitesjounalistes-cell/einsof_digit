@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Container } from "@/components/site/kit";
@@ -10,6 +11,8 @@ import { useI18n } from "@/lib/i18n";
  * Bandeau d'ouverture de chaque page du site multi-pages :
  * fil d'Ariane (Accueil / …), libellé numéroté, titre serif animé
  * mot à mot (dégradé or posé par mot — voir UI-FIX-2), sous-titre.
+ * `image` : visuel de fond photographique (obscurci par deux voiles
+ * dégradés — lisibilité du texte garantie, aucun texte décoratif).
  */
 export function PageHero({
   label,
@@ -17,6 +20,8 @@ export function PageHero({
   gold,
   sub,
   chips,
+  image,
+  parent,
 }: {
   label: string;
   title: string;
@@ -24,10 +29,31 @@ export function PageHero({
   sub?: string;
   /** petits attributs affichés sous le texte (ex. « 7 pôles », « Devis 48 h ») */
   chips?: string[];
+  /** visuel de fond (chemin public) — voiles sombres superposés */
+  image?: string;
+  /** page parente pour le fil d'Ariane (ex. Services → page de détail) */
+  parent?: { label: string; href: string };
 }) {
   const { t } = useI18n();
   return (
     <header className="relative overflow-hidden border-b border-line bg-[#0D0D0D] pt-28 pb-14 md:pt-36 md:pb-20">
+      {/* Visuel de fond + voiles sombres (lisibilité) */}
+      {image && (
+        <div aria-hidden className="absolute inset-0">
+          <Image
+            src={image}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center opacity-55"
+          />
+          {/* voile principal : bas → haut, garantit le contraste du texte */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/78 to-[#0A0A0A]/35" />
+          {/* voile latéral gauche : renforce la zone de texte */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A]/85 via-[#0A0A0A]/35 to-transparent" />
+        </div>
+      )}
       {/* halo radial discret, aucun texte décoratif en arrière-plan */}
       <div
         aria-hidden
@@ -46,6 +72,21 @@ export function PageHero({
                   {t("pages.home")}
                 </Link>
               </li>
+              {parent && (
+                <>
+                  <li aria-hidden>
+                    <ChevronRight size={12} strokeWidth={1.5} className="text-gold/60" />
+                  </li>
+                  <li>
+                    <Link
+                      href={parent.href}
+                      className="inline-flex min-h-[24px] items-center transition-colors hover:text-goldtext"
+                    >
+                      {parent.label}
+                    </Link>
+                  </li>
+                </>
+              )}
               <li aria-hidden>
                 <ChevronRight size={12} strokeWidth={1.5} className="text-gold/60" />
               </li>

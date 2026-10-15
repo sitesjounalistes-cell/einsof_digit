@@ -2,8 +2,6 @@
 
 import { Hero } from "@/components/site/Hero";
 import { StatsSection } from "@/components/site/StatsSection";
-import { JournalSection } from "@/components/site/JournalSection";
-import { HubGrid } from "@/components/pages/HubGrid";
 import { useI18n } from "@/lib/i18n";
 import { Reveal } from "@/components/motion";
 import { Container, GoldButton } from "@/components/site/kit";
@@ -11,8 +9,9 @@ import { ArrowRight } from "lucide-react";
 
 /**
  * Page d'accueil (hub) — architecture multi-pages :
- * hero, chiffres clés, cartes vers chaque page du site,
- * aperçu du journal et appel à l'action final.
+ * hero, chiffres clés et appel à l'action final.
+ * Chaque page du site (services, logiciels, tarifs, blog…) est
+ * atteinte via le menu de navigation — pas de grille de cartes ici.
  */
 export function HomePage() {
   const { t } = useI18n();
@@ -20,8 +19,6 @@ export function HomePage() {
     <>
       <Hero />
       <StatsSection />
-      <HubGrid />
-      <JournalSection />
 
       {/* Appel à l'action final */}
       <section className="relative overflow-hidden bg-bg py-20 md:py-28">

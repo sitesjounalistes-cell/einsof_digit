@@ -46,6 +46,7 @@ export function RealisationsPage() {
         gold={c.hero.gold}
         sub={c.hero.sub}
         chips={c.hero.chips}
+        image="/images/headers/header-realisations.png"
       />
 
       {/* Types de missions — descriptions génériques, aucun faux client */}

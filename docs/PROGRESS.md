@@ -81,3 +81,13 @@
 - **Base purgée de toute donnée de test** après vérification : 0 lead/réservation/e-mail/chat/consentement, 3 articles éditoriaux, 12 créneaux opérationnels
 - Sections re-masquées automatiquement après purge ; lint 0 erreur, tsc 0 erreur, dev.log sans erreur
 - Vérifications antérieures (14/10) : rendu sombre + clair, desktop/mobile, chatbot tarifs exacts §19, essai 201/409, contact 201/400, admin flux/CSV, Omnis, PWA
+
+## 🏗️ Passage multipage approfondi + carrousels + images (15/10/2026)
+- **Accueil** : suppression de la grille « Explorer le site » et de la section Journal — accueil = hero + chiffres + CTA ; le blog est accessible via le menu « Blog » (ex « Journal ») et sa page
+- **Carrousels défilants** : nouveau composant `ScrollCarousel` (défilement infini, pause au survol/focus, fondus de bords, fallback reduced-motion) — /services (7 pôles) et /logiciels (6 SaaS avec visuels)
+- **Pages de détail services** : `/services/{web,software,saas,community,acquisition,training,strategy}` — vue d'ensemble + points-clés (carte collante), inclus, méthode 4 étapes, pour qui, bande tarifaire du catalogue §19, CTA, liens vers les autres pôles (5 langues)
+- **Pages de détail SaaS** : `/logiciels/{factura-pro,gestion-comptable,gestion-hospitaliere,gestion-ecole,gestion-immobiliere,gestion-pharmacie}` — vidéo ¾ de largeur (affiche + badge « bientôt », iframe/MP4 prêts), présentation, 10 caractéristiques, pour qui + cas, forfaits catalogue (3 tiers hôpital, note école), CTA démo + essai 7 jours, mini-FAQ, autres logiciels (5 langues)
+- **Images** : 23 visuels générés (10 bandeaux de pages + 7 pôles + 6 SaaS), PageHero avec image de fond + voiles sombres sur TOUTES les pages
+- **Flux formulaires multi-pages** : démo / devis / essai lancés depuis n'importe quelle page → sessionStorage → /contact prérempli (sujet + message) ; fix Radix Select (sujet prérempli + crash SelectValue)
+- **Qualité** : tsc 0 erreur, lint 0 erreur, 15 routes 200, vérification Agent Browser desktop + mobile, console sans erreur
+- **En attente client** : URLs des vidéos produits (champ `videoUrl`), ressource FAQ pour restructurer la page

@@ -54,8 +54,36 @@ export function onNavigate(handler: (sectionId: string) => void) {
   return () => window.removeEventListener(NAVIGATE, fn);
 }
 
+const PENDING_FORM = "eins:open-form-pending";
+
 export function openForm(type: OpenFormType, prefill?: Record<string, string>) {
+  if (typeof window === "undefined") return;
+  /* Architecture multi-pages : le formulaire de contact vit sur /contact.
+     Depuis une autre page, on mémorise la demande puis on y navigue —
+     ContactSection consomme la demande au montage (préremplissage). */
+  if (window.location.pathname !== "/contact") {
+    try {
+      sessionStorage.setItem(PENDING_FORM, JSON.stringify({ type, prefill }));
+    } catch {
+      /* mode privé */
+    }
+    window.location.assign("/contact");
+    return;
+  }
   window.dispatchEvent(new CustomEvent(OPEN_FORM, { detail: { type, prefill } }));
+}
+
+/** Consomme une demande en attente (déposée par une autre page). */
+export function consumePendingForm(): { type: OpenFormType; prefill?: Record<string, string> } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(PENDING_FORM);
+    if (!raw) return null;
+    sessionStorage.removeItem(PENDING_FORM);
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 export function onOpenForm(

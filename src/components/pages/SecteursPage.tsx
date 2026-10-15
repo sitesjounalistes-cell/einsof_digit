@@ -49,6 +49,7 @@ export function SecteursPage() {
         gold={c.hero.gold}
         sub={c.hero.sub}
         chips={c.hero.chips}
+        image="/images/headers/header-secteurs.png"
       />
 
       {/* Ruban des 14 secteurs (section existante, réutilisée telle quelle) */}

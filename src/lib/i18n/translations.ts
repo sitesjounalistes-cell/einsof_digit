@@ -30,7 +30,7 @@ const fr = {
     pricing: "Tarifs",
     tarifs: "Tarifs",
     realisations: "Réalisations",
-    blog: "Journal",
+    blog: "Blog",
     faq: "FAQ",
     about: "À propos",
     "a-propos": "À propos",
@@ -66,6 +66,12 @@ const fr = {
     tGold: "tout votre digital.",
     sub: "Sept pôles d'expertise qui se complètent : un seul interlocuteur pour votre site, vos logiciels, vos réseaux sociaux et votre croissance.",
     cta: "Demander un devis",
+    discover: "Découvrir le pôle",
+    carouselHint: "Faites défiler — chaque carte ouvre la page détaillée du pôle.",
+    detail: {
+      factsLabel: "Points-clés",
+      otherServices: "Les autres pôles",
+    },
     items: {
       web: {
         name: "Sites web",
@@ -121,6 +127,9 @@ const fr = {
     book: "Réserver une démo",
     trial: "Essai gratuit de 7 jours",
     schoolNote: "9 mois payés par an — les 3 mois de vacances sont offerts.",
+    discover: "Découvrir le logiciel",
+    carouselHint: "Faites défiler — chaque carte ouvre la page détaillée du logiciel.",
+    videoSoonBadge: "Vidéo bientôt disponible",
     hospitalNote: "Trois forfaits selon la taille de votre établissement.",
     items: {
       factura: {
@@ -206,6 +215,7 @@ const fr = {
     sub: "Tous les montants sont en francs guinéens (GNF), tels que communiqués par l'agence. Les mentions « à partir de » et « sur devis » sont explicites.",
     tabs: { web: "Sites web", software: "Logiciels", saas: "SaaS" },
     fromLabel: "à partir de",
+    popularLabel: "Le plus choisi",
     quoteLabel: "Sur devis",
     perMonth: "/ mois",
     perYear: "/ an",
@@ -555,7 +565,7 @@ const en: Dict = {
     pricing: "Pricing",
     tarifs: "Pricing",
     realisations: "Work",
-    blog: "Journal",
+    blog: "Blog",
     faq: "FAQ",
     about: "About",
     "a-propos": "About",
@@ -591,6 +601,12 @@ const en: Dict = {
     tGold: "your entire digital world.",
     sub: "Seven complementary areas of expertise: a single point of contact for your website, software, social media and growth.",
     cta: "Request a quote",
+    discover: "Explore this service",
+    carouselHint: "Keep scrolling — each card opens the service's detail page.",
+    detail: {
+      factsLabel: "Key facts",
+      otherServices: "Other services",
+    },
     items: {
       web: {
         name: "Websites",
@@ -646,6 +662,9 @@ const en: Dict = {
     book: "Book a demo",
     trial: "Free 7-day trial",
     schoolNote: "9 months paid per year — the 3 months of holidays are free.",
+    discover: "Explore the software",
+    carouselHint: "Keep scrolling — each card opens the software's detail page.",
+    videoSoonBadge: "Video coming soon",
     hospitalNote: "Three plans depending on the size of your facility.",
     items: {
       factura: {
@@ -731,6 +750,7 @@ const en: Dict = {
     sub: "All amounts are in Guinean francs (GNF), exactly as communicated by the agency. “From” and “quote only” mentions are explicit.",
     tabs: { web: "Websites", software: "Software", saas: "SaaS" },
     fromLabel: "from",
+    popularLabel: "Most popular",
     quoteLabel: "Quote only",
     perMonth: "/ month",
     perYear: "/ year",
@@ -1071,7 +1091,7 @@ const es: Dict = {
     pricing: "Precios",
     tarifs: "Precios",
     realisations: "Realizaciones",
-    blog: "Diario",
+    blog: "Blog",
     faq: "FAQ",
     about: "Nosotros",
     "a-propos": "Nosotros",
@@ -1107,6 +1127,12 @@ const es: Dict = {
     tGold: "todo tu mundo digital.",
     sub: "Siete áreas de especialización que se complementan: un solo interlocutor para tu sitio web, tu software, tus redes sociales y tu crecimiento.",
     cta: "Solicitar un presupuesto",
+    discover: "Descubrir el servicio",
+    carouselHint: "Desliza — cada tarjeta abre la página detallada del servicio.",
+    detail: {
+      factsLabel: "Puntos clave",
+      otherServices: "Otros servicios",
+    },
     items: {
       web: {
         name: "Sitios web",
@@ -1162,6 +1188,9 @@ const es: Dict = {
     book: "Reservar una demo",
     trial: "Prueba gratuita de 7 días",
     schoolNote: "9 meses pagados al año — los 3 meses de vacaciones son gratuitos.",
+    discover: "Descubrir el software",
+    carouselHint: "Desliza — cada tarjeta abre la página detallada del software.",
+    videoSoonBadge: "Video próximamente",
     hospitalNote: "Tres planes según el tamaño de tu establecimiento.",
     items: {
       factura: {
@@ -1247,6 +1276,7 @@ const es: Dict = {
     sub: "Todos los importes están en francos guineanos (GNF), tal como los comunica la agencia. Las menciones « desde » y « a consultar » son explícitas.",
     tabs: { web: "Sitios web", software: "Software", saas: "SaaS" },
     fromLabel: "desde",
+    popularLabel: "El más elegido",
     quoteLabel: "A consultar",
     perMonth: "/ mes",
     perYear: "/ año",
@@ -1581,7 +1611,7 @@ const zh: Dict = {
     pricing: "价格",
     tarifs: "价格",
     realisations: "案例",
-    blog: "日志",
+    blog: "博客",
     faq: "常见问题",
     about: "关于我们",
     "a-propos": "关于我们",
@@ -1617,6 +1647,12 @@ const zh: Dict = {
     tGold: "您的整个数字世界。",
     sub: "七大互补的专业领域：网站、软件、社交媒体与增长，只需一个对接人。",
     cta: "索取报价",
+    discover: "了解该服务",
+    carouselHint: "滑动浏览——每张卡片都可打开该服务的详情页。",
+    detail: {
+      factsLabel: "要点",
+      otherServices: "其他服务",
+    },
     items: {
       web: {
         name: "网站",
@@ -1672,6 +1708,9 @@ const zh: Dict = {
     book: "预约演示",
     trial: "7天免费试用",
     schoolNote: "每年支付9个月——3个月假期免费。",
+    discover: "了解该软件",
+    carouselHint: "滑动浏览——每张卡片都可打开该软件的详情页。",
+    videoSoonBadge: "视频即将上线",
     hospitalNote: "根据机构规模提供三档套餐。",
     items: {
       factura: {
@@ -1757,6 +1796,7 @@ const zh: Dict = {
     sub: "所有金额均以几内亚法郎（GNF）计，与机构对外公布一致。“起价”与“按需报价”均有明确标注。",
     tabs: { web: "网站", software: "软件", saas: "SaaS" },
     fromLabel: "起价",
+    popularLabel: "最受欢迎",
     quoteLabel: "按需报价",
     perMonth: "/ 月",
     perYear: "/ 年",
@@ -2091,7 +2131,7 @@ const de: Dict = {
     pricing: "Preise",
     tarifs: "Preise",
     realisations: "Referenzen",
-    blog: "Journal",
+    blog: "Blog",
     faq: "FAQ",
     about: "Über uns",
     "a-propos": "Über uns",
@@ -2127,6 +2167,12 @@ const de: Dict = {
     tGold: "Ihre gesamte digitale Welt.",
     sub: "Sieben sich ergänzende Kompetenzbereiche: ein einziger Ansprechpartner für Ihre Website, Ihre Software, Ihre Social Media und Ihr Wachstum.",
     cta: "Angebot anfordern",
+    discover: "Service entdecken",
+    carouselHint: "Weiter scrollen — jede Karte öffnet die Detailseite des Service.",
+    detail: {
+      factsLabel: "Kernpunkte",
+      otherServices: "Weitere Leistungen",
+    },
     items: {
       web: {
         name: "Websites",
@@ -2182,6 +2228,9 @@ const de: Dict = {
     book: "Demo buchen",
     trial: "Kostenloser 7-Tage-Test",
     schoolNote: "9 Monate pro Jahr bezahlt — die 3 Ferienmonate sind gratis.",
+    discover: "Software entdecken",
+    carouselHint: "Weiter scrollen — jede Karte öffnet die Detailseite der Software.",
+    videoSoonBadge: "Video folgt in Kürze",
     hospitalNote: "Drei Tarife je nach Größe Ihrer Einrichtung.",
     items: {
       factura: {
@@ -2267,6 +2316,7 @@ const de: Dict = {
     sub: "Alle Beträge in guineischen Francs (GNF), exakt so, wie die Agentur sie mitteilt. Die Hinweise „ab“ und „auf Angebot“ sind ausdrücklich ausgewiesen.",
     tabs: { web: "Websites", software: "Software", saas: "SaaS" },
     fromLabel: "ab",
+    popularLabel: "Am beliebtesten",
     quoteLabel: "Auf Angebot",
     perMonth: "/ Monat",
     perYear: "/ Jahr",
