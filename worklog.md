@@ -421,3 +421,145 @@ Stage Summary:
 - Double garantie de lisibilité : dégradé par mot (CSS fiable) + force-reveal 4 s (JS) + branches lightMode complètes
 - Copy hero/about rafraîchie en 5 langues, alignée OpenGraph
 - Commit 3e31ef7 « fix(ui): texte or visible partout — dégradé posé mot par mot, fin des titres amputés »
+
+---
+Task ID: MP-1
+Agent: orchestrator (Z.ai Code)
+Task: Conversion monopage → multi-pages (demande client : chaque section devient une page dédiée)
+
+Work Log:
+- Créé src/lib/routes.ts — carte du site (11 pages) + SECTION_ROUTES (section → page/anchor pour le chatbot)
+- Créé src/lib/page-content.tsx — type Localized + hooks useLocalized/pickLocalized (contenu par page hors dictionnaire global)
+- Créé src/components/site/SiteShell.tsx + src/app/(site)/layout.tsx — coquille partagée : Navbar, Footer, chat, overlays RGPD/PWA/admin, rideau 1×/session, transition de page animée, handler de navigation inter-pages (router.push + scroll différé)
+- Nouvelle page d'accueil hub : src/app/(site)/page.tsx + src/components/pages/HomePage.tsx (Hero, Stats, HubGrid, Journal, CTA) — ancien src/app/page.tsx supprimé
+- Créé src/components/pages/HubGrid.tsx + src/lib/pages-content/hub.ts (10 cartes, 5 langues) + PageHero.tsx (fil d'Ariane + titre animé) + PageBlocks.tsx (CtaBanner, PageCrossLinks)
+- Navbar : navigation par routes (usePathname, 6 liens ≥ lg, 8 ≥ xl, tiroir 10 pages), Footer : liens vers les 10 pages, MobileActionBar : /logiciels#section-trial et /contact
+- chat-bus : navigateSmart ; chat-context : outil navigate → navigation inter-pages ; Hero/About : CTA → /contact ; translations.ts : clés nav.* (5 langues) + pages.home
+- Lint 0 erreur, tsc src 0 erreur, GET / 200
+
+Stage Summary:
+- Squelette multi-pages opérationnel : /, /services, /logiciels, /secteurs, /methode, /tarifs, /realisations, /blog, /a-propos, /faq, /contact à créer par les agents MP-2a..2d
+- Motif imposé aux agents : page.tsx (serveur, metadata) + composant client dans src/components/pages/ + contenu 5 langues dans src/lib/pages-content/
+
+---
+Task ID: MP-2c
+Agent: full-stack-developer
+Task: Pages /realisations, /a-propos et /contact (contenu détaillé 5 langues)
+
+Work Log:
+- Lecture du worklog (UI-FIX-1, UI-FIX-2, MP-1) : motif imposé page.tsx serveur + composant client + contenu 5 langues ; contraintes WordMask (dégradé or par mot, pas d'opacity:0 custom), pas d'invention de données
+- Créé src/lib/pages-content/realisations.ts — REALISATIONS (fr/en/es/zh/de) : hero « Références », 6 types de missions génériques (objectif + 3 livrables typiques, aucun faux client), CTA, liens croisés /services //blog //contact
+- Créé src/lib/pages-content/apropos.ts — APROPOS (5 langues) : hero « Sept ans d'expertise au service du numérique guinéen », 4 cartes « pourquoi EINSOF » (interlocuteur unique, deux promesses, équipe terrain multilingue/Conakry, prix clairs en GNF), CTA, liens croisés /realisations //faq //contact
+- Créé src/lib/pages-content/contact.ts — CONTACT (5 langues) : hero « 15 — Contact » (chips 24 h/48 h/horaires), 4 cartes « avant d'écrire » pointant vers /tarifs (3 formules), /logiciels (6 SaaS, essai 7 jours), /services (sur mesure dès 20 000 000 GNF — chiffre du catalogue), /faq ; sans CtaBanner (la page est le CTA)
+- Créé src/components/pages/RealisationsPage.tsx — PageHero + Section id="work-types" (Stagger, SpotlightCard/Beam/card-lift, puces livrables avec icônes lucide) + <ProjectsSection/> <PartnersSection/> <TestimonialsSection/> + CtaBanner + PageCrossLinks
+- Créé src/components/pages/AProposPage.tsx — PageHero + <StatsSection/> <AboutSection/> + Section id="why-us" (4 cartes Stagger) + <DocumentsSection/> + CtaBanner + PageCrossLinks
+- Créé src/components/pages/ContactPage.tsx — PageHero + <ContactSection/> + Section id="contact-help" (4 cartes, GoldButton outline) + PageCrossLinks ; navigation interne des cartes via router.push (next/navigation, même routage client que next/link) car GoldButton avec href rend un <a> natif
+- Créé les 3 routes serveur avec metadata (title « X — EINSOF » via NEXT_PUBLIC_BRAND_NAME, descriptions dédiées) : src/app/(site)/realisations/page.tsx, src/app/(site)/a-propos/page.tsx, src/app/(site)/contact/page.tsx
+- Séparation visuelle des sections surface adjacentes via className="border-b border-line" / "border-t border-line" (sections existantes non modifiées)
+- Vérifications : bunx tsc --noEmit → 0 erreur ; bun run lint → 0 erreur ; curl /realisations, /a-propos, /contact → 200 ; dev.log propre (compilation OK, aucune erreur runtime) ; contenu SSR contrôlé (titres, cartes, chiffres catalogue présents dans le HTML servi)
+
+Stage Summary:
+- 9 fichiers créés, 0 fichier existant modifié : /realisations, /a-propos et /contact complètes, localisées en 5 langues avec la même structure
+- Sections API réutilisées telles quelles (projets, partenaires, témoignages, chiffres, à propos, documents, contact) — elles se masquent si vides
+- Aucune donnée inventée : seuls types de missions génériques, faits du catalogue (20 000 000 GNF, 6 SaaS, essai 7 jours, 3 formules web) et délais officiels (24 h/48 h, Lun–Ven 8 h–18 h)
+- Animations uniquement via les primitives de components/motion (Reveal/Stagger/WordMask gérées par PageHero, SectionHeading, CtaBanner, PageBlocks) — aucun risque de texte invisible
+
+Rapport final :
+- Fichiers créés : src/lib/pages-content/{realisations,apropos,contact}.ts ; src/components/pages/{RealisationsPage,AProposPage,ContactPage}.tsx ; src/app/(site)/{realisations,a-propos,contact}/page.tsx
+- Correctifs partagés souhaités : (1) GoldButton avec href rend un <a> natif — navigation plein rechargement (utilisé aussi par CtaBanner/PageBlocks existants) ; envisager next/link dans kit.tsx ; (2) les libellés numérotés « 15 — Contact » coexistent dans mon PageHero et le SectionHeading interne de ContactSection (redondance de titre « Parlons de votre projet. » visible deux fois) — ne pouvant modifier ContactSection, je suis le motif imposé ; un prop `heading=false` sur ContactSection serait un plus ; (3) liens croisés vers /services, /blog, /faq, /tarifs, /logiciels : ces pages relèvent des autres agents MP-2 (routes encore inexistantes au moment de mon passage)
+- Points douteux : cartouche « travaille pour nos clients » des projets vides — ProjectsSection/PartnersSection/TestimonialsSection restent masquées tant que l'API est vide (comportement voulu, vérifié : rien d'affiché de faux)
+
+---
+Task ID: MP-2a
+Agent: full-stack-developer
+Task: Pages /services et /methode (contenu détaillé 5 langues)
+
+Work Log:
+- Lecture du worklog (UI-FIX-1, UI-FIX-2, MP-1) et des composants partagés (PageHero, PageBlocks, kit, motion, sections existantes) pour respecter le motif imposé
+- Créé src/lib/pages-content/services.ts — ServicesPageContent : heroChips, heading du détail, 7 pôles (mission, « inclus » en puces, « pour qui », badge soon, renvoi /logiciels pour le SaaS), CTA (« Un projet en tête ? / Parlons-en. ») et liens croisés (/logiciels, /tarifs, /methode) — 5 langues complètes (fr/en/es/zh/de, mêmes clés)
+- Créé src/components/pages/ServicesPage.tsx — PageHero (label/titre/or/sub du dictionnaire global services.*, chips du module localisé) + <ServicesSection/> + <PillarsSection/> + Section id="services-detail" (tone surface, grille lg:grid-cols-2, Stagger) avec une carte riche par pôle : icône (mêmes icônes Lucide que ServicesSection), numéro serif, mission, liste « inclus » (puces Check or), ligne « pour qui », GoldBadge « Bientôt » pulsé sur Stratégie, lien next/link vers /logiciels sur le SaaS + CtaBanner + PageCrossLinks
+- Créé src/app/(site)/services/page.tsx — composant serveur, metadata « Services — EINSOF » (BRAND via NEXT_PUBLIC_BRAND_NAME)
+- Créé src/lib/pages-content/methode.ts — MethodePageContent : heroChips (« Devis détaillé / Budget figé / Suivi inclus »), heading du détail, 5 étapes (numéro, « Ce que nous faisons », « Ce que vous recevez » en puces, durée indicative — omise pour l'étape 04, non fournie au cahier des charges), 2 garanties (« Sérénité garantie », « Des services qui vont plus loin »), CTA (« Prêt à démarrer ? / La première étape est un simple échange. »), liens croisés (/services, /realisations, /tarifs) — 5 langues complètes
+- Créé src/components/pages/MethodPage.tsx — PageHero (dictionnaire global process.*) + <ProcessSection/> + Section id="method-detail" (tone surface, liste verticale séparée par DrawRule, numéros 01–05 en gold-text-gradient sur l'élément lui-même — jamais background-clip sur un parent, conformément à UI-FIX-2, pilule durée avec icône Clock) + Section id="method-guarantees" (2 grandes cartes glass-panel, icônes ShieldCheck/Gem reprenant l'iconographie de PillarsSection) + CtaBanner + PageCrossLinks
+- Créé src/app/(site)/methode/page.tsx — composant serveur, metadata « Méthode — EINSOF »
+- Aucune animation custom : uniquement les primitives de components/motion (Reveal, Stagger/StaggerItem, PopIn, PulseGlow, Beam, DrawRule ; WordMask via PageHero/SectionHeading) — aucune opacity:0 maison, aucun filigrane, or limité aux numéros/puces/bordures/badges
+- Vérifications : bunx tsc --noEmit (hors examples/skills) → 0 erreur ; bun run lint → 0 erreur ; curl /services et /methode → 200 ; dev.log propre (compilation OK, aucune erreur runtime) ; contenu SSR contrôlé (chips, CTA, garanties, « Voir les six logiciels », durées présents dans le HTML servi)
+
+Stage Summary:
+- 6 fichiers créés, 0 fichier existant modifié : /services et /methode complètes, localisées en 5 langues avec la même structure de clés
+- Sections partagées réutilisées telles quelles (ServicesSection, PillarsSection, ProcessSection) : les pôles et la frise des étapes restent la source de vérité, mes nouveaux blocs n'ajoutent que le détail
+- Aucun fait inventé : contenu issu exclusivement du cahier des charges de la tâche et des textes existants (hub, services.*, process.*) ; durée indicative omise à l'étape 04 car non fournie
+- Navigation interne 100 % next/link (href) ; animations sûres en mode light (appareils faibles / prefers-reduced-motion)
+
+Rapport final :
+- Fichiers créés : src/lib/pages-content/services.ts ; src/lib/pages-content/methode.ts ; src/components/pages/ServicesPage.tsx ; src/components/pages/MethodPage.tsx ; src/app/(site)/services/page.tsx ; src/app/(site)/methode/page.tsx
+- Correctifs partagés souhaités : (1) GoldButton avec href rend un <a> natif (déjà signalé par MP-2d) — mes CTA passent par CtaBanner/PageBlocks qui l'utilisent, un next/link dans kit.tsx bénéficierait à toutes les pages ; (2) la classe utilitaire display-3 utilise clamp(1.5rem–2rem), j'ai préféré des titres h3 serif explicites (text-xl/2xl) pour les cartes — une variante display-4 plus petite serait utile pour uniformiser ; (3) Section préfixe les id avec « section- » (id="services-detail" → #section-services-detail) : cohérent avec le reste du site mais à connaître pour les ancres du chatbot (SECTION_ROUTES)
+- Points douteux : (1) « Durée indicative » absente à l'étape 04 Livraison (non fournie) — la pilule durée est masquée, champ optionnel prévu pour ça ; (2) le pôle Stratégie affiche sa mission avec une carte légèrement estompée (opacity-85, motif repris de ServicesSection) et sans liste « inclus » (rien de fourni) ; (3) les libellés hero des deux pages proviennent du dictionnaire global (services.*, process.*) tandis que le reste vient des modules pages-content — conformément au motif imposé, mais deux sources de vérité coexistent pour les mêmes textes d'en-tête
+
+---
+Task ID: MP-2d
+Agent: full-stack-developer
+Task: Pages /blog, /blog/[slug], /faq et /secteurs (contenu détaillé 5 langues)
+
+Work Log:
+- Lecture du worklog (UI-FIX-1, UI-FIX-2, MP-1), de la bibliothèque motion (WordMask v3, branches lightMode), de kit.tsx/PageHero/PageBlocks, de FaqSection/SectorsSection, de JournalSection (motif fetch /api/posts) et de src/lib/locale-json.ts (signature parseLocaleJson/pickLocale) avant d'écrire la moindre ligne
+- Créé src/lib/pages-content/blog.ts (BLOG : hero, listing avec libellés de chargement/état vide, 3 thèmes du journal, CTA, liens croisés), src/lib/pages-content/article.ts (ARTICLE : retour, lecture, lire aussi, introuvable, CTA), src/lib/pages-content/faq.ts (FAQ : hero + 6 Q/R détaillées 3-4 phrases, alignées sur les conditions réelles : délais prudent sans chiffre inventé, formation à la livraison, bugs gratuits + renouvellement 500 000 GNF, évolutivité site→logiciel, langues incluses, devis sous 24 h ouvrées), src/lib/pages-content/secteurs.ts (SECTEURS : 6 cartes « défis/réponse » avec réalité locale (connectivité variable, process papier, multi-sites) + les 14 secteurs officiels traduits en 5 langues — noms alignés sur sectors.items du dictionnaire) — fr détaillé, en/es/zh/de complets, même structure
+- Créé src/components/pages/BlogPage.tsx : PageHero (label « 14 — Journal »), Section blog-listing = grille complète des articles de la VRAIE base (fetch /api/posts au montage, même motif que JournalSection) avec la différence clé : chaque carte est un <Link href={/blog/[slug]}> (navigation, pas de Dialog) ; chargement = libellé Shimmer + 3 squelettes animate-pulse (aucun opacity:0 custom) ; état vide élégant (Reveal) « Le premier article arrive bientôt. » + GoldButton vers /contact ; Section blog-topics (tone surface) = 3 cartes SpotlightCard numérotées avec icônes lucide ; CtaBanner + PageCrossLinks
+- Créé src/app/(site)/blog/[slug]/page.tsx (SERVEUR, dynamic force-dynamic, getPost via db.blogPost + isPublished, generateMetadata depuis title/excerpt .fr via parseLocaleJson, notFound() sinon) + src/components/pages/ArticlePage.tsx (client) : bandeau fin retour ← Journal (next/link, cible 44 px), badge catégorie (tr journal.categories.*) + date Intl long (zh→zh-CN) + temps de lecture, H1 WordMask, extrait lead-text, corps en paragraphes split("\n\n") en Reveal progressif once (texte finit 100 % visible), DrawRule, « lire aussi » jusqu'à 2 autres articles (cartes Link), CtaBanner « Un projet ? Parlons-en. » ; Shimmer pendant le chargement, message + retour /blog si introuvable côté client (couvre le cas > 12 articles)
+- Créé src/components/pages/FaqPage.tsx : PageHero (label « 07 — FAQ »), FaqSection existante réutilisée telle quelle, Section faq-extra (tone surface, border-t) avec accordéon shadcn (type single collapsible) des 6 questions détaillées stylées thème (data-[state=open]:text-goldtext, chevron or), CtaBanner « Écrivez-nous » (secondaire /tarifs), PageCrossLinks (/tarifs, /logiciels, /methode)
+- Créé src/components/pages/SecteursPage.tsx : PageHero (label « 04 — Secteurs »), SectorsSection existante réutilisée telle quelle, Section sectors-detail (tone surface) = 6 cartes défis/réponse (Stagger, SpotlightCard, icônes lucide dédiées, puces à point or), Section sectors-all = les 14 secteurs en GoldBadge (Stagger 0.04, flex-wrap centré) + DrawRule, CtaBanner avec sub « Parlez-nous de votre métier » (secondaire /logiciels), PageCrossLinks (/logiciels, /services, /realisations)
+- Pages serveur créées avec metadata exportées : (site)/blog/page.tsx, (site)/blog/[slug]/page.tsx, (site)/faq/page.tsx, (site)/secteurs/page.tsx — motif MP-1 respecté (serveur mince + composant client + module pages-content)
+- Incidents : serveur dev absent du port 3000 en début de vérification (aucun processus) → relancé en arrière-plan (nohup bun run dev >> dev.log) pour mener les contrôles HTTP ; aucune réécriture de fichier existant, aucune clé translations.ts ajoutée, pas d'emoji, or en touches discrètes (badges, points, filets, bordures pâles)
+
+Stage Summary:
+- 4 pages livrées et fonctionnelles : /blog 200, /faq 200, /secteurs 200, /blog/[3 slugs réels] 200, /blog/slug-inexistant 404 (notFound serveur) ; metadata titre/description correctes (ex. « Combien coûte un site web en Guinée ? … — EINSOF »)
+- Le journal lit uniquement la vraie base (aucun article fabriqué) et la navigation article est désormais multipage (Link), complémentaire au Dialog de l'accueil ; état vide et squelettes prévus
+- tsc --noEmit : 0 erreur sur mes fichiers ; bun run lint : 0 erreur ; dev.log : compilations OK, aucune erreur runtime après mes curls
+- Rapport final : fichiers créés = src/lib/pages-content/{blog,article,faq,secteurs}.ts ; src/components/pages/{BlogPage,ArticlePage,FaqPage,SecteursPage}.tsx ; src/app/(site)/blog/page.tsx ; src/app/(site)/blog/[slug]/page.tsx ; src/app/(site)/faq/page.tsx ; src/app/(site)/secteurs/page.tsx. Correctifs partagés souhaités : (1) GoldButton avec href rend un <a> natif — le passer en next/link dans kit.tsx profiterait à tous les CTA des pages (CtaBanner/boutons d'état vide) ; (2) exposer une variante « card heading » serif standardisée (les agents MP-2 recréent chacun leurs titres h3 text-xl) ; (3) le label « 14 — Journal » du PageHero /blog contredit le journal.label « 10 — Journal » du dictionnaire (numérotation héritée de l'ancienne page unique) — harmoniser dans translations.ts serait bienvenu. Points douteux : (1) /api/posts renvoie max 12 articles triés par date : un 13e article serait absent du listing et de la recherche client de /blog/[slug] (couvert par l'état « introuvable » client, mais une API /api/posts/[slug] serait plus robuste) ; (2) les 14 noms de secteurs existent en double source (dictionnaire global + mon module 5 langues pour la page) — la source fait foi pour les ancres/ruban reste SectorsSection.
+
+---
+Task ID: MP-2b
+Agent: full-stack-developer
+Task: Pages /logiciels et /tarifs (contenu détaillé 5 langues, prix catalog)
+
+Work Log:
+- Lecture du worklog (UI-FIX-1, UI-FIX-2, MP-1), de kit.tsx, PageHero, PageBlocks, motion, catalog.ts, SaasSection/TrialSection/PricingSection et de pages-content/hub.ts (motif imposé respecté à la lettre)
+- Créé src/lib/pages-content/logiciels.ts — Localized<LogicielsContent> en fr/en/es/zh/de : hero (label « 03 — SaaS de gestion », chips essai/démo/support, sub = saas.sub), détail des 6 produits (public, 5 modules clés, « pour qui » détaillé), libellés de bloc (Modules clés / Pour qui ? / Trois forfaits), noms des 3 forfaits hospitaliers, note école « 9 mois payés par an — les 3 mois de vacances sont offerts », CTA « Pas encore sûr ? / Réservez une démo guidée. », liens croisés (/tarifs, /secteurs, /contact)
+- Créé src/components/pages/LogicielsPage.tsx ("use client") : PageHero > <SaasSection/> (existante) > Section id="saas-detail" tone="surface" (SectionHeading + grille 2 colonnes lg, Stagger/SpotlightCard/Beam ; chaque carte jointe au catalogue via findSaas(slug) : GoldBadge public, puces Check, encart « pour qui » bordé or, prix TOUJOURS rendus par PriceTag — hospitalier = 3 lignes Essentiel/Avancé/Complet avec les offres hosp-1/hosp-3/hosp-5, école = billableNote via offer.billableMonths=9) > <TrialSection/> (existante, garde id="trial") > CtaBanner (primaire /contact, secondaire /tarifs) > PageCrossLinks
+- Créé src/app/(site)/logiciels/page.tsx (composant serveur, metadata « Logiciels SaaS — EINSOF », rend <LogicielsPage/>)
+- Créé src/lib/pages-content/tarifs.ts — Localized<TarifsContent> 5 langues : hero (label « 06 — Tarifs », chips GNF / « à partir de » / renouvellement 500 000, sub = pricing.sub), détail « bien lire les prix » (3 cartes web + renouvellement + 2 cartes logiciels reliées à WEB_OFFERS/WEB_RENEWAL/SOFTWARE_OFFERS par id d'offre, libellé « Recommandé », « paiement unique » réutilisé du dictionnaire), mini-FAQ 4 Q/R (devis figé, renouvellement 500 000, paiement par jalons sans paiement en ligne, sur mesure dès 20 000 000), CTA « Un budget à cadrer ? / Demandez un devis détaillé. », liens croisés (/logiciels, /services, /faq)
+- Créé src/components/pages/TarifsPage.tsx ("use client") : PageHero > <PricingSection/> (existante, 3 onglets) > Section id="pricing-detail" tone="surface" (a) 3 cartes Sites web [vitrine 1 500 000 / tableau de bord 2 500 000 mis en avant avec GoldBadge « Recommandé » + Beam always / boutique 3 500 000, « paiement unique », footnote du PriceTag retirée car remplacée par la description riche] + encart renouvellement 500 000 GNF/an bordé or ; b) 2 cartes Logiciels [sur mesure dès 20 000 000, mobile sur devis] ; c) « Inclus dans chaque site » via tr("pricing.included.items") — 8 items Check ; d) « Conditions & clauses » via tr("pricing.notes.items") — 4 items, astérisques or) > Section id="pricing-faq" (accordéon shadcn/ui, 4 Q/R, Reveal, max-w-3xl) > CtaBanner (primaire /contact, secondaire /logiciels) > PageCrossLinks
+- Créé src/app/(site)/tarifs/page.tsx (composant serveur, metadata « Tarifs — EINSOF »)
+- Règle « aucun texte invisible » respectée : uniquement les primitives de components/motion (Reveal, Stagger/StaggerItem, Beam, SpotlightCard, DrawRule via SectionHeading) ; titres = SectionHeading/PageHero (WordMask v3) ; aucune animation custom opacity:0 écrite ; aucun emoji, aucun filigrane
+- Aucun fichier existant modifié (translations.ts, kit, sections, catalog, Navbar/Footer intacts) ; navigation interne déléguée aux composants partagés (next/link dans PageCrossLinks/PageHero)
+- Vérifications : bunx tsc --noEmit → 0 erreur ; bun run lint → 0 erreur ; GET /logiciels 200, GET /tarifs 200 ; dev.log propre (aucune erreur runtime)
+- Audit agent-browser (1440 px & 390 px, FR forcé via eins-lang) : 0 mot h1/h2 bloqué, sections saas/saas-detail/trial et pricing/pricing-detail/pricing-faq toutes présentes, montants exacts dans le DOM (1 000 000 / 3 000 000 / 5 000 000 / 100 000 / 7 000 000 / 500 000 / 1 500 000 / 2 500 000 / 3 500 000 / 20 000 000 GNF), accordéon FAQ s'ouvre (state=open, réponse opacity 1), pas de scroll horizontal mobile ; captures pleines page sauvegardées (/tmp/logiciels-desktop.png, /tmp/tarifs-desktop.png)
+
+Stage Summary:
+- /logiciels et /tarifs livrées et conformes au motif MP-1 : page.tsx serveur (metadata) + composant client + contenu localisé 5 langues complet
+- Zéro montant inventé : chaque prix provient de PriceTag alimenté par catalog.ts (jonction par slug produit / id d'offre) ; « à partir de » et « sur devis » hérités des clés pricing.* existantes
+- Réutilisation maximale du partagé : SaasSection, TrialSection, PricingSection, PageHero, CtaBanner, PageCrossLinks, kit (Section/Container/SectionHeading/PriceTag/GoldBadge), tr("pricing.included.items") et tr("pricing.notes.items") pour inclus/conditions — même texte que l'onglet tarifs en toutes langues
+- Le détail hôpital liste les 3 forfaits nommés (Essentiel 1 000 000 / Avancé 3 000 000 / Complet 5 000 000 GNF/mois) et l'école affiche la note 9 mois payés (4 500 000 GNF/an implicite via la clé existante)
+
+Rapport final :
+- Fichiers créés (6, aucun existant modifié) : src/app/(site)/logiciels/page.tsx, src/app/(site)/tarifs/page.tsx, src/components/pages/LogicielsPage.tsx, src/components/pages/TarifsPage.tsx, src/lib/pages-content/logiciels.ts, src/lib/pages-content/tarifs.ts
+- Correctifs partagés souhaités : aucun bloquant. (1) GoldButton (kit.tsx) rend un <a href> natif — la transition de page animée de SiteShell repose sur son interception globale ; si un jour les CTA doivent passer par router.push explicite, prévoir un GoldLink dans kit.tsx (hors périmètre MP-2b). (2) Les libellés d'offre de catalog.ts (PriceOffer.name, ex. « Forfait Essentiel ») sont en français uniquement — non affichés par PriceTag, donc invisible pour l'utilisateur ; si un autre agent doit afficher offer.name directement, envisager un jour une couche de traduction des noms d'offres. (3) SECTION_ROUTES ne référence pas les nouvelles ancres « saas-detail » et « pricing-detail »/« pricing-faq » (le chatbot peut toujours pointer vers les pages /logiciels et /tarifs, ce qui suffit) — à enrichir si on veut des liens profonds d'ancre.
+- Points douteux : (1) blip transient observé pendant un recompile du dev serveur (page /logiciels servie avec le contenu de /tarifs côté navigateur pendant ~10 s) — non reproductible après rechargement, probablement une course dev-server/HMR pendant les builds des autres agents ; à surveiller mais sans lien avec le code livré. (2) La page /logiciels porte le label « 03 — SaaS de gestion » (cohérent avec translations.saas.label) alors que le hub de la page d'accueil la numérote « 02 » (hub.ts) — incohérence préexistante entre hub.ts et le dictionnaire, non corrigée (fichiers interdits de modification), signalée pour décision.
+
+---
+Task ID: MP-3
+Agent: orchestrator (Z.ai Code)
+Task: Intégration multi-pages — correctifs partagés, robustesse d'affichage, vérification Agent Browser complète
+
+Work Log:
+- Pages livrées par les agents MP-2a..2d (toutes en 200) : /services, /methode, /logiciels, /tarifs, /realisations, /a-propos, /contact, /blog, /blog/[slug], /faq, /secteurs — contenu détaillé 5 langues, prix catalog exclusivement, navigation Link
+- Correctifs d'intégration : GoldButton href → next/link (SPA, fin des rechargements complets) ; prop `heading` ajoutée à 6 sections (Services/Process/Saas/Pricing/Faq/Sectors) + ContactSection pour dédoublonner PageHero/titre de section ; labels journal harmonisés « 10 — Journal » (5 langues) ; clé corrigée pricing.oneTime → common.oneTime (fuite de clé i18n sur /tarifs)
+- BUG CRITIQUE corrigé (préexistant) : MotionProvider — device via useSyncExternalStore sur store statique (emptySubscribe) ne se réappliquait jamais après hydratation → le mode léger auto ne s'activait pas sur appareils ≤ 4 cœurs (2 cœurs ici) → contenu invisible (screenshots noirs). Remplacé par useState + rAF post-montage
+- Page transition motion.main supprimée (risque de page entière à opacity 0 si rAF gelés) — les sections animent leur propre entrée ; CurtainIntro 1×/session conservé
+- Preuve par worktree (commit 3e31ef7) : erreurs d'hydratation Radix useId + warning Lenis PRÉEXISTANTS, non régressions
+- Vérifications Agent Browser (1440 px et 390 px, FR et EN) : 11 routes + article de blog = 200 ; navigation navbar/tiroir/footer ; FAQ accordéon (aria-expanded, réponse visible) ; onglets tarifs ; navigation inter-pages du chatbot (event → /tarifs#section-pricing) ; 0 débordement horizontal mobile ; footer collant au bas des pages courts et poussé sur les longs ; h1 uniques (dédoublonnés) ; 24 clés t() des pages validées contre le dictionnaire fr ; lint 0 erreur, tsc 0 erreur
+
+Stage Summary:
+- Site entièrement multipage : 11 pages dédiées détaillées + hub d'accueil, 5 langues complètes
+- Garantie de visibilité renforcée : plus aucun fondu global ; le mode léger auto fonctionne vraiment (filet de sécurité UI-FIX-1 opérationnel)
+- Commits : feat(site) backbone MP-1 + feat(site) pages MP-2/MP-3
