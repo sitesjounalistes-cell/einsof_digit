@@ -52,14 +52,16 @@
 .light {
   --font-serif: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
   --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
-  --bg: #faf8f3;
-  --surface: #ffffff;
-  --surface-2: #f1ede3;
-  --deep: #f0e8d5;
-  --line: #e4ddcc;
-  --ink: #111111;
-  --mute: #5e5a52;
-  --gold: #b8921f;
+  /* Ajustement client : le blanc pur est trop frappant —
+     palette « parchemin chaud », ivoire enrobant, jamais cru. */
+  --bg: #f1ebdd;
+  --surface: #faf6ec;
+  --surface-2: #e7dfcb;
+  --deep: #eae2cd;
+  --line: #d8cdb2;
+  --ink: #14130e;
+  --mute: #615c4e;
+  --gold: #a8841c;
   --gold-text: #7a5c0e;
   --gold-deep: #8a6a14;
   --gold-light: #e9d38a;
@@ -67,10 +69,10 @@
   --success: #1f7a33;
   --danger: #c62828;
   --gold-gradient: linear-gradient(135deg, #8a6a14 0%, #b8921f 40%, #e9d38a 55%, #b8921f 70%, #8a6a14 100%);
-  --shadow-lift: 0 20px 50px -25px rgba(0, 0, 0, 0.25);
+  --shadow-lift: 0 20px 50px -25px rgba(90, 74, 34, 0.35);
   --grain-opacity: 0.02;
   --vignette: none;
-  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg: rgba(250, 246, 236, 0.8);
   --glass-border: rgba(138, 106, 20, 0.22);
   --glow: none;
 
@@ -96,13 +98,15 @@
 
 /* ── Thème sombre (signature) ─────────────────────── */
 .dark {
-  --bg: #0a0a0a;
-  --surface: #121212;
-  --surface-2: #1a1a1a;
-  --deep: #0d0d0d;
-  --line: #2a2a2a;
+  /* Ajustement client : le noir absolu est trop dur —
+     obsidienne veloutée #151517, profond mais moins écrasant. */
+  --bg: #151517;
+  --surface: #1d1d20;
+  --surface-2: #26262a;
+  --deep: #1a1a1d;
+  --line: #34343a;
   --ink: #f5f2ea;
-  --mute: #a8a39a;
+  --mute: #b0aba1;
   --gold: #d4af37;
   --gold-text: #e2c25a;
   --gold-deep: #8a6a14;
@@ -112,9 +116,9 @@
   --danger: #e5484d;
   --gold-gradient: linear-gradient(135deg, #8a6a14 0%, #d4af37 40%, #f6e7a8 55%, #d4af37 70%, #8a6a14 100%);
   --shadow-lift: 0 20px 60px -20px rgba(212, 175, 55, 0.25);
-  --grain-opacity: 0.035;
-  --vignette: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.22) 100%);
-  --glass-bg: rgba(18, 18, 18, 0.6);
+  --grain-opacity: 0.03;
+  --vignette: radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, 0.16) 100%);
+  --glass-bg: rgba(29, 29, 32, 0.62);
   --glass-border: rgba(212, 175, 55, 0.18);
   --glow: 0 0 40px rgba(212, 175, 55, 0.25);
 
@@ -444,6 +448,24 @@
   }
 }
 
+/* ── Aperçu de site animé (Réalisations) ─────────────────
+   La capture pleine page défile dans une fenêtre de hauteur
+   fixe : 100cqh = hauteur de la fenêtre (container query). */
+.work-window {
+  container-type: size;
+}
+@keyframes work-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-100% + 100cqh));
+  }
+}
+.group:hover .work-scrollable {
+  animation: work-scroll 9s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+}
+
 /* Marquee */
 .marquee-track {
   display: flex;
@@ -595,6 +617,54 @@ html.reduce-motion * {
   html * {
     scroll-behavior: auto !important;
   }
+}
+
+/* ── Menus déroulants de la navigation (bandes Services / Logiciels) ── */
+.dropdown-panel {
+  animation: dropdown-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: top center;
+}
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+.dropdown-item {
+  animation: dropdown-item-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes dropdown-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Barre de progression des pastilles du carrousel (lecture auto) */
+.dot-progress {
+  transform-origin: left;
+  animation-name: dot-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes dot-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+[data-autopause="true"] .dot-progress {
+  animation-play-state: paused;
 }
 
 /* Toasts sombres premium */

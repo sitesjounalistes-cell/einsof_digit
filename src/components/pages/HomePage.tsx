@@ -2,6 +2,7 @@
 
 import { Hero } from "@/components/site/Hero";
 import { StatsSection } from "@/components/site/StatsSection";
+import { ClientLogosBand } from "@/components/site/ClientLogosBand";
 import { useI18n } from "@/lib/i18n";
 import { Reveal } from "@/components/motion";
 import { Container, GoldButton } from "@/components/site/kit";
@@ -18,6 +19,8 @@ export function HomePage() {
   return (
     <>
       <Hero />
+      {/* Bande déroulante des clients réalisés (preuve sociale immédiate) */}
+      <ClientLogosBand />
       <StatsSection />
 
       {/* Appel à l'action final */}

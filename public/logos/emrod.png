@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="EMROD SARL - Création artisanale de mobilier d'exception sur-mesure à Conakry. Menuiserie haut de gamme et aménagement intérieur en Guinée." />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <title>EMROD SARL | Artisanat d'Exception</title>
+    <script type="module" crossorigin src="/assets/index-rYH9k-Vb.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DlMqXKTZ.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

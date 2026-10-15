@@ -1,10 +1,13 @@
 "use client";
 
+import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Container } from "@/components/site/kit";
 import { DrawRule, Reveal, WordMask } from "@/components/motion";
+import { useMotionMode } from "@/components/providers";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -13,6 +16,9 @@ import { useI18n } from "@/lib/i18n";
  * mot à mot (dégradé or posé par mot — voir UI-FIX-2), sous-titre.
  * `image` : visuel de fond photographique (obscurci par deux voiles
  * dégradés — lisibilité du texte garantie, aucun texte décoratif).
+ * Le visuel est soumis à une parallaxe douce (il se décale moins
+ * vite que la page et zoome très légèrement) — désactivée en mode
+ * « animations réduites ».
  */
 export function PageHero({
   label,
@@ -35,19 +41,37 @@ export function PageHero({
   parent?: { label: string; href: string };
 }) {
   const { t } = useI18n();
+  const { lightMode } = useMotionMode();
+  const headerRef = useRef<HTMLElement>(null);
+  /* Parallaxe : le fond glisse de +70 px pendant que le header sort */
+  const { scrollYProgress } = useScroll({
+    target: headerRef,
+    offset: ["start start", "end start"],
+  });
+  const imgY = useTransform(scrollYProgress, [0, 1], [0, 70]);
+  const imgScale = useTransform(scrollYProgress, [0, 1], [1.04, 1.12]);
+
   return (
-    <header className="relative overflow-hidden border-b border-line bg-deep pt-28 pb-14 md:pt-36 md:pb-20">
+    <header
+      ref={headerRef}
+      className="relative overflow-hidden border-b border-line bg-deep pt-28 pb-14 md:pt-36 md:pb-20"
+    >
       {/* Visuel de fond + voiles (couleur du thème courant — lisibilité) */}
       {image && (
         <div aria-hidden className="absolute inset-0">
-          <Image
-            src={image}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center opacity-40 dark:opacity-55"
-          />
+          <motion.div
+            className="absolute inset-0"
+            style={lightMode ? undefined : { y: imgY, scale: imgScale }}
+          >
+            <Image
+              src={image}
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-center opacity-40 dark:opacity-55"
+            />
+          </motion.div>
           {/* voile principal : bas → haut, garantit le contraste du texte */}
           <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/80 to-bg/45" />
           {/* voile latéral gauche : renforce la zone de texte */}

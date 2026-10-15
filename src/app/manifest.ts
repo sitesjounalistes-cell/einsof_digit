@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "Sites web, logiciels sur mesure, SaaS de gestion, community management et acquisition client en Guinée.",
     start_url: "/",
     display: "standalone",
-    background_color: "#0A0A0A",
-    theme_color: "#0A0A0A",
+    background_color: "#151517",
+    theme_color: "#151517",
     lang: "fr",
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },

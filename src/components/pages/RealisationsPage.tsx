@@ -15,6 +15,7 @@ import { CtaBanner, PageCrossLinks } from "@/components/site/PageBlocks";
 import { Container, Section, SectionHeading } from "@/components/site/kit";
 import { PartnersSection } from "@/components/site/PartnersSection";
 import { ProjectsSection } from "@/components/site/ProjectsSection";
+import { WorksShowcase } from "@/components/site/WorksShowcase";
 import { TestimonialsSection } from "@/components/site/TestimonialsSection";
 import { Beam, SpotlightCard, Stagger, StaggerItem } from "@/components/motion";
 import { useLocalized } from "@/lib/page-content";
@@ -107,7 +108,10 @@ export function RealisationsPage() {
         </Container>
       </Section>
 
-      {/* Réalisations réelles (API — se masque si vide) */}
+      {/* Travaux réalisés — les 8 sites livrés, aperçu animé au survol */}
+      <WorksShowcase />
+
+      {/* Réalisations détaillées (API — se masque si vide) */}
       <ProjectsSection />
 
       {/* Partenaires (API — se masque si vide) */}

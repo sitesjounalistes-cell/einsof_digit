@@ -31,8 +31,10 @@ import { useMotionMode } from "@/components/providers";
  *   transition a du punch, rien de mou ;
  * - glisser-déposer 1:1 au pointeur avec « flick » : une impulsion
  *   rapide fait toujours avancer d'au moins une carte ;
- * - lecture automatique (pause au survol, au focus, pendant le
- *   glissement et onglet masqué ; temporisation après interaction) ;
+ * - lecture automatique en boucle (≈ 8 s par carte, pause au survol,
+ *   au focus, pendant le glissement et onglet masqué ; temporisation
+ *   après interaction) — la pastille active affiche une barre de
+ *   progression qui matérialise le tempo ;
  * - flèches, pastilles cliquables et clavier (←/→/Début/Fin).
  *
  * Comportement du clic : une carte latérale se centre d'abord ; la
@@ -141,7 +143,7 @@ export function CoverflowCarousel({
   items,
   renderItem,
   ariaLabel,
-  autoplayMs = 5000,
+  autoplayMs = 8000,
   viewportClassName = "h-[500px] sm:h-[540px]",
   className = "",
 }: {
@@ -149,7 +151,7 @@ export function CoverflowCarousel({
   /** contenu d'une carte ; `active` permet d'accentuer la carte centrale */
   renderItem: (item: CoverflowItem, state: { active: boolean; index: number }) => ReactNode;
   ariaLabel: string;
-  /** durée d'une étape de lecture automatique (0 = désactivée) */
+  /** durée d'une étape de lecture automatique, en boucle (0 = désactivée) */
   autoplayMs?: number;
   /** hauteur du rail 3D (les cartes remplissent la hauteur) */
   viewportClassName?: string;
@@ -160,6 +162,9 @@ export function CoverflowCarousel({
 
   const [index, setIndex] = useState(0);
   const indexRef = useRef(0);
+  /* cycle : redémarre la barre de progression à chaque changement
+     d'état qui influence le tempo (carte active, pause, lecture) */
+  const [cycle, setCycle] = useState(0);
   const pos = useMotionValue(0);
   const [step, setStep] = useState(300);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -189,6 +194,7 @@ export function CoverflowCarousel({
       indexRef.current = target;
       lastInteract.current = Date.now();
       setIndex(target);
+      setCycle((c) => c + 1);
       const from = pos.get();
       const dist = Math.abs(target - from);
       if (dist > 2.5) {
@@ -201,7 +207,10 @@ export function CoverflowCarousel({
     [n, pos]
   );
 
-  /* Lecture automatique — tempo humaine, pauses respectueuses */
+  /* Lecture automatique en boucle — ≈ 8 s par carte, pauses respectueuses.
+     La temporisation après interaction (3,6 s) ne bloque jamais un tempo
+     ≥ 5 s : la rotation reprend d'elle-même dès que l'utilisateur laisse
+     le carrousel tranquille. */
   useEffect(() => {
     if (lightMode || autoplayMs <= 0 || paused || n < 2) return;
     const id = window.setInterval(() => {
@@ -375,9 +384,16 @@ export function CoverflowCarousel({
       {/* Commandes : flèches + pastilles + compteur */}
       <div className="mt-7 flex items-center justify-center gap-5">
         <RailButton dir="prev" onClick={() => goTo(indexRef.current - 1)} disabled={index === 0} />
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5" data-autopause={paused ? "true" : undefined}>
           {items.map((it, i) => (
-            <Dot key={it.key} active={i === index} label={it.ariaLabel} onClick={() => goTo(i)} />
+            <Dot
+              key={it.key}
+              active={i === index}
+              label={it.ariaLabel}
+              onClick={() => goTo(i)}
+              progress={autoplayMs}
+              cycle={cycle}
+            />
           ))}
         </div>
         <RailButton dir="next" onClick={() => goTo(indexRef.current + 1)} disabled={index === n - 1} />
@@ -405,15 +421,23 @@ export function CoverflowCarousel({
   );
 }
 
-/* ── Pastille de pagination ───────────────────────────────────── */
+/* ── Pastille de pagination ─────────────────────────────────────
+   La pastille active porte une barre de progression qui matérialise
+   le tempo de la lecture automatique (redémarre à chaque cycle). */
 function Dot({
   active,
   label,
   onClick,
+  progress = 0,
+  cycle = 0,
 }: {
   active: boolean;
   label: string;
   onClick: () => void;
+  /** durée de la lecture automatique (0 = pas d'indicateur) */
+  progress?: number;
+  /** change à chaque cycle → redémarre l'animation de progression */
+  cycle?: number;
 }) {
   return (
     <button
@@ -423,13 +447,23 @@ function Dot({
       aria-current={active || undefined}
       className="group flex h-8 min-w-8 cursor-pointer items-center justify-center"
     >
-      <span
-        className={`block h-1.5 rounded-full transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-          active
-            ? "w-7 bg-gold shadow-[0_0_12px_rgba(212,175,55,0.5)]"
-            : "w-1.5 bg-line group-hover:w-3 group-hover:bg-gold/60"
-        }`}
-      />
+      {active && progress > 0 ? (
+        <span className="relative block h-1.5 w-7 overflow-hidden rounded-full bg-line">
+          <span
+            key={cycle}
+            className="dot-progress absolute inset-0 rounded-full bg-gold shadow-[0_0_12px_rgba(212,175,55,0.5)]"
+            style={{ animationDuration: `${progress}ms` }}
+          />
+        </span>
+      ) : (
+        <span
+          className={`block h-1.5 rounded-full transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            active
+              ? "w-7 bg-gold shadow-[0_0_12px_rgba(212,175,55,0.5)]"
+              : "w-1.5 bg-line group-hover:w-3 group-hover:bg-gold/60"
+          }`}
+        />
+      )}
     </button>
   );
 }

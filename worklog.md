@@ -683,3 +683,24 @@ Stage Summary:
 - Carrousels Services/SaaS = coverflow punchy à emphase centrale, interaction riche (drag/flick/autoplay/clavier), navigation conservée vers les pages de détail
 - Thème clair désormais cohérent de bout en bout (bandes profondes ivoire, voiles adaptés) ; sombre inchangé visuellement
 - En attente client : URLs vidéos produits, ressource FAQ ; blog à approfondir ensuite
+
+---
+Task ID: 14
+Agent: orchestrator (Z.ai Code)
+Task: itération 15 — rotation auto carrousels (8 s, boucle), menus déroulants Services/Logiciels, réalisations client (8 sites réels + aperçu animé), bande logos d'accueil, FAQ catégorisée (questions propriété), adoucissement des deux thèmes, animations supplémentaires.
+
+Work Log:
+- Carrousel coverflow : autoplay passé à 8 s (boucle infinie), barre de progression sur la pastille active (key=cycle, pause data-autopause), hints i18n mis à jour (5 langues).
+- Navbar : NavDropdown desktop (survol intention + clic, Échap, clic extérieur, animation CSS dropdown-in, cascade items) pour Services (7 pôles) et Logiciels (6 produits) ; tiroir mobile : chevrons dépliants avec CollapseMotion + liens de sous-listes (inert quand replié) ; fermeture via reset pendant le rendu (pattern React, plus d'useEffect setState).
+- Réalisations : works.ts (8 sites réels fournis par le client, titres/méta du web, secteurs, 5 langues) ; WorksShowcase avec fenêtre « navigateur » (chrome + domaine) et aperçu animé au survol (capture pleine page qui défile — container query 100cqh, keyframes work-scroll) ; captis/ecometus/interseas/emrod/referencemedia/fmk224/topguinee/samoumedia.
+- Médias : 8 captures pleine page via agent-browser (1280→1100 px, JPEG q82), 6 logos téléchargés (captis.svg, ecometus.png, referencemedia.png, fmk224.png, topguinee.png, samoumedia.jpg) ; 2 sites sans logo → texte serif.
+- Accueil : ClientLogosBand (marquee CSS -50 %, pause survol, logos grayscale → couleur ; dark : monochrome blanc brightness-0/invert, couleur au survol) placé entre Hero et Stats.
+- FAQ : faq.ts réécrit — 6 thèmes × 20 questions × 5 langues ; 4 questions « propriété » du client insérées mot pour mot (fr) ; +4 questions factuelles (frais cachés, suivi projet, mobile, renouvellement) ; FaqPage avec chips d'ancres sticky + accordéons par thème.
+- Thèmes : clair « parchemin chaud » (#f1ebdd bg, surface #faf6ec, plus de blanc cru) ; sombre « obsidienne veloutée » (#151517, surfaces #1d1d20/#26262a, lignes #34343a) ; theme-color/manifest alignés ; ombres/vitres adaptées.
+- Animations : PageHero parallaxe (y 0→70 px + scale 1.04→1.12, désactivée en mode réduit) ; pas de fondu sur <main> (leçon archivée dans SiteShell respectée).
+- i18n : nav.allServices/allLogiciels/submenu, works.*, clients.* ×5 langues ; carouselHint ×2 ×5.
+- Vérification agent-browser : autoplay 01→03 visible, dropdowns desktop OK (dark+light), tiroir mobile OK, aperçu défilant OK, FAQ accordéons OK, thèmes OK ; lint vert ; dev.log sans erreur.
+
+Stage Summary:
+- Conformité client : rotation auto 7–10 s en boucle ✓, bandes déroulantes Services/Logiciels dans le menu (desktop + mobile) ✓, page Réalisations avec les 8 sites et aperçu animé au survol ✓, bande logos sur l'accueil ✓, FAQ catégorisée avec les 4 questions propriété ✓, thèmes moins criards (clair ivoire chaud, sombre obsidienne adoucie) ✓, animations renforcées ✓.
+- En attente client : blog « section article » approfondi (contenus à venir), logos manquants interseas/emrod si fournis, resources FAQ/insight supplémentaires.

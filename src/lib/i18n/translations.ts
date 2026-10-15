@@ -40,6 +40,9 @@ const fr = {
     menuClose: "Fermer le menu",
     langLabel: "Langue",
     themeLabel: "Thème",
+    allServices: "Tous nos services",
+    allLogiciels: "Tous les logiciels",
+    submenu: "Afficher la liste",
   },
   hero: {
     morning: "Bonjour",
@@ -67,7 +70,7 @@ const fr = {
     sub: "Sept pôles d'expertise qui se complètent : un seul interlocuteur pour votre site, vos logiciels, vos réseaux sociaux et votre croissance.",
     cta: "Demander un devis",
     discover: "Découvrir le pôle",
-    carouselHint: "Glissez, utilisez les flèches — un clic sur la carte centrale ouvre la page détaillée du pôle.",
+    carouselHint: "Défilement automatique toutes les 8 secondes — glissez, utilisez les flèches ; un clic sur la carte centrale ouvre la page détaillée du pôle.",
     detail: {
       factsLabel: "Points-clés",
       otherServices: "Les autres pôles",
@@ -128,7 +131,7 @@ const fr = {
     trial: "Essai gratuit de 7 jours",
     schoolNote: "9 mois payés par an — les 3 mois de vacances sont offerts.",
     discover: "Découvrir le logiciel",
-    carouselHint: "Glissez, utilisez les flèches — un clic sur la carte centrale ouvre la page détaillée du logiciel.",
+    carouselHint: "Défilement automatique toutes les 8 secondes — glissez, utilisez les flèches ; un clic sur la carte centrale ouvre la page détaillée du logiciel.",
     videoSoonBadge: "Vidéo bientôt disponible",
     hospitalNote: "Trois forfaits selon la taille de votre établissement.",
     items: {
@@ -307,6 +310,19 @@ const fr = {
     cta: "Travailler avec nous",
     ctaSub: "Parlons de votre projet dès aujourd'hui.",
     teamNote: "Présentation détaillée de l'équipe à venir.",
+  },
+  works: {
+    label: "Travaux réalisés",
+    title: "Des sites en ligne,",
+    tGold: "des clients satisfaits.",
+    sub: "Huit sites livrés et toujours en activité. Survolez une carte : l'aperçu du site défile sous vos yeux, comme si vous naviguiez en direct.",
+    visit: "Visiter le site",
+    preview: "Aperçu en direct",
+    hint: "Survolez une carte pour voir le site défiler — un clic ouvre le site dans un nouvel onglet.",
+  },
+  clients: {
+    label: "Ils nous font confiance",
+    cta: "Voir nos réalisations",
   },
   projects: {
     label: "09 — Réalisations",
@@ -575,6 +591,9 @@ const en: Dict = {
     menuClose: "Close menu",
     langLabel: "Language",
     themeLabel: "Theme",
+    allServices: "All our services",
+    allLogiciels: "All the software",
+    submenu: "Show the list",
   },
   hero: {
     morning: "Good morning",
@@ -602,7 +621,7 @@ const en: Dict = {
     sub: "Seven complementary areas of expertise: a single point of contact for your website, software, social media and growth.",
     cta: "Request a quote",
     discover: "Explore this service",
-    carouselHint: "Drag, use the arrows — clicking the centre card opens the service's detail page.",
+    carouselHint: "Auto-advancing every 8 seconds — drag, use the arrows; clicking the centre card opens the service's detail page.",
     detail: {
       factsLabel: "Key facts",
       otherServices: "Other services",
@@ -663,7 +682,7 @@ const en: Dict = {
     trial: "Free 7-day trial",
     schoolNote: "9 months paid per year — the 3 months of holidays are free.",
     discover: "Explore the software",
-    carouselHint: "Drag, use the arrows — clicking the centre card opens the software's detail page.",
+    carouselHint: "Auto-advancing every 8 seconds — drag, use the arrows; clicking the centre card opens the software's detail page.",
     videoSoonBadge: "Video coming soon",
     hospitalNote: "Three plans depending on the size of your facility.",
     items: {
@@ -842,6 +861,19 @@ const en: Dict = {
     cta: "Work with us",
     ctaSub: "Let's talk about your project today.",
     teamNote: "Detailed team presentation coming soon.",
+  },
+  works: {
+    label: "Delivered works",
+    title: "Live websites,",
+    tGold: "satisfied clients.",
+    sub: "Eight websites delivered and still running today. Hover over a card: the site preview scrolls before your eyes, as if you were browsing it live.",
+    visit: "Visit the website",
+    preview: "Live preview",
+    hint: "Hover over a card to see the site scroll — one click opens it in a new tab.",
+  },
+  clients: {
+    label: "They trust us",
+    cta: "See our work",
   },
   projects: {
     label: "09 — Portfolio",
@@ -1101,6 +1133,9 @@ const es: Dict = {
     menuClose: "Cerrar menú",
     langLabel: "Idioma",
     themeLabel: "Tema",
+    allServices: "Todos nuestros servicios",
+    allLogiciels: "Todos los software",
+    submenu: "Mostrar la lista",
   },
   hero: {
     morning: "Buenos días",
@@ -1128,7 +1163,7 @@ const es: Dict = {
     sub: "Siete áreas de especialización que se complementan: un solo interlocutor para tu sitio web, tu software, tus redes sociales y tu crecimiento.",
     cta: "Solicitar un presupuesto",
     discover: "Descubrir el servicio",
-    carouselHint: "Desliza o usa las flechas — un clic en la tarjeta central abre la página detallada del servicio.",
+    carouselHint: "Avance automático cada 8 segundos — desliza o usa las flechas; un clic en la tarjeta central abre la página detallada del servicio.",
     detail: {
       factsLabel: "Puntos clave",
       otherServices: "Otros servicios",
@@ -1189,7 +1224,7 @@ const es: Dict = {
     trial: "Prueba gratuita de 7 días",
     schoolNote: "9 meses pagados al año — los 3 meses de vacaciones son gratuitos.",
     discover: "Descubrir el software",
-    carouselHint: "Desliza o usa las flechas — un clic en la tarjeta central abre la página detallada del software.",
+    carouselHint: "Avance automático cada 8 segundos — desliza o usa las flechas; un clic en la tarjeta central abre la página detallada del software.",
     videoSoonBadge: "Video próximamente",
     hospitalNote: "Tres planes según el tamaño de tu establecimiento.",
     items: {
@@ -1368,6 +1403,19 @@ const es: Dict = {
     cta: "Trabajar con nosotros",
     ctaSub: "Hablemos de tu proyecto hoy mismo.",
     teamNote: "Presentación detallada del equipo próximamente.",
+  },
+  works: {
+    label: "Trabajos realizados",
+    title: "Sitios en línea,",
+    tGold: "clientes satisfechos.",
+    sub: "Ocho sitios entregados y siempre activos. Pase el cursor sobre una tarjeta: la vista previa del sitio se desplaza ante sus ojos, como si navegara en directo.",
+    visit: "Visitar el sitio",
+    preview: "Vista en directo",
+    hint: "Pase el cursor sobre una tarjeta para ver el sitio desplazarse — un clic lo abre en una nueva pestaña.",
+  },
+  clients: {
+    label: "Confían en nosotros",
+    cta: "Ver nuestras realizaciones",
   },
   projects: {
     label: "09 — Realizaciones",
@@ -1621,6 +1669,9 @@ const zh: Dict = {
     menuClose: "关闭菜单",
     langLabel: "语言",
     themeLabel: "主题",
+    allServices: "全部服务",
+    allLogiciels: "全部软件",
+    submenu: "展开列表",
   },
   hero: {
     morning: "早上好",
@@ -1648,7 +1699,7 @@ const zh: Dict = {
     sub: "七大互补的专业领域：网站、软件、社交媒体与增长，只需一个对接人。",
     cta: "索取报价",
     discover: "了解该服务",
-    carouselHint: "拖动或使用箭头——点击中间卡片即可打开该服务的详情页。",
+    carouselHint: "每 8 秒自动切换——可拖动或使用箭头；点击中间卡片即可打开该服务的详情页。",
     detail: {
       factsLabel: "要点",
       otherServices: "其他服务",
@@ -1709,7 +1760,7 @@ const zh: Dict = {
     trial: "7天免费试用",
     schoolNote: "每年支付9个月——3个月假期免费。",
     discover: "了解该软件",
-    carouselHint: "拖动或使用箭头——点击中间卡片即可打开该软件的详情页。",
+    carouselHint: "每 8 秒自动切换——可拖动或使用箭头；点击中间卡片即可打开该软件的详情页。",
     videoSoonBadge: "视频即将上线",
     hospitalNote: "根据机构规模提供三档套餐。",
     items: {
@@ -1888,6 +1939,19 @@ const zh: Dict = {
     cta: "与我们合作",
     ctaSub: "今天就谈谈您的项目。",
     teamNote: "团队详细介绍即将上线。",
+  },
+  works: {
+    label: "已交付的作品",
+    title: "在线运行的网站，",
+    tGold: "满意的客户。",
+    sub: "八个已交付且至今仍在运行的网站。将鼠标悬停在卡片上：网站预览会在您眼前滚动，就像实时浏览一样。",
+    visit: "访问网站",
+    preview: "实时预览",
+    hint: "将鼠标悬停在卡片上即可查看网站滚动——点击即可在新标签页打开。",
+  },
+  clients: {
+    label: "他们信任我们",
+    cta: "查看我们的案例",
   },
   projects: {
     label: "09 — 案例",
@@ -2141,6 +2205,9 @@ const de: Dict = {
     menuClose: "Menü schließen",
     langLabel: "Sprache",
     themeLabel: "Design",
+    allServices: "Alle unsere Services",
+    allLogiciels: "Alle Softwareprodukte",
+    submenu: "Liste anzeigen",
   },
   hero: {
     morning: "Guten Morgen",
@@ -2168,7 +2235,7 @@ const de: Dict = {
     sub: "Sieben sich ergänzende Kompetenzbereiche: ein einziger Ansprechpartner für Ihre Website, Ihre Software, Ihre Social Media und Ihr Wachstum.",
     cta: "Angebot anfordern",
     discover: "Service entdecken",
-    carouselHint: "Ziehen oder Pfeile nutzen — ein Klick auf die mittlere Karte öffnet die Detailseite des Service.",
+    carouselHint: "Alle 8 Sekunden automatische Weitergabe — ziehen oder Pfeile nutzen; ein Klick auf die mittlere Karte öffnet die Detailseite des Service.",
     detail: {
       factsLabel: "Kernpunkte",
       otherServices: "Weitere Leistungen",
@@ -2229,7 +2296,7 @@ const de: Dict = {
     trial: "Kostenloser 7-Tage-Test",
     schoolNote: "9 Monate pro Jahr bezahlt — die 3 Ferienmonate sind gratis.",
     discover: "Software entdecken",
-    carouselHint: "Ziehen oder Pfeile nutzen — ein Klick auf die mittlere Karte öffnet die Detailseite der Software.",
+    carouselHint: "Alle 8 Sekunden automatische Weitergabe — ziehen oder Pfeile nutzen; ein Klick auf die mittlere Karte öffnet die Detailseite der Software.",
     videoSoonBadge: "Video folgt in Kürze",
     hospitalNote: "Drei Tarife je nach Größe Ihrer Einrichtung.",
     items: {
@@ -2408,6 +2475,19 @@ const de: Dict = {
     cta: "Mit uns arbeiten",
     ctaSub: "Sprechen wir heute über Ihr Projekt.",
     teamNote: "Detaillierte Teampräsentation folgt in Kürze.",
+  },
+  works: {
+    label: "Gelieferte Arbeiten",
+    title: "Websites online,",
+    tGold: "zufriedene Kunden.",
+    sub: "Acht ausgelieferte Websites, die heute noch laufen. Fahren Sie über eine Karte: Die Vorschau der Website scrollt vor Ihren Augen, als würden Sie live surfen.",
+    visit: "Website besuchen",
+    preview: "Live-Vorschau",
+    hint: "Fahren Sie über eine Karte, um die Website scrollen zu sehen — ein Klick öffnet sie in einem neuen Tab.",
+  },
+  clients: {
+    label: "Sie vertrauen uns",
+    cta: "Unsere Arbeiten ansehen",
   },
   projects: {
     label: "09 — Referenzen",
