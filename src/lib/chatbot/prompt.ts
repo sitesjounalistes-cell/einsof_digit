@@ -14,11 +14,48 @@
  */
 
 import { BRAND } from "@/lib/brand";
-import { SAAS_PRODUCTS } from "@/lib/catalog";
+import {
+  SAAS_PRODUCTS,
+  WEB_OFFERS,
+  WEB_RENEWAL,
+  SOFTWARE_OFFERS,
+  formatGNF,
+} from "@/lib/catalog";
 import { siteRoutesForPrompt } from "./site-routes";
 import { siteContextBlock } from "./site-index";
 
 export const saasList = SAAS_PRODUCTS.map((s) => `"${s.slug}"`).join(", ");
+
+/* PRIX OFFICIELS — générés depuis le catalogue (§19), TOUJOURS présents
+ * dans le prompt système (indépendamment de la récupération RAG).
+ * Contre-mesure à la dérive constatée : le modèle citait un montant
+ * inventé (5 000 000 GNF) sur une question courte EN. */
+function officialPricesBlock(): string {
+  const web = WEB_OFFERS.map(
+    (o) => `${o.name} ${o.amount !== null ? formatGNF(o.amount) : "sur devis"}`
+  ).join(" · ");
+  const webRenewal = `Renouvellement annuel du site (domaine + hébergement) ${formatGNF(WEB_RENEWAL.amount ?? 0)}/an`;
+  const soft = SOFTWARE_OFFERS.map((o) =>
+    o.amount !== null
+      ? `${o.name} à partir de ${formatGNF(o.amount)}`
+      : `${o.name} : tarif en cours de définition (sur devis)`
+  ).join(" · ");
+  const saas = SAAS_PRODUCTS.map((p) => {
+    const lines = p.offers
+      .map((o) =>
+        o.period === "month"
+          ? `${o.name} ${o.isFrom ? "à partir de " : ""}${o.amount !== null ? formatGNF(o.amount) : "sur devis"}/mois`
+          : `${o.name} ${o.amount !== null ? formatGNF(o.amount) : "sur devis"}`
+      )
+      .join(", ");
+    return `${p.name} : ${lines}`;
+  }).join(" · ");
+  return `PRIX OFFICIELS — CE SONT LES SEULS MONTANTS AUTORISÉS. N'invente AUCUN autre chiffre ; si le visiteur demande un prix absent de cette liste, dis que c'est sur devis.
+- Sites web : ${web}.
+- ${webRenewal}.
+- Logiciels : ${soft}.
+- SaaS : ${saas}. Essai gratuit 7 jours sur chaque SaaS.`;
+}
 
 export function buildSystemPrompt(locale: string, currentPath: string, userMessage: string): string {
   const context = siteContextBlock(userMessage);
@@ -60,6 +97,7 @@ N'écris JAMAIS l'action en texte libre. Outils :
 - switch_locale {locale:"fr"|"en"|"es"|"zh"|"de"} : change la langue du site.
 - switch_theme {theme:"dark"|"light"} : change le thème.
 Le visiteur consulte actuellement : "${currentPath}".
+${officialPricesBlock()}
 ${context ? `\n${context}\n` : ""}
 BASE DE CONNAISSANCES :
 - Pôles : sites web, logiciels sur mesure et applications mobiles, SaaS de gestion, community management, acquisition client, formations. Stratégie d'entreprise : offre à venir.

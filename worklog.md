@@ -767,3 +767,24 @@ Stage Summary:
 - Latence : la vraie cause était la CLÉ ABSENTE du .env ; rétablie + chaîne de modèles re-mesurée (llama-3.3-70b 0,6 s) → TTFB 0,6-2,8 s en streaming réel, réponses complètes en 1,4-6,5 s, repli z-ai accéléré en ceinture de sécurité.
 - Omnis : capsule haute « site visible » + navigation temps réel + question clavier/voix — conforme à la demande (« lui poser des questions, lui va naviguer directement sur l'interface et réagir en temps réel »).
 - À surveiller : la clé OpenRouter doit rester dans .env (elle avait disparu du sandbox) ; OPENROUTER_MODEL optionnel pour surcharger la chaîne.
+
+---
+Task ID: 18
+Agent: Z.ai Code (principal)
+Task: Suite continuation — (1) erreur d'hydratation /tarifs (radix-_R_…) : reproduction, cause racine côté environnement client et durcissement ; (2) re-vérification latence chatbot ; (3) re-vérification Omnis « site visible » + navigation temps réel ; (4) garde-fous prix anti-hallucination.
+
+Work Log:
+- HYDRATATION — diagnostic : ni le code ni le SSR ne divergent (curl SSR ids = DOM hydraté, identiques : radix-_R_2iinebmmitplb_…). Matrice Playwright (scripts/hydration-check.mjs) : desktop / mobile-390 / reduced-motion / mobile-reduced × 2 passes + clics Tabs & Accordion → 8/8 OK, 0 erreur d'hydratation. La divergence constatée chez le client (arbre client avec un fork de MOINS près de la racine) correspond à un HTML/JS de compiles DIFFÉRENTES : causes d'environnement identifiées et corrigées :
+  1. sw.js : caches.put("/", copy) pour TOUTES les navigations — en cas d'échec réseau passager (redémarrage du serveur de dev, hoquet passerelle), le SW répondait à /tarifs avec le HTML périmé d'une AUTRE page (l'accueil d'une compile antérieure) → hydratation systématiquement divergente. Correctif : cache SO URL PROPRE, uniquement réponses 200 text/html, repli hors ligne seulement si l'URL demandée a été visitée, version bump einsof-v2 (purge auto des anciens caches à l'activate).
+  2. RegisterSW.tsx : SW DÉSACTIVÉ en développement (le SW en dev = HTML précaché périmé pendant que le JS neuf s'exécute) + purge au montage des enregistrements résiduels et des caches einsof-* (les sessions précédentes du client sont nettoyées à la prochaine visite).
+  3. next.config.ts : allowedDevOrigins ["*.space-z.ai", "preview-chat-*.space-z.ai"] — l'aperçu (iframe depuis la passerelle) frappait /_next/* en cross-origin (warning Next 16 / risque de blocage d'assets).
+- LATENCE CHAT — re-vérifiée en direct (bench SSE /api/chat/message, contrat réel) : « tarifs site vitrine » premier token 1,23 s / total 5,3 s, réponse exacte (1 500 000 GNF) + action navigate /tarifs ; « Bonjour » 1,6 s / 1,8 s ; EN 0,62-1,95 s. Chaîne llama-3.3-70b → mistral-small → deepseek-flash opérationnelle.
+- ANTI-HALLUCINATION PRIX (nouveau garde-fou) : constaté en bench EN — le modèle citait 5 000 000 GNF (montant INVENTÉ) pour le site vitrine. Correctif : bloc « PRIX OFFICIELS — SEULS MONTANTS AUTORISÉS » généré DEPUIS le catalogue (§19) et injecté DANS le prompt système (indépendant du RAG) : web 1,5/2,5/3,5 M GNF, renouvellement 500 000/an, logiciel dès 20 M, SaaS détaillés. Re-test EN+FR : 1 500 000 GNF cité des deux langues.
+- OMNIS — re-vérifié E2E navigateur : capsule top-centre, site 100 % visible derrière (screenshot desktop + mobile 390 px) ; question clavier « Amène-moi sur la page réalisations » depuis le champ intégré → URL /realisations en direct, page visible SOUS la capsule, état « One moment… », 0 marqueur d'action affiché. Chat texte : question EN → réponse EN + navigation /tarifs en direct + prix exact.
+- QA finale : lint 0 erreur ; tsc 0 erreur dans src/ ; footer collé au bas (docH == footerBottom, aucun flottement) ; balayage console multi-routes : 0 erreur persistante ; dev.log propre.
+
+Stage Summary:
+- L'erreur d'hydratation radix-_R_… est doublement traitée : (a) code déjà immunisé (itération 17, même référence motion.* dans les deux modes), (b) causes d'environnement ELIMINÉES — le service worker ne peut plus servir un HTML d'une autre page/compile, il est désactivé en dev avec purge des résidus, et l'origine de l'aperçu est autorisée pour les assets de dev. 8/8 passes de la matrice d'hydratation OK.
+- Chatbot : premier token 0,6-2 s en streaming réel ; les prix cités ne peuvent plus dériver — liste officielle injectée dans le prompt (1 500 000 GNF vitrine vérifié EN+FR).
+- Omnis : capsule « site visible » validée desktop + mobile, navigation temps réel depuis le champ intégré (réalisations atteinte en direct).
+- scripts/hydration-check.mjs conservé : re-jouer la matrice d'hydratation à tout moment (CHROME_PATH=~/.cache/ms-playwright/chromium-1200/chrome-linux64/chrome node scripts/hydration-check.mjs).
