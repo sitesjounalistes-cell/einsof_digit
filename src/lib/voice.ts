@@ -110,14 +110,16 @@ export function splitSentences(text: string, max = 220): string[] {
 
 /**
  * Énonce un texte avec la meilleure voix disponible.
- * Retourne l'utterance principale (null si la synthèse est indisponible).
  * `onEnd` est appelé à la fin de TOUTE la lecture (toutes les phrases).
+ * `onFail` est appelé si la synthèse ne démarre jamais (file vide, aucune
+ * voix) — permet à l'appelant de basculer sur la voix serveur.
  */
 export function speakProfessional(
   text: string,
   lang: Lang,
   onEnd?: () => void,
-  onStart?: () => void
+  onStart?: () => void,
+  onFail?: () => void
 ): SpeechSynthesisUtterance | null {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
   const synth = window.speechSynthesis;
@@ -164,12 +166,119 @@ export function speakProfessional(
   });
 
   /* File d'attente vide (certains navigateurs purgent au chargement) :
-     si rien n'a démarré après 400 ms, on notifie quand même la fin. */
+     si rien n'a démarré après 1,2 s, on signale l'échec (repli serveur)
+     ou, à défaut, la fin. */
   window.setTimeout(() => {
     if (!started && !synth.speaking && !synth.pending) {
-      onEnd?.();
+      (onFail ?? onEnd)?.();
     }
-  }, 400);
+  }, 1200);
 
   return null;
+}
+
+/* ── Repli serveur (skill TTS) + annulation ───────────────────── */
+
+let speakToken = 0;
+let currentAudio: HTMLAudioElement | null = null;
+
+/** Stoppe immédiatement toute lecture (navigateur ET serveur). */
+export function cancelSpeech(): void {
+  speakToken++;
+  try {
+    window.speechSynthesis?.cancel();
+  } catch {
+    /* ignore */
+  }
+  if (currentAudio) {
+    try {
+      currentAudio.pause();
+    } catch {
+      /* ignore */
+    }
+    currentAudio = null;
+  }
+}
+
+async function speakViaServer(
+  text: string,
+  lang: Lang,
+  token: number,
+  onStart?: () => void,
+  onEnd?: () => void
+): Promise<void> {
+  onStart?.();
+  const chunks = splitSentences(text, 900);
+  for (const chunk of chunks) {
+    if (token !== speakToken) return;
+    try {
+      const res = await fetch("/api/voice/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: chunk, lang }),
+      });
+      if (!res.ok) throw new Error(`tts_${res.status}`);
+      const blob = await res.blob();
+      if (token !== speakToken) return;
+      const url = URL.createObjectURL(blob);
+      try {
+        await new Promise<void>((resolve) => {
+          const audio = new Audio(url);
+          currentAudio = audio;
+          audio.onended = () => resolve();
+          audio.onerror = () => resolve();
+          audio.play().catch(() => resolve());
+        });
+      } finally {
+        URL.revokeObjectURL(url);
+        currentAudio = null;
+      }
+    } catch {
+      break; // serveur/réseau indisponible — inutile d'insister sur les chunks restants
+    }
+  }
+  if (token === speakToken) onEnd?.();
+}
+
+export interface SpeakCallbacks {
+  onStart?: () => void;
+  onEnd?: () => void;
+}
+
+/**
+ * Lecture VOCALE avec double voie :
+ *  1. voix du navigateur (neuronale locale — la meilleure qualité) ;
+ *  2. si la synthèse ne démarre pas (aucune voix, synthèse cassée,
+ *     environnement sans moteur audio) → TTS serveur automatique.
+ * Annulable via cancelSpeech() (nouveau tour de parole, fermeture…).
+ */
+export function speakWithFallback(text: string, lang: Lang, cb: SpeakCallbacks): void {
+  cancelSpeech();
+  const token = speakToken;
+
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    void speakViaServer(text, lang, token, cb.onStart, cb.onEnd);
+    return;
+  }
+
+  let started = false;
+  let serverStarted = false;
+
+  speakProfessional(
+    text,
+    lang,
+    () => {
+      if (!serverStarted) cb.onEnd?.();
+    },
+    () => {
+      started = true;
+      cb.onStart?.();
+    },
+    () => {
+      /* onFail — la synthèse navigateur ne démarre pas : repli serveur. */
+      if (started || serverStarted || token !== speakToken) return;
+      serverStarted = true;
+      void speakViaServer(text, lang, token, cb.onStart, cb.onEnd);
+    }
+  );
 }

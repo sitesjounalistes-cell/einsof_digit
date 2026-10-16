@@ -13,14 +13,24 @@ import {
   SendHorizonal,
   ChevronDown,
   ChevronUp,
+  Square,
 } from "lucide-react";
 import { useChat } from "./chat-context";
 import { useI18n } from "@/lib/i18n";
 import { useConsent } from "@/lib/consent";
-import { speakProfessional, pickBestVoice, invalidateVoiceCache, SPEECH_LOCALES } from "@/lib/voice";
+import { speakWithFallback, cancelSpeech, pickBestVoice, invalidateVoiceCache, SPEECH_LOCALES } from "@/lib/voice";
+import { VoiceRecorder, isVoiceInputSupported } from "@/lib/voice-recorder";
 import { onNavigatePath } from "@/lib/chat-bus";
 
-type OmnisState = "idle" | "listening" | "thinking" | "speaking" | "unsupported" | "denied";
+type OmnisState =
+  | "idle"
+  | "recording"
+  | "transcribing"
+  | "thinking"
+  | "speaking"
+  | "denied"
+  | "unsupported";
+type OmnisNote = null | "no_speech" | "asr_error" | "mic_error";
 
 interface SpeechRecognitionLike {
   lang: string;
@@ -29,13 +39,16 @@ interface SpeechRecognitionLike {
   start(): void;
   stop(): void;
   abort(): void;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
+  onresult:
+    | ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void)
+    | null;
   onerror: ((e: { error: string }) => void) | null;
   onend: (() => void) | null;
 }
 
 type RecognitionCtor = new () => SpeechRecognitionLike;
 
+/** Web Speech du navigateur — voie RAPIDE quand elle fonctionne (Chrome/Edge). */
 function getRecognitionCtor(): RecognitionCtor | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as {
@@ -55,13 +68,22 @@ function pathToLabel(path: string): string {
 }
 
 /**
- * MODE OMNIS — v2 « interface visible ».
- * Contrairement à une prise d'écran plein fond, Omnis est une CAPSULE
- * flottante en haut au centre : le site reste ENTIEREMENT visible autour,
- * l'IA peut naviguer en direct (router.push via chat-bus) et le visiteur
- * VOIT la page changer sous la capsule. Une carte discrète en bas à droite
- * conserve la dernière réponse, un champ texte intégré permet de poser la
- * question au clavier sans quitter le mode vocal.
+ * MODE OMNIS — v3 « voix réparée de bout en bout ».
+ *
+ * ANCIEN BUG : la reconnaissance reposait uniquement sur webkitSpeechRecognition
+ * (absente de Firefox, bloquée dans les iframes d'aperçu, capricieuse sur
+ * Safari) — l'utilisateur parlait, rien ne se passait.
+ *
+ * NOUVEAU PIPELINE (double voie, jamais muet) :
+ *  1. Enregistrement UNIVERSALISTE : getUserMedia + MediaRecorder (tous
+ *     navigateurs) avec niveau sonore en direct (le visiteur VOIT que le
+ *     micro entend) et arrêt automatique en fin de phrase (VAD).
+ *  2. En parallèle, Web Speech si disponible (interim + précision Google).
+ *  3. À l'arrêt : texte Web Speech s'il existe, sinon WAV 16 kHz →
+ *     /api/voice/transcribe (ASR serveur) — fonctionne partout.
+ *  4. Réponse LLM streamée → lecture voix : synthèse navigateur d'abord,
+ *     repli TTS serveur automatique (/api/voice/speak) si aucune voix.
+ * La navigation reste temps réel sous la capsule (chat-bus → router.push).
  */
 export function OmnisOverlay() {
   const { omnisOpen, setOmnisOpen, messages, streaming, send, consentNoticeAck, setOpen } = useChat();
@@ -69,36 +91,48 @@ export function OmnisOverlay() {
   const { record } = useConsent();
 
   const [state, setState] = useState<OmnisState>("idle");
-  const [interim, setInterim] = useState("");
+  const [note, setNote] = useState<OmnisNote>(null);
+  const [heard, setHeard] = useState("");
+  const [webInterim, setWebInterim] = useState("");
   const [handsFree, setHandsFree] = useState(true);
   const [navFlash, setNavFlash] = useState<string | null>(null);
   const [kbOpen, setKbOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [cardOpen, setCardOpen] = useState(true);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+
+  const recorderRef = useRef<VoiceRecorder | null>(null);
+  const webRecRef = useRef<SpeechRecognitionLike | null>(null);
+  const webFinalRef = useRef("");
   const handsFreeRef = useRef(handsFree);
-  const silenceRef = useRef(0);
   const restartTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const elapsedTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startedAtRef = useRef(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const pendingVoiceRef = useRef<string>("");
+  const barRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const silenceRef = useRef(0);
 
-  const supported = getRecognitionCtor() !== null;
+  const supported = isVoiceInputSupported();
 
   useEffect(() => {
     handsFreeRef.current = handsFree;
   }, [handsFree]);
 
-  /* État courant lisible dans les callbacks non-React (rec.onend, timers) */
+  /* État courant lisible dans les callbacks non-React (VAD, timers) */
   const stateRef = useRef<OmnisState>(state);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
-  /* Auto-référence : rec.onend (déclaré DANS startListening) relance
-     l'écoute — la fonction ne peut pas se référencer directement. */
-  const startListeningRef = useRef<() => void>(() => {});
+  const streamingRef = useRef(streaming);
+  useEffect(() => {
+    streamingRef.current = streaming;
+  }, [streaming]);
 
-  /* Voix neuronale la plus professionnelle disponible (voiceschanged) */
+  /* Préchauffe la sélection de voix (voiceschanged asynchrone) */
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     invalidateVoiceCache();
@@ -118,36 +152,67 @@ export function OmnisOverlay() {
     });
   }, [omnisOpen]);
 
-  const stopRecognition = useCallback(() => {
-    try {
-      recognitionRef.current?.abort();
-    } catch {
-      /* ignore */
-    }
-    recognitionRef.current = null;
-  }, []);
-
-  const stopEverything = useCallback(() => {
-    stopRecognition();
+  const clearTimers = useCallback(() => {
     if (restartTimer.current) {
       clearTimeout(restartTimer.current);
       restartTimer.current = null;
     }
+    if (noteTimer.current) {
+      clearTimeout(noteTimer.current);
+      noteTimer.current = null;
+    }
+    if (elapsedTimer.current) {
+      clearInterval(elapsedTimer.current);
+      elapsedTimer.current = null;
+    }
+  }, []);
+
+  const flashNote = useCallback((n: OmnisNote) => {
+    setNote(n);
+    if (noteTimer.current) clearTimeout(noteTimer.current);
+    noteTimer.current = setTimeout(() => setNote(null), 5200);
+  }, []);
+
+  const stopWebSpeech = useCallback(() => {
+    const rec = webRecRef.current;
+    webRecRef.current = null;
+    if (!rec) return;
+    rec.onresult = null;
+    rec.onerror = null;
+    rec.onend = null;
     try {
-      window.speechSynthesis?.cancel();
+      rec.abort();
     } catch {
       /* ignore */
     }
-  }, [stopRecognition]);
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    const rec = recorderRef.current;
+    recorderRef.current = null;
+    rec?.dispose();
+    if (elapsedTimer.current) {
+      clearInterval(elapsedTimer.current);
+      elapsedTimer.current = null;
+    }
+  }, []);
+
+  const stopEverything = useCallback(() => {
+    stopRecording();
+    stopWebSpeech();
+    clearTimers();
+    cancelSpeech();
+  }, [stopRecording, stopWebSpeech, clearTimers]);
 
   const exit = useCallback(() => {
     stopEverything();
     setOmnisOpen(false);
     setState("idle");
-    setInterim("");
+    setNote(null);
+    setHeard("");
+    setWebInterim("");
     setKbOpen(false);
     setDraft("");
-    silenceRef.current = 0;
   }, [setOmnisOpen, stopEverything]);
 
   // Escape exits Omnis
@@ -164,103 +229,217 @@ export function OmnisOverlay() {
     if (!omnisOpen) stopEverything();
   }, [omnisOpen, stopEverything]);
 
-  const startListening = useCallback(() => {
+  /* ── Réarmement mains libres (après un tour sans parole détectée) ──
+     Un simple compteur d'état : l'effet dédié (défini après startListening)
+     re-déclenche l'écoute — aucune référence circulaire. */
+  const [relistenTick, setRelistenTick] = useState(0);
+  const requestRelisten = useCallback(() => setRelistenTick((t) => t + 1), []);
+
+  /* ── Démarrage Web Speech (voie rapide, échec silencieux) ──────── */
+  const startWebSpeech = useCallback(() => {
     const Ctor = getRecognitionCtor();
-    if (!Ctor) {
-      setState("unsupported");
-      return;
-    }
-    if (restartTimer.current) {
-      clearTimeout(restartTimer.current);
-      restartTimer.current = null;
-    }
-    try {
-      window.speechSynthesis?.cancel(); // jamais d'écoute pendant la voix
-    } catch {
-      /* ignore */
-    }
-    stopRecognition();
-    record("microphone", true);
-    setInterim("");
-    silenceRef.current = 0;
+    if (!Ctor) return;
     try {
       const rec = new Ctor();
-      recognitionRef.current = rec;
+      webRecRef.current = rec;
+      webFinalRef.current = "";
       rec.lang = SPEECH_LOCALES[lang];
-      rec.continuous = false;
+      rec.continuous = true;
       rec.interimResults = true;
       rec.onresult = (e) => {
-        let finalText = "";
-        let interimText = "";
+        let fin = "";
+        let inter = "";
         for (let i = 0; i < e.results.length; i++) {
           const res = e.results[i];
           const txt = res[0]?.transcript ?? "";
-          if (res.isFinal) finalText += txt;
-          else interimText += txt;
+          if (res.isFinal) fin += txt;
+          else inter += txt;
         }
-        setInterim(interimText || finalText);
-        if (finalText.trim()) {
-          setState("thinking");
-          silenceRef.current = 0;
-          stopRecognition();
-          void send(finalText.trim());
+        if (fin.trim()) {
+          webFinalRef.current = `${webFinalRef.current ? `${webFinalRef.current} ` : ""}${fin.trim()}`;
         }
+        setWebInterim((webFinalRef.current + (inter ? ` ${inter}` : "")).trim());
       };
-      rec.onerror = (e) => {
-        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-          setHandsFree(false);
-          setState("denied");
-        } else if (e.error === "no-speech") {
-          /* silence : comptabilisé, la boucle se met en pause au bout de 2 */
-          silenceRef.current += 1;
-          setState("idle");
-        } else {
-          setState("idle");
-        }
+      rec.onerror = () => {
+        /* toléré : l'ASR serveur prend le relais à l'arrêt */
+        stopWebSpeech();
       };
       rec.onend = () => {
-        setState((s) => (s === "listening" ? "idle" : s));
-        /* Mains libres : après une écoute restée sans résultat (silence),
-           relancer brièvement — pause après 2 silences consécutifs. */
-        if (
-          handsFreeRef.current &&
-          silenceRef.current > 0 &&
-          silenceRef.current < 2 &&
-          (stateRef.current === "idle" || stateRef.current === "listening")
-        ) {
-          restartTimer.current = setTimeout(() => {
-            restartTimer.current = null;
-            if (
-              handsFreeRef.current &&
-              (stateRef.current === "idle" || stateRef.current === "listening")
-            ) {
-              startListeningRef.current();
-            }
-          }, 500);
-        }
+        /* le VAD pilote l'arrêt global — rien à faire ici */
       };
-      setState("listening");
       rec.start();
     } catch {
-      setState("idle");
+      webRecRef.current = null;
     }
-  }, [lang, record, send, stopRecognition]);
+  }, [lang, stopWebSpeech]);
 
-  /* Synchronise l'auto-référence après chaque re-création du callback. */
+  /* ── Fin de prise : Web Speech d'abord, ASR serveur sinon ─────── */
+  const finishCapture = useCallback(async () => {
+    stopWebSpeech();
+    const rec = recorderRef.current;
+    recorderRef.current = null;
+    if (elapsedTimer.current) {
+      clearInterval(elapsedTimer.current);
+      elapsedTimer.current = null;
+    }
+    if (!rec) return;
+
+    let take: { wavBase64: string; durationMs: number; rms: number } | null = null;
+    try {
+      take = await rec.stop();
+    } catch {
+      take = null;
+    }
+
+    const webText = webFinalRef.current.trim();
+    webFinalRef.current = "";
+    setWebInterim("");
+
+    /* Voie rapide — Web Speech a compris. */
+    if (webText) {
+      setHeard(webText);
+      silenceRef.current = 0;
+      if (streamingRef.current) {
+        pendingVoiceRef.current = webText;
+        setState("thinking");
+        return;
+      }
+      setState("thinking");
+      void send(webText, { source: "voice" });
+      return;
+    }
+
+    /* Prise vide / souffle seul — pas d'aller-retour inutile. */
+    if (!take || !take.wavBase64 || take.durationMs < 650 || take.rms < 0.004) {
+      silenceRef.current += 1;
+      flashNote("no_speech");
+      setState("idle");
+      requestRelisten();
+      return;
+    }
+
+    /* Voie fiable — ASR serveur (tous navigateurs). */
+    setState("transcribing");
+    try {
+      const res = await fetch("/api/voice/transcribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audioBase64: take.wavBase64 }),
+      });
+      const json = (await res.json().catch(() => null)) as { ok?: boolean; data?: { text?: string } } | null;
+      const text = json?.ok ? String(json.data?.text ?? "").trim() : "";
+      if (text) {
+        setHeard(text);
+        silenceRef.current = 0;
+        if (streamingRef.current) {
+          pendingVoiceRef.current = text;
+          setState("thinking");
+          return;
+        }
+        setState("thinking");
+        void send(text, { source: "voice" });
+      } else if (json?.ok) {
+        silenceRef.current += 1;
+        flashNote("no_speech");
+        setState("idle");
+        requestRelisten();
+      } else {
+        flashNote("asr_error");
+        setState("idle");
+        requestRelisten();
+      }
+    } catch {
+      flashNote("asr_error");
+      setState("idle");
+      requestRelisten();
+    }
+  }, [send, flashNote, requestRelisten, stopWebSpeech]);
+
+  /* ── Démarrage de l'écoute ─────────────────────────────────────── */
+  const startListening = useCallback(async () => {
+    if (!isVoiceInputSupported()) {
+      setState("unsupported");
+      setKbOpen(true);
+      return;
+    }
+    if (recorderRef.current) return;
+    clearTimers();
+    cancelSpeech(); // jamais d'écoute pendant la voix
+    record("microphone", true);
+    setNote(null);
+    setHeard("");
+    setWebInterim("");
+    setElapsed(0);
+    silenceRef.current = 0;
+
+    const rec = new VoiceRecorder();
+    rec.onLevel = (level) => {
+      const bars = barRefs.current;
+      const gains = [0.55, 0.8, 1, 0.8, 0.55];
+      for (let i = 0; i < bars.length; i++) {
+        const bar = bars[i];
+        if (bar) bar.style.transform = `scaleY(${(0.18 + level * gains[i]).toFixed(3)})`;
+      }
+    };
+    rec.onVadStop = () => {
+      if (recorderRef.current === rec) void finishCapture();
+    };
+
+    try {
+      await rec.start();
+      recorderRef.current = rec;
+      startedAtRef.current = Date.now();
+      setState("recording");
+      elapsedTimer.current = setInterval(() => {
+        setElapsed(Math.floor((Date.now() - startedAtRef.current) / 100) / 10);
+      }, 200);
+      startWebSpeech();
+    } catch (e) {
+      rec.dispose();
+      const name = (e as DOMException | undefined)?.name ?? "";
+      if (name === "NotAllowedError" || name === "SecurityError" || name === "PermissionDeniedError") {
+        setHandsFree(false);
+        setKbOpen(true); // le clavier prend le relais immédiatement
+        setState("denied");
+      } else if (name === "NotFoundError" || name === "DevicesNotFoundError" || name === "NotReadableError") {
+        setKbOpen(true);
+        flashNote("mic_error");
+        setState("idle");
+      } else {
+        setKbOpen(true);
+        flashNote("mic_error");
+        setState("idle");
+      }
+    }
+  }, [clearTimers, flashNote, finishCapture, record, startWebSpeech]);
+
+  /* Réarmement mains libres : après un tour sans parole détectée, on
+     ré-écoute brièvement — pause après 2 silences (le visiteur re-tape
+     le micro pour reprendre). */
   useEffect(() => {
-    startListeningRef.current = startListening;
-  }, [startListening]);
+    if (!relistenTick || !handsFree) return;
+    const id = setTimeout(() => {
+      if (stateRef.current === "idle" && !streamingRef.current) void startListening();
+    }, 700);
+    return () => clearTimeout(id);
+  }, [relistenTick, handsFree, startListening]);
+
+  /* Question vocale arrivée pendant le streaming : partie dès la fin. */
+  useEffect(() => {
+    if (streaming) return;
+    const queued = pendingVoiceRef.current;
+    if (queued) {
+      pendingVoiceRef.current = "";
+      void send(queued, { source: "voice" });
+    }
+  }, [streaming, send]);
 
   /* ── Boucle conversationnelle temps réel ─────────────────────────
-     Dès qu'une RÉPONSE (à un tour utilisateur) est complète → lecture
-     à voix haute → fin de lecture → (mains libres) réécoute auto.
-     Garde fou : `spokenRef` mémorise le dernier énoncé — la mise à jour
-     du message (id serveur après done) ne re-déclenche pas la lecture.
-     Le site reste visible sous la capsule : les actions navigate
-     déplacent la page en direct, sous les yeux du visiteur. */
+     Dès qu'une RÉPONSE est complète → lecture à voix haute (navigateur,
+     repli serveur automatique) → fin de lecture → (mains libres)
+     réécoute auto. spokenRef évite toute double lecture. */
   const spokenRef = useRef("");
 
-  // À l'ouverture d'Omnis, la transcription existante n'est pas relue.
   useEffect(() => {
     if (!omnisOpen) return;
     const last = [...messages].reverse().find((m) => m.role === "assistant" && m.content);
@@ -271,25 +450,25 @@ export function OmnisOverlay() {
     if (!omnisOpen || streaming) return;
     const last = messages[messages.length - 1];
     const isReplyToUser =
-      last?.role === "assistant" && last.content && messages.length > 1 && messages[messages.length - 2]?.role === "user";
-    if (isReplyToUser && last.content !== spokenRef.current) {
-      spokenRef.current = last.content;
-      speakProfessional(
-        last.content,
-        lang,
-        () => {
-          setState((s) => (s === "speaking" ? "idle" : s));
-          if (handsFreeRef.current && supported) {
-            restartTimer.current = setTimeout(() => {
-              restartTimer.current = null;
-              if (stateRef.current === "idle") startListening();
-            }, 350);
-          }
-        },
-        () => setState("speaking")
-      );
-    }
-  }, [streaming, messages, omnisOpen, lang, startListening, supported]);
+      last?.role === "assistant" &&
+      last.content &&
+      messages.length > 1 &&
+      messages[messages.length - 2]?.role === "user";
+    if (!isReplyToUser || last.content === spokenRef.current) return;
+    spokenRef.current = last.content;
+    speakWithFallback(last.content, lang, {
+      onStart: () => setState("speaking"),
+      onEnd: () => {
+        setState((s) => (s === "speaking" ? "idle" : s));
+        if (handsFreeRef.current && isVoiceInputSupported()) {
+          restartTimer.current = setTimeout(() => {
+            restartTimer.current = null;
+            if (stateRef.current === "idle" && !streamingRef.current) void startListening();
+          }, 400);
+        }
+      },
+    });
+  }, [streaming, messages, omnisOpen, lang, startListening]);
 
   /* Envoi clavier sans quitter Omnis */
   const submitDraft = useCallback(
@@ -298,37 +477,56 @@ export function OmnisOverlay() {
       const text = draft.trim();
       if (!text || streaming) return;
       setDraft("");
+      stopEverything(); // coupe l'écoute éventuelle
       setState("thinking");
       void send(text);
     },
-    [draft, streaming, send]
+    [draft, streaming, send, stopEverything]
   );
 
   if (!omnisOpen) return null;
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant" && m.content);
   const lastUser = [...messages].reverse().find((m) => m.role === "user" && m.content);
-  const effState: OmnisState = streaming && state !== "listening" ? "thinking" : state;
+  const effState: OmnisState = streaming && state !== "recording" ? "thinking" : state;
+  const recording = state === "recording";
 
   const statusLabel =
-    state === "listening"
+    state === "recording"
       ? t("chat.omnis.listening")
-      : state === "thinking" || streaming
-        ? t("chat.omnis.thinking")
-        : state === "speaking"
-          ? t("chat.omnis.speaking")
-          : handsFree
-            ? t("chat.omnis.autoListen")
-            : t("chat.omnis.idle");
+      : state === "transcribing"
+        ? t("chat.omnis.transcribing")
+        : state === "thinking" || streaming
+          ? t("chat.omnis.thinking")
+          : state === "speaking"
+            ? t("chat.omnis.speaking")
+            : state === "denied"
+              ? t("chat.omnis.micDenied")
+              : handsFree
+                ? t("chat.omnis.autoListen")
+                : t("chat.omnis.idle");
+
+  const noteLabel =
+    note === "no_speech"
+      ? t("chat.omnis.noSpeech")
+      : note === "asr_error"
+        ? t("chat.omnis.asrError")
+        : note === "mic_error"
+          ? t("chat.omnis.micError")
+          : null;
 
   const dotCls =
-    state === "listening"
+    state === "recording"
       ? "bg-[var(--success)]"
       : state === "speaking"
         ? "bg-gold"
         : effState === "thinking"
           ? "bg-gold/70"
           : "bg-mute/50";
+
+  const interimText = recording
+    ? webInterim
+    : heard || webInterim || lastUser?.content.slice(0, 80) || "";
 
   return (
     <>
@@ -338,11 +536,11 @@ export function OmnisOverlay() {
         aria-label={t("chat.omnis.title")}
         className="animate-in fade-in slide-in-from-top-3 duration-300 fixed left-1/2 top-[4.75rem] z-[82] flex w-[min(94vw,660px)] -translate-x-1/2 flex-col gap-2 md:top-[5.5rem]"
       >
-        {/* Ligne principale : état + voix + clavier + fermer */}
-        <div className="glass-panel flex items-center gap-2.5 rounded-2xl border border-line/60 px-3 py-2 shadow-2xl">
+        {/* Ligne principale : état + niveaux + voix + clavier + fermer */}
+        <div className="glass-panel flex items-center gap-2 rounded-2xl border border-line/60 px-2.5 py-2 shadow-2xl sm:gap-2.5 sm:px-3">
           <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold/40 text-goldtext">
             <Radar className="h-4 w-4" strokeWidth={1.5} />
-            {(state === "listening" || state === "speaking") && (
+            {(recording || state === "speaking") && (
               <span
                 className="absolute inset-0 rounded-full border border-gold/60"
                 style={{ animation: "breathe 2.4s ease-in-out infinite" }}
@@ -356,40 +554,63 @@ export function OmnisOverlay() {
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotCls}`}
                 style={{
                   animation:
-                    state === "listening"
-                      ? "pulse-dot 2s infinite"
-                      : effState === "thinking"
-                        ? "pulse-dot 1s infinite"
-                        : undefined,
+                    recording ? "pulse-dot 2s infinite" : effState === "thinking" ? "pulse-dot 1s infinite" : undefined,
                 }}
               />
               <span className="truncate">{statusLabel}</span>
+              {recording && (
+                <span className="ml-1 shrink-0 rounded-full bg-surface/80 px-1.5 text-[0.6875rem] tabular-nums text-mute">
+                  {elapsed.toFixed(1)}s
+                </span>
+              )}
             </p>
-            <p className="truncate text-xs italic text-mute">
-              {interim
-                ? `« ${interim} »`
-                : lastUser
-                  ? `« ${lastUser.content.slice(0, 80)} »`
-                  : t("chat.omnis.hint")}
-            </p>
+            {state === "denied" ? (
+              <p className="line-clamp-2 text-xs leading-snug text-mute">{t("chat.omnis.micDenied")}</p>
+            ) : (
+              <p className="truncate text-xs italic text-mute">
+                {noteLabel ? noteLabel : interimText ? `« ${interimText} »` : t("chat.omnis.hint")}
+              </p>
+            )}
           </div>
 
-          {/* Micro : bascule écoute (désactivé pendant réflexion) */}
+          {/* Niveau sonore en direct : le visiteur VOIT que le micro entend */}
+          {recording && (
+            <span className="flex h-10 shrink-0 items-center gap-[3px]" aria-hidden="true">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <span
+                  key={i}
+                  ref={(el) => {
+                    barRefs.current[i] = el;
+                  }}
+                  className="h-6 w-[3px] origin-center rounded-full bg-gold transition-transform duration-75 ease-linear"
+                  style={{ transform: "scaleY(0.18)" }}
+                />
+              ))}
+            </span>
+          )}
+
+          {/* Micro : démarre / arrête-et-envoie */}
           <button
             type="button"
-            onClick={startListening}
-            disabled={effState === "thinking" || !supported}
-            aria-label={t("chat.omnis.listening")}
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 disabled:opacity-50 ${
-              state === "listening"
-                ? "gold-fill shadow-[0_8px_30px_rgba(212,175,55,0.35)]"
+            onClick={() => {
+              if (recording) void finishCapture();
+              else void startListening();
+            }}
+            disabled={state === "transcribing" || (effState === "thinking" && !recording) || !supported}
+            aria-label={recording ? t("chat.omnis.stop") : t("chat.omnis.listening")}
+            title={recording ? t("chat.omnis.stop") : t("chat.omnis.hint")}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 disabled:opacity-50 sm:h-11 sm:w-11 ${
+              recording
+                ? "gold-fill shadow-[0_8px_30px_rgba(212,175,55,0.45)]"
                 : "border border-gold/50 text-goldtext hover:bg-gold/10"
             }`}
           >
             {state === "denied" ? (
               <MicOff className="h-4.5 w-4.5 text-goldtext" strokeWidth={1.5} />
+            ) : recording ? (
+              <Square className="h-4 w-4 fill-current text-ongold" strokeWidth={1.5} />
             ) : (
-              <Mic className={`h-4.5 w-4.5 ${state === "listening" ? "text-ongold" : ""}`} strokeWidth={1.5} />
+              <Mic className="h-4.5 w-4.5 text-goldtext" strokeWidth={1.5} />
             )}
           </button>
 
@@ -400,7 +621,7 @@ export function OmnisOverlay() {
             aria-pressed={handsFree}
             title={t("chat.omnis.handsFree")}
             aria-label={t("chat.omnis.handsFree")}
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors ${
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors sm:h-10 sm:w-10 ${
               handsFree
                 ? "border-gold/50 bg-gold/10 text-goldtext"
                 : "border-line text-mute hover:border-gold hover:text-goldtext"
@@ -423,7 +644,7 @@ export function OmnisOverlay() {
             aria-expanded={kbOpen}
             title={t("chat.omnis.typeInstead")}
             aria-label={t("chat.omnis.typeInstead")}
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors ${
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors sm:h-10 sm:w-10 ${
               kbOpen
                 ? "border-gold/50 bg-gold/10 text-goldtext"
                 : "border-line text-mute hover:border-gold hover:text-goldtext"
@@ -436,7 +657,7 @@ export function OmnisOverlay() {
             type="button"
             onClick={exit}
             aria-label={t("chat.omnis.exit")}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-mute transition-colors hover:text-ink"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-mute transition-colors hover:text-ink sm:h-10 sm:w-10"
           >
             <X className="h-4 w-4" strokeWidth={1.5} />
           </button>
@@ -475,7 +696,11 @@ export function OmnisOverlay() {
             navFlash ? "max-h-10 py-2.5 opacity-100" : "max-h-0 border-transparent py-0 opacity-0"
           }`}
         >
-          <RadarIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} style={{ animation: navFlash ? "omnis-spin 2.4s linear infinite" : undefined }} />
+          <RadarIcon
+            className="h-3.5 w-3.5 shrink-0"
+            strokeWidth={1.5}
+            style={{ animation: navFlash ? "omnis-spin 2.4s linear infinite" : undefined }}
+          />
           <span className="truncate font-medium">
             {(navFlash && t("chat.omnis.navigating").replace("{page}", pathToLabel(navFlash))) || ""}
           </span>
@@ -522,6 +747,11 @@ export function OmnisOverlay() {
                   </div>
                 ) : (
                   <p className="text-sm leading-relaxed text-mute">{t("chat.omnis.hint")}</p>
+                )}
+                {heard && (
+                  <p className="text-xs italic leading-relaxed text-mute">
+                    {t("chat.you")} : « {heard} »
+                  </p>
                 )}
                 {state === "denied" && (
                   <p className="text-xs leading-relaxed text-mute">{t("chat.omnis.micDenied")}</p>

@@ -38,6 +38,8 @@ const schema = z.object({
   locale: z.string().max(5).default("fr"),
   /** Ephemeral mode: client-provided recent history, nothing persisted. */
   history: historySchema.max(12).optional(),
+  /** Le message provient de la reconnaissance vocale → tolérance phonétique. */
+  voice: z.boolean().optional().default(false),
 });
 
 export const maxDuration = 60;
@@ -117,29 +119,27 @@ export async function POST(req: Request): Promise<Response> {
        contient d'anciennes réponses dans une autre langue, la directive
        du prompt système seul est trop loin pour peser sur le modèle. */
     { role: "system", content: languageReminder(d.locale) },
+    /* Message issu de la voix : la transcription automatique est souvent
+       phonétiquement déformée — le modèle doit interpréter l'INTENTION
+       (ex. « mantras muy vas tarifs » = « montrez-moi vos tarifs »)
+       au lieu de répondre qu'il n'a pas compris. */
+    ...(d.voice
+      ? [
+          {
+            role: "system" as const,
+            content:
+              "MESSAGE VOCAL : la question de l'utilisateur provient d'une RECONNAISSANCE VOCALE AUTOMATIQUE, souvent approximative (mots déformés phonétiquement, noms altérés, accents incorrects). Interprète TOUJOURS l'intention la plus probable en t'appuyant sur le contexte du site et l'historique, répond directement au fond, et ne demande de reformuler QUE si aucun sens plausible n'émerge. Exemples : « mantras muy vas tarifs » ou « voss tariffs » = « montrez-moi vos tarifs » ; « logisiel farmassi » = « logiciel pharmacie ».",
+          },
+        ]
+      : []),
     { role: "user", content: d.message },
   ];
 
   /* ── Moteur principal : OpenRouter en streaming réel (clé client).
         Les tokens partent vers le navigateur au fil de l'eau — aucune
-        réponse pré-écrite. Repli transparent : z-ai (mot à mot). ── */
+        réponse pré-écrite. Repli transparent : z-ai STREAMÉ réellement
+        (premier token ~1 s au lieu de la complétion complète). ── */
   if (isOpenRouterConfigured()) {
-    const zaiFallback = async (): Promise<string> => {
-      const zai = await ZAI.create();
-      const withTimeout = Promise.race([
-        zai.chat.completions.create({
-          messages: llmMessages,
-          thinking: { type: "disabled" },
-        }),
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 15_000)),
-      ]);
-      const completion = (await withTimeout) as Awaited<
-        ReturnType<typeof zai.chat.completions.create>
-      > | null;
-      const text = completion?.choices?.[0]?.message?.content ?? "";
-      if (!text.trim()) throw new Error("empty");
-      return text;
-    };
     return streamResponse(
       streamOpenRouterChain(llmMessages, { temperature: 0.6, maxTokens: 700 }),
       {
@@ -152,80 +152,27 @@ export async function POST(req: Request): Promise<Response> {
         saveUserPromise,
         userMessage: d.message,
       },
-      zaiFallback,
+      () => streamZaiWithWatchdog(llmMessages),
       d.locale
     );
   }
 
-  // ── Repli direct : z-ai, LLM call with 15 s guard (spec §27) ──
-  let text = "";
-  try {
-    const zai = await ZAI.create();
-    const withTimeout = Promise.race([
-      zai.chat.completions.create({
-        messages: llmMessages,
-        thinking: { type: "disabled" },
-      }),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 15_000)),
-    ]);
-    const completion = (await withTimeout) as Awaited<
-      ReturnType<typeof zai.chat.completions.create>
-    > | null;
-    text = completion?.choices?.[0]?.message?.content ?? "";
-    if (!text.trim()) throw new Error("empty");
-  } catch (e) {
-    console.error("[chat/message] llm", e);
-    return sse([{ type: "error", v: "llm" }]);
-  }
-
-  const { clean, actions } = parseActions(text);
-  const validActions = filterActions(actions);
-
-  // Persist assistant reply + apply server-side actions
-  let messageId: number | undefined;
-  if (persisted && d.sessionId) {
-    try {
-      const saved = await db.chatMessage.create({
-        data: { sessionId: d.sessionId, role: "assistant", content: clean },
-      });
-      messageId = saved.id;
-      if (!savedUser) {
-        await db.chatMessage.create({
-          data: { sessionId: d.sessionId, role: "user", content: d.message },
-        });
-      }
-    } catch (e) {
-      console.error("[chat/message] save assistant", e);
-    }
-  }
-
-  for (const a of validActions) {
-    if (a.tool === "create_lead") {
-      const created = await handleCreateLead(a, ip);
-      if (created) a.args = { ...a.args, _created: true };
-    } else if (a.tool === "suggest_slots") {
-      const slots = await listUpcomingSlots(DEMO_CHAT_SLOTS_LIMIT).catch(() => []);
-      if (slots.length > 0) a.args = { slots };
-      else a.args = { _drop: true };
-    } else if (a.tool === "book_demo") {
-      await handleBookDemo(a, ip, d.locale);
-    }
-  }
-  const emitActions = validActions.filter((a) => a.args?._drop !== true);
-
-  /* Flux simulé rapide : 3 mots par événement, 8 ms — le repli reste
-     réactif (un repli lent donne l'impression d'un site cassé). */
-  const tokens = clean.match(/\S+\s*/g) ?? [clean];
-  const events: SseEvent[] = [];
-  for (let i = 0; i < tokens.length; i += 3) {
-    events.push({ type: "token", v: tokens.slice(i, i + 3).join("") });
-  }
-  for (const a of emitActions) {
-    events.push({ type: "action", tool: a.tool, args: a.args });
-  }
-  events.push({ type: "done", messageId });
-
-  return sse(events, 8);
+  // ── Repli direct : z-ai EN STREAMING RÉEL (même mécanique SSE, §27) ──
+  return streamResponse(
+    streamZaiWithWatchdog(llmMessages),
+    {
+      ip,
+      persisted,
+      sessionId: d.sessionId,
+      get savedUser() {
+        return savedUser;
+      },
+      saveUserPromise,
+      userMessage: d.message,
+    },
+    () => streamZaiWithWatchdog(llmMessages),
+    d.locale
+  );
 }
 
 /* ── Réponse en flux réel (OpenRouter) ───────────────────────────
@@ -264,7 +211,7 @@ function streamResponse(
     saveUserPromise?: Promise<void>;
     userMessage: string;
   },
-  zaiFallback: () => Promise<string>,
+  zaiFallback: () => AsyncGenerator<string>,
   locale: string
 ): Response {
   const encoder = new TextEncoder();
@@ -273,81 +220,100 @@ function streamResponse(
       const send = (ev: SseEvent) =>
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(ev)}\n\n`));
       const savedUserNow = () => (typeof ctx.savedUser === "function" ? ctx.savedUser() : ctx.savedUser);
-      let full = "";
-      let got = false;
-      let sentLen = 0;
-      let lastSafeCut = 0;
-      /* Longueur des préfixes de marqueurs d'action — les deltas du modèle
-         peuvent COUPER un marqueur en deux (« …\n[[ac » + « tion:… ») :
-         sans rétention, le fragment « [[ac » partirait vers le navigateur
-         et s'afficherait. On retient donc les 12 derniers caractères tant
-         que le flux n'est pas terminé (12 > longueur de « [[action:{ » et
-         de « {\"tool\" »), puis on rince à la fin. */
+
+      /* Émetteur « sûr » : ne fait JAMAIS partir vers le navigateur les
+         marqueurs d'action ([[action:…] ou dérives {"tool":…) — les deltas
+         du modèle peuvent les couper en deux (« …[[ac » + « tion:… »).
+         On retient les 12 derniers caractères tant que le flux n'est pas
+         terminé, puis on rince. Utilisé par le flux principal ET le repli. */
       const HOLD = 12;
-      /* Affichage propre : les marqueurs d'action ([[action:…] ou dérives
-         {"tool":…}) sont parsés en FIN de flux — on ne les envoie JAMAIS
-         au navigateur. On n'émet que le texte sûr (avant le 1er marqueur). */
-      const safeCut = () => {
-        let cut = full.length;
-        const i1 = full.indexOf("[[action");
-        if (i1 !== -1 && i1 < cut) cut = i1;
-        const i2 = full.indexOf('{"tool"');
-        if (i2 !== -1 && i2 < cut) cut = i2;
-        return cut;
+      const makeSafeSender = () => {
+        let buf = "";
+        let sentLen = 0;
+        const safeCut = (final: boolean) => {
+          let cut = buf.length;
+          const i1 = buf.indexOf("[[action");
+          if (i1 !== -1 && i1 < cut) cut = i1;
+          const i2 = buf.indexOf('{"tool"');
+          if (i2 !== -1 && i2 < cut) cut = i2;
+          if (!final) cut = Math.min(cut, Math.max(0, buf.length - HOLD));
+          return cut;
+        };
+        return {
+          push(delta: string) {
+            buf += delta;
+            const cut = safeCut(false);
+            if (cut > sentLen) {
+              send({ type: "token", v: buf.slice(sentLen, cut) });
+              sentLen = cut;
+            }
+          },
+          flush() {
+            const cut = safeCut(true);
+            if (cut > sentLen) {
+              send({ type: "token", v: buf.slice(sentLen, cut) });
+              sentLen = cut;
+            }
+          },
+          text: () => buf,
+          visible: () => sentLen > 0,
+        };
       };
-      const sendSafe = (final = false) => {
-        const cutAll = safeCut();
-        lastSafeCut = cutAll;
-        const cut = final ? cutAll : Math.min(cutAll, Math.max(0, full.length - HOLD));
-        if (cut > sentLen) {
-          send({ type: "token", v: full.slice(sentLen, cut) });
-          sentLen = cut;
+
+      /* Fin de flux partagée : actions serveur + persistance + done. */
+      const finish = async (full: string, senderVisible: boolean): Promise<void> => {
+        const { clean, actions } = parseActions(full);
+        const validActions = await runServerActions(filterActions(actions), ctx.ip, locale);
+
+        let messageId: number | undefined;
+        if (ctx.persisted && ctx.sessionId) {
+          try {
+            const saved = await db.chatMessage.create({
+              data: { sessionId: ctx.sessionId, role: "assistant", content: clean || full.trim() },
+            });
+            messageId = saved.id;
+            if (!savedUserNow()) {
+              await db.chatMessage.create({
+                data: { sessionId: ctx.sessionId, role: "user", content: ctx.userMessage },
+              });
+            }
+          } catch (e) {
+            console.error("[chat/message] save assistant", e);
+          }
         }
+
+        for (const a of validActions) {
+          if (a.args?._drop === true) continue;
+          send({ type: "action", tool: a.tool, args: a.args });
+        }
+        send({ type: "done", messageId });
       };
+
+      let got = false;
+      const sender = makeSafeSender();
       try {
         for await (const delta of iterator) {
           if (!delta) continue;
           got = true;
-          full += delta;
-          sendSafe();
+          sender.push(delta);
         }
-        sendSafe(true);
+        sender.flush();
         /* Ni texte visible, ni marqueur exploitable → repli. */
-        if (!got || !full.trim() || lastSafeCut === 0) throw new Error("empty_stream");
+        if (!got || !sender.text().trim() || !sender.visible()) throw new Error("empty_stream");
       } catch (e) {
-        console.error("[chat/message] openrouter stream", e);
-        if (lastSafeCut === 0) {
-          /* aucun token VISIBLE envoyé → repli z-ai complet, même flux */
+        console.error("[chat/message] primary stream", e);
+        if (!sender.visible()) {
+          /* aucun token VISIBLE envoyé → repli z-ai STREAMÉ, même flux */
           try {
             await ctx.saveUserPromise;
-            const text = await zaiFallback();
-            const { clean, actions } = parseActions(text);
-            const validActions = await runServerActions(filterActions(actions), ctx.ip, locale);
-            let messageId: number | undefined;
-            if (ctx.persisted && ctx.sessionId) {
-              try {
-                const saved = await db.chatMessage.create({
-                  data: { sessionId: ctx.sessionId, role: "assistant", content: clean },
-                });
-                messageId = saved.id;
-                if (!savedUserNow()) {
-                  await db.chatMessage.create({
-                    data: { sessionId: ctx.sessionId, role: "user", content: ctx.userMessage },
-                  });
-                }
-              } catch (err) {
-                console.error("[chat/message] save assistant", err);
-              }
+            const fb = makeSafeSender();
+            for await (const delta of zaiFallback()) {
+              if (!delta) continue;
+              fb.push(delta);
             }
-            const tokens = clean.match(/\S+\s*/g) ?? [clean];
-            for (let i = 0; i < tokens.length; i += 3) {
-              send({ type: "token", v: tokens.slice(i, i + 3).join("") });
-            }
-            for (const a of validActions) {
-              if (a.args?._drop === true) continue;
-              send({ type: "action", tool: a.tool, args: a.args });
-            }
-            send({ type: "done", messageId });
+            fb.flush();
+            if (!fb.text().trim() || !fb.visible()) throw new Error("empty_fallback");
+            await finish(fb.text(), fb.visible());
             controller.close();
           } catch (err) {
             console.error("[chat/message] zai fallback", err);
@@ -359,31 +325,7 @@ function streamResponse(
         /* coupure en cours de flux : on clôt proprement avec ce qui existe */
       }
 
-      const { clean, actions } = parseActions(full);
-      const validActions = await runServerActions(filterActions(actions), ctx.ip, locale);
-
-      let messageId: number | undefined;
-      if (ctx.persisted && ctx.sessionId) {
-        try {
-          const saved = await db.chatMessage.create({
-            data: { sessionId: ctx.sessionId, role: "assistant", content: clean || full.trim() },
-          });
-          messageId = saved.id;
-          if (!savedUserNow()) {
-            await db.chatMessage.create({
-              data: { sessionId: ctx.sessionId, role: "user", content: ctx.userMessage },
-            });
-          }
-        } catch (e) {
-          console.error("[chat/message] save assistant", e);
-        }
-      }
-
-      for (const a of validActions) {
-        if (a.args?._drop === true) continue;
-        send({ type: "action", tool: a.tool, args: a.args });
-      }
-      send({ type: "done", messageId });
+      await finish(sender.text(), sender.visible());
       controller.close();
     },
   });
@@ -394,6 +336,65 @@ function streamResponse(
       Connection: "keep-alive",
     },
   });
+}
+
+/* ── Streaming z-ai réel ──────────────────────────────────────────
+   Le SDK accepte stream:true et renvoie un ReadableStream de SSE
+   (chat.completion.chunk) : premier token ~0,5-1 s au lieu de la
+   complétion complète (3-12 s) — c'est ce qui rend le repli réactif. */
+async function* streamZaiDeltas(messages: ChatMessage[]): AsyncGenerator<string> {
+  const zai = await ZAI.create();
+  const res = (await zai.chat.completions.create({
+    messages,
+    stream: true,
+    thinking: { type: "disabled" },
+  })) as unknown as ReadableStream<Uint8Array>;
+  const reader = res.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) continue;
+      const payload = trimmed.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      try {
+        const json = JSON.parse(payload) as { choices?: { delta?: { content?: string } }[] };
+        const delta = json.choices?.[0]?.delta?.content;
+        if (delta) yield delta;
+      } catch {
+        /* chunk incomplet — ignoré */
+      }
+    }
+  }
+}
+
+/** Streaming z-ai avec watchdog « premier token » (12 s). */
+async function* streamZaiWithWatchdog(messages: ChatMessage[]): AsyncGenerator<string> {
+  const it = streamZaiDeltas(messages)[Symbol.asyncIterator]();
+  const first = await Promise.race([
+    it.next(),
+    new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), 12_000)),
+  ]);
+  if (first === "timeout") {
+    try {
+      await it.return?.(undefined as never);
+    } catch {
+      /* ignore */
+    }
+    throw new Error("zai_first_token_timeout");
+  }
+  if (!first.done && first.value) yield first.value;
+  while (true) {
+    const { done, value } = await it.next();
+    if (done) break;
+    if (value) yield value;
+  }
 }
 
 const CHAT_LOCALES = ["fr", "en", "es", "zh", "de"] as const;

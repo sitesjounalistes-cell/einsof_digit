@@ -39,7 +39,8 @@ interface ChatContextValue {
   setOmnisOpen: (v: boolean) => void;
   messages: ChatMsg[];
   streaming: boolean;
-  send: (text: string) => Promise<void>;
+  /** source:"voice" → le serveur active la tolérance phonétique ASR. */
+  send: (text: string, opts?: { source?: "text" | "voice" }) => Promise<void>;
   sendFeedback: (id: number | undefined, value: 1 | -1) => void;
   consentNoticeAck: boolean;
   ackConsentNotice: () => void;
@@ -223,13 +224,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   );
 
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, opts?: { source?: "text" | "voice" }) => {
       const trimmed = text.trim();
       if (!trimmed || streaming) return;
       const userMsg: ChatMsg = { role: "user", content: trimmed };
       setMessages((m) => [...m, userMsg]);
       setStreaming(true);
-      track("chat_message_sent", { locale: lang });
+      track("chat_message_sent", { locale: lang, via: opts?.source === "voice" ? "voice" : "text" });
 
       await ensureSession();
       const history = [...messages, userMsg]
@@ -249,6 +250,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             message: trimmed,
             currentPath: getCurrentPath(),
             locale: lang,
+            voice: opts?.source === "voice",
             history: sessionRef.current ? undefined : history.slice(0, -1),
           }),
         });
