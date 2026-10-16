@@ -23,6 +23,7 @@ const SAAS_KEY: Record<SaasProduct["slug"], string> = {
   "gestion-ecole": "school",
   "gestion-immobiliere": "immo",
   "gestion-pharmacie": "pharma",
+  "gestion-formation": "formation",
 };
 
 /* Visuel produit généré (obsidienne & or) — cohérence sur les cartes. */
@@ -33,6 +34,7 @@ const SAAS_IMAGE: Record<SaasProduct["slug"], string> = {
   "gestion-ecole": "/images/saas/saas-ecole.png",
   "gestion-immobiliere": "/images/saas/saas-immo.png",
   "gestion-pharmacie": "/images/saas/saas-pharma.png",
+  "gestion-formation": "/images/saas/saas-formation.png",
 };
 
 /* Forfait hôpital : bornes exactes du catalogue (1 000 000 → 5 000 000 GNF / mois) */

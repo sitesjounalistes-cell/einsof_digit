@@ -13,7 +13,8 @@ export type SaasSlug =
   | "gestion-hospitaliere"
   | "gestion-ecole"
   | "gestion-immobiliere"
-  | "gestion-pharmacie";
+  | "gestion-pharmacie"
+  | "gestion-formation";
 
 export interface SaasDetail {
   slug: SaasSlug;

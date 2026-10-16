@@ -6,9 +6,7 @@ import { PageHero } from "@/components/site/PageHero";
 import { CtaBanner, PageCrossLinks } from "@/components/site/PageBlocks";
 import {
   Container,
-  GoldBadge,
   GoldButton,
-  PriceTag,
   Section,
   SectionHeading,
 } from "@/components/site/kit";
@@ -25,13 +23,19 @@ import { useI18n } from "@/lib/i18n";
 import { openForm } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
 import {
+  ACQUISITION_OFFERS,
+  COMMUNITY_OFFERS,
   SAAS_PRODUCTS,
   SOFTWARE_OFFERS,
+  TRAINING_OFFERS,
   WEB_OFFERS,
-  WEB_RENEWAL,
   formatGNF,
+  type PriceOffer,
 } from "@/lib/catalog";
 import { SERVICE_DETAILS, SERVICE_SLUGS, type ServiceSlug } from "@/lib/pages-content/service-details";
+import { TARIFS, type TarifCard } from "@/lib/pages-content/tarifs";
+import { PriceCard, RenewalsAddonBand } from "@/components/site/PricingSection";
+import { useLocalized } from "@/lib/page-content";
 
 /**
  * Page de détail d'un pôle /services/[slug] :
@@ -42,55 +46,47 @@ import { SERVICE_DETAILS, SERVICE_SLUGS, type ServiceSlug } from "@/lib/pages-co
 export function ServiceDetailPage({ slug }: { slug: ServiceSlug }) {
   const { t, lang } = useI18n();
   const d = (SERVICE_DETAILS[lang] ?? SERVICE_DETAILS.fr)[slug];
+  const tarifs = useLocalized(TARIFS);
   const labelFor = (other: ServiceSlug) =>
     (SERVICE_DETAILS[lang] ?? SERVICE_DETAILS.fr)[other].name;
 
-  const priceProps = {
-    fromLabel: t("pricing.fromLabel"),
-    perMonth: t("pricing.perMonth"),
-    perYear: t("pricing.perYear"),
-    quoteLabel: t("pricing.quoteLabel"),
-  };
-
-  /* Bande tarifaire selon la référence catalogue du pôle */
+  /* Bande tarifaire selon la référence catalogue du pôle — les cartes
+     détaillées (titre, description, points) viennent du contenu localisé
+     de la page tarifs ; les montants viennent du catalogue officiel. */
   const priceStrip = () => {
+    const stripCard = (
+      groupId: "web" | "software" | "community" | "acquisition" | "training",
+      offer: PriceOffer,
+      featured = false
+    ) => {
+      const group = tarifs.groups[groupId] as { cards?: TarifCard[] };
+      const card = group.cards?.find((x) => x.id === offer.id);
+      if (!card) return null;
+      return <PriceCard offer={offer} card={card} featured={featured} />;
+    };
+
     if (d.priceRef === "web") {
       return (
-        <Stagger className="grid gap-5 md:grid-cols-3" step={0.09}>
-          {WEB_OFFERS.map((offer) => (
-            <StaggerItem key={offer.id} className="h-full">
-              <SpotlightCard className="h-full rounded-xl">
-                <article className="card-lift flex h-full flex-col rounded-xl border border-line bg-bg p-6">
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-serif text-lg font-semibold text-ink">{offer.name}</h3>
-                    {offer.featured && <GoldBadge>{t("pricing.popularLabel")}</GoldBadge>}
-                  </div>
-                  <div className="mt-4">
-                    <PriceTag offer={offer} {...priceProps} />
-                  </div>
-                </article>
-              </SpotlightCard>
-            </StaggerItem>
-          ))}
-          <div className="md:col-span-3">
-            <PriceTag offer={WEB_RENEWAL} {...priceProps} />
+        <>
+          <Stagger className="grid gap-5 md:grid-cols-3" step={0.09}>
+            {WEB_OFFERS.map((offer) => (
+              <StaggerItem key={offer.id} className="h-full">
+                {stripCard("web", offer, offer.featured === true)}
+              </StaggerItem>
+            ))}
+          </Stagger>
+          <div className="mt-8">
+            <RenewalsAddonBand />
           </div>
-        </Stagger>
+        </>
       );
     }
     if (d.priceRef === "software") {
       return (
-        <Stagger className="grid gap-5 md:grid-cols-2" step={0.09}>
+        <Stagger className="grid gap-5 md:grid-cols-3" step={0.09}>
           {SOFTWARE_OFFERS.map((offer) => (
             <StaggerItem key={offer.id} className="h-full">
-              <SpotlightCard className="h-full rounded-xl">
-                <article className="card-lift flex h-full flex-col rounded-xl border border-line bg-bg p-6">
-                  <h3 className="font-serif text-lg font-semibold text-ink">{offer.name}</h3>
-                  <div className="mt-4">
-                    <PriceTag offer={offer} {...priceProps} />
-                  </div>
-                </article>
-              </SpotlightCard>
+              {stripCard("software", offer)}
             </StaggerItem>
           ))}
         </Stagger>
@@ -101,6 +97,7 @@ export function ServiceDetailPage({ slug }: { slug: ServiceSlug }) {
         <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" step={0.06}>
           {SAAS_PRODUCTS.map((p) => {
             const o = p.offers[0];
+            const isQuote = o.amount === null || o.isQuoteOnly === true;
             const period = o.period === "month" ? t("pricing.perMonth") : t("pricing.perYear");
             return (
               <StaggerItem key={p.slug} className="h-full">
@@ -113,9 +110,10 @@ export function ServiceDetailPage({ slug }: { slug: ServiceSlug }) {
                       {p.name}
                     </p>
                     <p className="mt-1 text-sm text-goldtext">
-                      {o.isFrom ? `${t("common.from")} ` : ""}
-                      {formatGNF(o.amount ?? 0)}
-                      <span className="text-xs text-mute"> {period}</span>
+                      {isQuote
+                        ? t("pricing.quoteLabel")
+                        : `${o.isFrom ? `${t("common.from")} ` : ""}${formatGNF(o.amount ?? 0)}`}
+                      {!isQuote && <span className="text-xs text-mute"> {period}</span>}
                     </p>
                   </div>
                   <ArrowUpRight
@@ -128,6 +126,39 @@ export function ServiceDetailPage({ slug }: { slug: ServiceSlug }) {
               </StaggerItem>
             );
           })}
+        </Stagger>
+      );
+    }
+    if (d.priceRef === "community") {
+      return (
+        <Stagger className="grid gap-5 md:grid-cols-3" step={0.09}>
+          {COMMUNITY_OFFERS.map((offer) => (
+            <StaggerItem key={offer.id} className="h-full">
+              {stripCard("community", offer, offer.featured === true)}
+            </StaggerItem>
+          ))}
+        </Stagger>
+      );
+    }
+    if (d.priceRef === "acquisition") {
+      return (
+        <Stagger className="grid gap-5 md:grid-cols-2" step={0.09}>
+          {ACQUISITION_OFFERS.map((offer) => (
+            <StaggerItem key={offer.id} className="h-full">
+              {stripCard("acquisition", offer)}
+            </StaggerItem>
+          ))}
+        </Stagger>
+      );
+    }
+    if (d.priceRef === "training") {
+      return (
+        <Stagger className="grid gap-5 md:grid-cols-2" step={0.09}>
+          {TRAINING_OFFERS.map((offer) => (
+            <StaggerItem key={offer.id} className="h-full">
+              {stripCard("training", offer)}
+            </StaggerItem>
+          ))}
         </Stagger>
       );
     }

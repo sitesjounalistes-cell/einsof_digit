@@ -105,7 +105,7 @@ export const FAQ: Localized<FaqContent> = {
         items: [
           {
             q: "Combien coûte un site web ?",
-            a: "Trois offres : site vitrine à 1 500 000 GNF, site avec tableau de bord à 2 500 000 GNF et boutique en ligne à 3 500 000 GNF. Le renouvellement annuel (nom de domaine et hébergement) est de 500 000 GNF par an.",
+            a: "Le site vitrine est à 1 500 000 GNF, le site avec tableau de bord à 3 500 000 GNF, et le site customisé (options sur mesure) est chiffré sur devis. Le renouvellement annuel (nom de domaine et hébergement) est de 500 000 GNF par an pour la vitrine et de 700 000 GNF par an pour le tableau de bord. Un système de paiement intégré ajoute 1 000 000 GNF à tout forfait.",
           },
           {
             q: "Comment obtenir un devis ?",
@@ -117,7 +117,7 @@ export const FAQ: Localized<FaqContent> = {
           },
           {
             q: "Y a-t-il des frais cachés ?",
-            a: "Non. Le devis est détaillé et figé : les montants annoncés sont ceux que vous payez. Le seul coût récurrent — le renouvellement annuel du nom de domaine et de l'hébergement, à 500 000 GNF — est annoncé dès le départ. L'ajout de nouvelles fonctionnalités fait toujours l'objet d'un devis validé avec vous avant tout travail.",
+            a: "Non. Le devis est détaillé et figé : les montants annoncés sont ceux que vous payez. Le coût récurrent — le renouvellement annuel du nom de domaine et de l'hébergement, à 500 000 GNF (vitrine) ou 700 000 GNF (tableau de bord) — est annoncé dès le départ. L'ajout de nouvelles fonctionnalités fait toujours l'objet d'un devis validé avec vous avant tout travail.",
           },
         ],
       },
@@ -159,7 +159,7 @@ export const FAQ: Localized<FaqContent> = {
         items: [
           {
             q: "Puis-je gérer mon site moi-même ?",
-            a: "Oui, sauf pour la vitrine simple. Le tableau de bord inclus vous permet de gérer environ 70 % de votre site : modification des pages créées par l'agence, contenus, images. Un seul administrateur ; le multi-administrateurs est sur devis.",
+            a: "Avec le site vitrine, non : les pages sont gérées par l'agence, et toute modification passe par un webmaster. Avec le site à tableau de bord, oui : vous modifiez vos contenus, votre galerie et vos pages services existantes (sans en créer de nouvelles), et vous recevez vos messages dans le tableau de bord, votre e-mail et votre WhatsApp — avec un seul espace administrateur. Les administrateurs supplémentaires font l'objet d'une tarification spécifique.",
           },
           {
             q: "Comment se passe la formation ?",
@@ -181,15 +181,15 @@ export const FAQ: Localized<FaqContent> = {
         items: [
           {
             q: "La correction des bugs est-elle payante ?",
-            a: "Non. Les bugs, failles et erreurs sont corrigés sans frais pendant toute la collaboration. En revanche, l'ajout de nouvelles fonctionnalités est facturé en supplément — la distinction figure clairement dans nos conditions.",
+            a: "Sur un site vitrine, bugs et failles sont vérifiés sans frais pendant les 6 premiers mois, puis toutes les clés et accès vous sont remis. Sur un site avec tableau de bord et sur les logiciels, les bugs sont corrigés sans frais pendant toute la collaboration. L'ajout de nouvelles fonctionnalités est facturé en supplément — la distinction figure clairement dans nos conditions.",
           },
           {
             q: "Que se passe-t-il après la mise en ligne ?",
-            a: "Les bugs, failles et erreurs sont corrigés gratuitement pendant toute la collaboration — c'est écrit noir sur blanc dans nos conditions. Le nom de domaine et l'hébergement sont renouvelés chaque année pour 500 000 GNF, ce qui garantit la continuité de votre site. Les nouvelles fonctionnalités et les évolutions sont étudiées sur devis, pour que vous sachiez toujours ce qui est inclus et ce qui est facturé.",
+            a: "Sur un site vitrine, bugs et failles sont vérifiés pendant les 6 premiers mois, puis vous recevez toutes vos clés. Sur un site avec tableau de bord, nous continuons à corriger les bugs pendant toute la collaboration. Le nom de domaine et l'hébergement sont renouvelés chaque année — 500 000 GNF (vitrine) ou 700 000 GNF (tableau de bord) — pour garantir la continuité de votre site. Les nouvelles fonctionnalités sont étudiées sur devis.",
           },
           {
             q: "Que comprend le renouvellement annuel ?",
-            a: "Pour 500 000 GNF par an, votre nom de domaine et votre hébergement sont renouvelés, ce qui garantit la continuité de votre site. C'est le seul coût récurrent ; tout le reste est précisé dans le devis, sans surprise.",
+            a: "Le nom de domaine et l'hébergement de votre site : 500 000 GNF par an pour un site vitrine, 700 000 GNF par an pour un site avec tableau de bord. Sans ce renouvellement, le domaine et l'hébergement expirent ; c'est le seul coût récurrent, annoncé dès le devis.",
           },
         ],
       },

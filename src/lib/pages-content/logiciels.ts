@@ -42,6 +42,13 @@ export interface LogicielsContent {
     schoolNote: string;
     products: SaasDetailProduct[];
   };
+  /** conception de workflows sur mesure (au-delà des SaaS prêts à l'emploi) */
+  workflows: {
+    title: string;
+    gold: string;
+    desc: string;
+    ctaLabel: string;
+  };
   cta: {
     title: string;
     gold: string;
@@ -58,11 +65,11 @@ export interface LogicielsContent {
 export const LOGICIELS: Localized<LogicielsContent> = {
   fr: {
     hero: {
-      label: "03 — SaaS de gestion",
-      title: "Six logiciels prêts pour",
+      label: "03 — SaaS & workflows",
+      title: "Sept logiciels prêts pour",
       gold: "votre métier.",
-      sub: "Des outils de gestion éprouvés, disponibles immédiatement, paramétrés pour votre activité et soutenus par notre équipe.",
-      chips: ["Essai gratuit 7 jours", "Démo guidée", "Support & mises à jour inclus"],
+      sub: "Des outils de gestion éprouvés, disponibles immédiatement, paramétrés pour votre activité et soutenus par notre équipe — et la conception de workflows sur mesure quand vos processus débordent le cadre.",
+      chips: ["Essai gratuit 7 jours", "Démo guidée", "Workflows sur mesure"],
     },
     detail: {
       label: "03.1 — Détail des produits",
@@ -154,7 +161,26 @@ export const LOGICIELS: Localized<LogicielsContent> = {
           forWhom:
             "Pharmacies d'officine qui veulent un stock toujours juste : les alertes de péremption évitent les pertes, l'historique d'approvisionnement documente chaque entrée, et le comptoir encaisse sans attente.",
         },
+        {
+          slug: "gestion-formation",
+          audience: "Centres de formation",
+          modules: [
+            "Inscriptions et dossiers apprenants",
+            "Programmes et sessions",
+            "Présences et évaluations",
+            "Certificats et attestations",
+            "Suivi budgétaire",
+          ],
+          forWhom:
+            "Centres de formation professionnelle, instituts et organismes de cours qui veulent digitaliser toute la vie de leur établissement : des inscriptions aux certificats, en passant par les présences et le budget.",
+        },
       ],
+    },
+    workflows: {
+      title: "Besoin d'aller plus loin ?",
+      gold: "Conception de workflows sur mesure.",
+      desc: "Au-delà des SaaS prêts à l'emploi, nous concevons des systèmes de workflows sur mesure : vos processus métier automatisés de bout en bout — validations, notifications, documents — chiffrés après étude de votre besoin.",
+      ctaLabel: "Étudier mon workflow",
     },
     cta: {
       title: "Pas encore sûr ?",
@@ -186,11 +212,11 @@ export const LOGICIELS: Localized<LogicielsContent> = {
   },
   en: {
     hero: {
-      label: "03 — SaaS management",
-      title: "Six software tools ready for",
+      label: "03 — SaaS & workflows",
+      title: "Seven software tools ready for",
       gold: "your business.",
-      sub: "Proven management tools, available immediately, configured for your activity and backed by our team.",
-      chips: ["7-day free trial", "Guided demo", "Support & updates included"],
+      sub: "Proven management tools, available immediately, configured for your activity and backed by our team — and bespoke workflow design when your processes outgrow the off-the-shelf.",
+      chips: ["7-day free trial", "Guided demo", "Bespoke workflows"],
     },
     detail: {
       label: "03.1 — Product details",
@@ -282,7 +308,26 @@ export const LOGICIELS: Localized<LogicielsContent> = {
           forWhom:
             "Community pharmacies that want their stock always right: expiry alerts prevent losses, the supply history documents every inbound order, and the counter sells without waiting.",
         },
+        {
+          slug: "gestion-formation",
+          audience: "Training centres",
+          modules: [
+            "Enrolment and learner records",
+            "Programmes and sessions",
+            "Attendance and assessments",
+            "Certificates and attestations",
+            "Budget tracking",
+          ],
+          forWhom:
+            "Vocational training centres, institutes and course providers that want to digitalise the whole life of their facility: from enrolment to certificates, including attendance and budget.",
+        },
       ],
+    },
+    workflows: {
+      title: "Need to go further?",
+      gold: "Bespoke workflow design.",
+      desc: "Beyond the ready-to-use SaaS, we design bespoke workflow systems: your business processes automated end to end — approvals, notifications, documents — priced after studying your need.",
+      ctaLabel: "Study my workflow",
     },
     cta: {
       title: "Still not sure?",
@@ -314,11 +359,11 @@ export const LOGICIELS: Localized<LogicielsContent> = {
   },
   es: {
     hero: {
-      label: "03 — SaaS de gestión",
-      title: "Seis softwares listos para",
+      label: "03 — SaaS y flujos de trabajo",
+      title: "Siete softwares listos para",
       gold: "su actividad.",
-      sub: "Herramientas de gestión probadas, disponibles de inmediato, configuradas para tu actividad y respaldadas por nuestro equipo.",
-      chips: ["Prueba gratis 7 días", "Demo guiada", "Soporte y actualizaciones incluidos"],
+      sub: "Herramientas de gestión probadas, disponibles de inmediato, configuradas para tu actividad y respaldadas por nuestro equipo — y el diseño de flujos de trabajo a medida cuando tus procesos desbordan lo estándar.",
+      chips: ["Prueba gratis 7 días", "Demo guiada", "Flujos de trabajo a medida"],
     },
     detail: {
       label: "03.1 — Detalle de los productos",
@@ -410,7 +455,26 @@ export const LOGICIELS: Localized<LogicielsContent> = {
           forWhom:
             "Farmacias de oficina que quieren un stock siempre ajustado: las alertas de caducidad evitan pérdidas, el historial de aprovisionamiento documenta cada entrada y el mostrador cobra sin espera.",
         },
+        {
+          slug: "gestion-formation",
+          audience: "Centros de formación",
+          modules: [
+            "Inscripciones y expedientes de alumnos",
+            "Programas y sesiones",
+            "Asistencia y evaluaciones",
+            "Certificados y constancias",
+            "Seguimiento presupuestario",
+          ],
+          forWhom:
+            "Centros de formación profesional, institutos y organismos de cursos que quieren digitalizar toda la vida de su establecimiento: de las inscripciones a los certificados, pasando por la asistencia y el presupuesto.",
+        },
       ],
+    },
+    workflows: {
+      title: "¿Necesita ir más lejos?",
+      gold: "Diseño de flujos de trabajo a medida.",
+      desc: "Más allá de los SaaS listos para usar, diseñamos sistemas de flujos de trabajo a medida: sus procesos de negocio automatizados de principio a fin — validaciones, notificaciones, documentos — presupuestados tras estudiar su necesidad.",
+      ctaLabel: "Estudiar mi flujo de trabajo",
     },
     cta: {
       title: "¿Aún con dudas?",
@@ -442,11 +506,11 @@ export const LOGICIELS: Localized<LogicielsContent> = {
   },
   zh: {
     hero: {
-      label: "03 — SaaS 管理软件",
-      title: "六款软件，为",
+      label: "03 — SaaS与工作流",
+      title: "七款软件，为",
       gold: "您的行业而生。",
-      sub: "经过验证的管理工具，即开即用，为您的业务完成配置，并由我们的团队提供支持。",
-      chips: ["7 天免费试用", "引导式演示", "支持与更新全包"],
+      sub: "经过验证的管理工具，即开即用，为您的业务完成配置，并由我们的团队提供支持——当标准软件无法覆盖您的流程时，我们还提供定制工作流设计。",
+      chips: ["7 天免费试用", "引导式演示", "定制工作流"],
     },
     detail: {
       label: "03.1 — 产品详情",
@@ -538,7 +602,26 @@ export const LOGICIELS: Localized<LogicielsContent> = {
           forWhom:
             "希望库存永远精准的零售药房：效期预警减少损耗，采购历史记录每一批进货，柜台收款不用等。",
         },
+        {
+          slug: "gestion-formation",
+          audience: "培训机构",
+          modules: [
+            "报名与学员档案",
+            "课程与班次",
+            "考勤与考核",
+            "证书与结业证明",
+            "预算跟进",
+          ],
+          forWhom:
+            "希望把机构整个运转数字化的职业培训中心、学院与课程机构：从报名到证书，涵盖考勤与预算。",
+        },
       ],
+    },
+    workflows: {
+      title: "需要更进一步？",
+      gold: "定制工作流设计。",
+      desc: "在开箱即用的 SaaS 之外，我们设计定制工作流系统：您的业务流程端到端自动化——审批、通知、单据——经需求评估后报价。",
+      ctaLabel: "评估我的工作流",
     },
     cta: {
       title: "还在犹豫？",
@@ -570,11 +653,11 @@ export const LOGICIELS: Localized<LogicielsContent> = {
   },
   de: {
     hero: {
-      label: "03 — SaaS-Verwaltung",
-      title: "Sechs Softwarelösungen bereit für",
+      label: "03 — SaaS & Workflows",
+      title: "Sieben Softwarelösungen bereit für",
       gold: "Ihr Metier.",
-      sub: "Bewährte Management-Tools, sofort verfügbar, für Ihre Tätigkeit konfiguriert und von unserem Team unterstützt.",
-      chips: ["7 Tage gratis testen", "Geführte Demo", "Support & Updates inklusive"],
+      sub: "Bewährte Management-Tools, sofort verfügbar, für Ihre Tätigkeit konfiguriert und von unserem Team unterstützt — plus maßgeschneidertem Workflow-Design, wenn Ihre Prozesse den Standard übersteigen.",
+      chips: ["7 Tage gratis testen", "Geführte Demo", "Maßgeschneiderte Workflows"],
     },
     detail: {
       label: "03.1 — Produktdetails",
@@ -666,7 +749,26 @@ export const LOGICIELS: Localized<LogicielsContent> = {
           forWhom:
             "Öffentliche Apotheken, deren Bestand immer stimmen soll: Ablaufwarnungen verhindern Verluste, die Einkaufshistorie dokumentiert jede Lieferung, und an der Theke wird ohne Wartezeit kassiert.",
         },
+        {
+          slug: "gestion-formation",
+          audience: "Bildungszentren",
+          modules: [
+            "Einschreibungen und Teilnehmerakten",
+            "Programme und Kurse",
+            "Anwesenheit und Bewertungen",
+            "Zertifikate und Nachweise",
+            "Budgetverfolgung",
+          ],
+          forWhom:
+            "Berufliche Bildungszentren, Institute und Kursanbieter, die das gesamte Leben ihrer Einrichtung digitalisieren wollen: von der Einschreibung bis zum Zertifikat — Anwesenheit und Budget inklusive.",
+        },
       ],
+    },
+    workflows: {
+      title: "Sie wollen weitergehen?",
+      gold: "Maßgeschneidertes Workflow-Design.",
+      desc: "Über die fertigen SaaS hinaus entwerfen wir individuelle Workflow-Systeme: Ihre Geschäftsprozesse von Ende zu Ende automatisiert — Freigaben, Benachrichtigungen, Dokumente — kalkuliert nach Analyse Ihres Bedarfs.",
+      ctaLabel: "Meinen Workflow analysieren",
     },
     cta: {
       title: "Noch unsicher?",

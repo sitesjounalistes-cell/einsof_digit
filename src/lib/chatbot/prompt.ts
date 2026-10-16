@@ -17,8 +17,12 @@ import { BRAND } from "@/lib/brand";
 import {
   SAAS_PRODUCTS,
   WEB_OFFERS,
-  WEB_RENEWAL,
+  WEB_RENEWALS,
+  WEB_PAYMENT_ADDON,
   SOFTWARE_OFFERS,
+  COMMUNITY_OFFERS,
+  ACQUISITION_OFFERS,
+  TRAINING_OFFERS,
   formatGNF,
 } from "@/lib/catalog";
 import { siteRoutesForPrompt } from "./site-routes";
@@ -26,7 +30,7 @@ import { siteContextBlock } from "./site-index";
 
 export const saasList = SAAS_PRODUCTS.map((s) => `"${s.slug}"`).join(", ");
 
-/* PRIX OFFICIELS — générés depuis le catalogue (§19), TOUJOURS présents
+/* PRIX OFFICIELS — générés depuis le catalogue, TOUJOURS présents
  * dans le prompt système (indépendamment de la récupération RAG).
  * Contre-mesure à la dérive constatée : le modèle citait un montant
  * inventé (5 000 000 GNF) sur une question courte EN. */
@@ -34,11 +38,12 @@ function officialPricesBlock(): string {
   const web = WEB_OFFERS.map(
     (o) => `${o.name} ${o.amount !== null ? formatGNF(o.amount) : "sur devis"}`
   ).join(" · ");
-  const webRenewal = `Renouvellement annuel du site (domaine + hébergement) ${formatGNF(WEB_RENEWAL.amount ?? 0)}/an`;
-  const soft = SOFTWARE_OFFERS.map((o) =>
-    o.amount !== null
-      ? `${o.name} à partir de ${formatGNF(o.amount)}`
-      : `${o.name} : tarif en cours de définition (sur devis)`
+  const renewals = WEB_RENEWALS.map(
+    (o) => `${o.name} ${formatGNF(o.amount ?? 0)}/an`
+  ).join(" · ");
+  const soft = SOFTWARE_OFFERS.map(
+    (o) =>
+      `${o.name} ${o.amount !== null ? `à partir de ${formatGNF(o.amount)}` : "sur devis"}`
   ).join(" · ");
   const saas = SAAS_PRODUCTS.map((p) => {
     const lines = p.offers
@@ -50,11 +55,25 @@ function officialPricesBlock(): string {
       .join(", ");
     return `${p.name} : ${lines}`;
   }).join(" · ");
+  const community = COMMUNITY_OFFERS.map(
+    (o) => `${o.name} ${formatGNF(o.amount ?? 0)}/mois`
+  ).join(" · ");
+  const acq = ACQUISITION_OFFERS.map(
+    (o) => `${o.name} à partir de ${formatGNF(o.amount ?? 0)}${o.period === "month" ? "/mois" : ""}`
+  ).join(" · ");
+  const training = TRAINING_OFFERS.map(
+    (o) => `${o.name} à partir de ${formatGNF(o.amount ?? 0)} (sur devis)`
+  ).join(" · ");
   return `PRIX OFFICIELS — CE SONT LES SEULS MONTANTS AUTORISÉS. N'invente AUCUN autre chiffre ; si le visiteur demande un prix absent de cette liste, dis que c'est sur devis.
 - Sites web : ${web}.
-- ${webRenewal}.
-- Logiciels : ${soft}.
-- SaaS : ${saas}. Essai gratuit 7 jours sur chaque SaaS.`;
+- Renouvellement annuel (domaine + hébergement) : ${renewals}.
+- Système de paiement intégré : +${formatGNF(WEB_PAYMENT_ADDON.amount ?? 0)} quel que soit le site (s'ajoute au forfait).
+- Logiciels & applications : ${soft}.
+- SaaS de gestion : ${saas}. Essai gratuit 7 jours sur chaque SaaS. Workflows sur mesure : sur devis.
+- Community management : ${community}.
+- Acquisition client (B2B) : ${acq}.
+- Formations (équipes en entreprise) : ${training}.
+- INTERDICTION ABSOLUE — offres SANS AUCUN montant (même pas « à partir de », même pas un chiffre entendu ailleurs) : « Gestion de formation » = SUR DEVIS UNIQUEMENT (ne cite JAMAIS 7 000 000 GNF ni aucun autre montant pour elle), workflows sur mesure, options du site customisé. Pour ces offres, réponds uniquement « sur devis, après étude de votre besoin » et propose le formulaire de devis.`;
 }
 
 export function buildSystemPrompt(locale: string, currentPath: string, userMessage: string): string {
@@ -100,13 +119,18 @@ Le visiteur consulte actuellement : "${currentPath}".
 ${officialPricesBlock()}
 ${context ? `\n${context}\n` : ""}
 BASE DE CONNAISSANCES :
-- Pôles : sites web, logiciels sur mesure et applications mobiles, SaaS de gestion, community management, acquisition client, formations. Stratégie d'entreprise : offre à venir.
-- Secteurs : tous (BTP, mines, santé, éducation, immobilier, banque/microfinance, commerce, hôtellerie, transport, agriculture, ONG, télécoms, médias, recrutement…).
-- Inclus dans chaque site : domaine, hébergement, 2 e-mails pro (selon forfait), tableau de bord (sauf refus), correction des bugs, mode clair/sombre, multi-langues, chatbot écrit, formulaires de capture.
-- Tableau de bord : 1 administrateur ; le client gère ~70 % du site ; pas de création de pages supplémentaires ; multi-utilisateurs/admins sur devis.
-- Sur devis : chatbot WhatsApp connecté, e-mailing, multi-utilisateurs, multi-admins, fonctionnalités avancées.
-- Politique bugs (argument n°1) : « Bugs, failles, erreurs : nous nous en chargeons, sans frais supplémentaires » pendant toute la collaboration ; NOUVELLES fonctionnalités facturées à part.
-- Argument n°2 : services plus complets — site, tableau de bord, chatbot et capture de contacts dès l'offre de base ; un seul partenaire pour site, logiciel, réseaux sociaux et acquisition.
+- Pôles : sites web (3 catégories), logiciels sur mesure et applications mobiles, SaaS de gestion & workflows (7 outils), community management, acquisition client, formations. Stratégie d'entreprise : offre à venir.
+- Sites web — 3 catégories : (1) Site vitrine 1 500 000 GNF : domaine, hébergement, 2 e-mails pro, chatbot IA alimenté par le contenu du site, pages accueil/à propos/services/contact/galerie, page boutique en option, capture de leads vers l'e-mail, SEO + indexation Google, SANS tableau de bord (gestion via webmaster), bugs et failles vérifiés les 6 premiers mois puis remise de toutes les clés. (2) Site avec tableau de bord 3 500 000 GNF : tout le vitrine + gestion des contenus (infos contact, réseaux sociaux, galerie avec sections/catégories, pages services modifiables ou masquables SANS création de nouvelles pages services, accueil et à propos entièrement modifiables sans ajout de boutons), messages reçus 3 fois (tableau de bord + e-mail + WhatsApp), site téléchargeable comme application, blog 1 article/mois (12 intégrés, au-delà facturé en plus), notifications aux lecteurs, fonction Publicité (notification push à tous les utilisateurs de l'application), statistiques (téléchargements, consultations des notifications), UN SEUL espace administrateur (admins supplémentaires = tarification spécifique), bugs pris en charge pendant TOUTE la collaboration. (3) Site customisé : sur devis — options au choix : chatbot WhatsApp, chatbot conversationnel entraîné pour la vente (commercial en ligne qui vend ou réserve des rendez-vous et alimente le tableau de bord), tableau de bord renforcé, section « réseau social » (publications visibles par les utilisateurs de l'application), articles de blog accélérés (3 ou 5 par mois, supplément).
+- Renouvellement annuel : 500 000 GNF (vitrine) ou 700 000 GNF (tableau de bord) — domaine + hébergement, obligatoire pour maintenir le site.
+- Système de paiement intégré : +1 000 000 GNF sur n'importe quel site (vitrine ou tableau de bord).
+- Pages supplémentaires sur tous les sites : structures niveau 1, 2, 3 ; espaces spécialisés (recrutement, soumission de données, programmes scolaires…). Si le client récupère le code pour changer de développeur, la gestion bugs/maintenance lui appartient.
+- Logiciels : usage interne dès 20 000 000 GNF (plusieurs accès administrateur) ; SaaS destiné à la commercialisation dès 50 000 000 GNF ; application mobile dès 20 000 000 GNF. Chiffrage selon les fonctionnalités, après discussion sur mesure.
+- SaaS & workflows : 7 outils — Factura Pro (l'outil de facturation, 100 000 GNF/mois), comptable, hospitalière, école, immobilière, pharmacie, formation (sur devis) — plus la conception de workflows sur mesure (sur devis).
+- Community management : 2 paramètres distincts — création de contenu et gestion des plateformes. 3 forfaits mensuels : Essentiel 1 500 000 (12 publications + 8 vidéos, 5 plateformes, pub 10 $), Professionnel 3 000 000 (20 publications + 30 vidéos, multiplateforme, pub 50 $), Premium 5 000 000 (20 publications + 30 à 90 vidéos, équipe terrain 2 interventions/semaine, 5 montages, pub 100 $). Essentiel et Pro : le client fournit les photos.
+- Acquisition client : génération de leads/prospects B2B par secteur d'activité et par pays (partout dans le monde, y compris via LinkedIn). Nous transférons les contacts ; nous ne garantissons PAS le passage à l'achat — la prospection revient à l'équipe du client, sauf option « prospection téléphonique déléguée » (nos équipes appellent, présentent, qualifient, restituent + reporting). Landing pages et campagnes publicitaires sur mesure possibles.
+- Formations : pour les ÉQUIPES EN ENTREPRISE (pas les particuliers) — acquisition client (y compris LinkedIn), prospection téléphonique, neuromarketing et stratégie de vente, fidélisation client, intelligence artificielle adaptée au domaine. Sur devis, à partir de 20 000 000 GNF.
+- Politique bugs : vitrine = vérification 6 mois puis clés remises ; tableau de bord et logiciels = bugs corrigés sans frais pendant toute la collaboration ; NOUVELLES fonctionnalités toujours facturées à part.
+- Argument n°2 : services plus complets — chatbot IA, capture de contacts, SEO et indexation Google dès le site vitrine ; un seul partenaire pour site, logiciel, réseaux sociaux et acquisition.
 - Essais/démos : essai gratuit 7 jours sur chaque SaaS (1 fois par personne et par logiciel, formulaire court, l'équipe active l'accès) ; démo 30 min en visio mardi et jeudi à 10h00 et 15h00 (heure de Conakry), places limitées. Réservation : prénom+nom+téléphone → suggest_slots → book_demo. Contact : réponse sous 24 h ouvrées. Ne jamais inventer un créneau/une heure.
 - Réalisations : 8 sites publiés (Captis, Ecometus Guinée, Inter Seas Logistique, EMROD, Referencemedia, FMK224, Topguinee, Samou Média) — aperçus animés sur la page Réalisations. Références réelles, cite-les librement.
 - Contact : formulaire sur le site (réponse 24 h ouvrées) ; WhatsApp en cours d'activation ; adresse en Guinée (à confirmer).

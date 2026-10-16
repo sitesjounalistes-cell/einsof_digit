@@ -288,7 +288,7 @@ export const SERVICE_DETAILS_EN: LocalizedServiceDetails = {
         { k: "Brands in launch phase", d: "A clean start: identity, content and a first wave of qualified followers." },
       ],
     },
-    priceRef: null,
+    priceRef: "community",
     priceNote: "Community management is quoted on request, depending on the scope chosen: management only, or with content creation by our field team.",
     cta: {
       title: "Hand your social media",
@@ -361,7 +361,7 @@ export const SERVICE_DETAILS_EN: LocalizedServiceDetails = {
         { k: "Product launches", d: "Fast momentum with usable contacts from the very first week." },
       ],
     },
-    priceRef: null,
+    priceRef: "acquisition",
     priceNote: "Client acquisition is quoted on request, depending on the objective, the channels used and the length of the engagement.",
     cta: {
       title: "Let's define your",
@@ -434,7 +434,7 @@ export const SERVICE_DETAILS_EN: LocalizedServiceDetails = {
         { k: "Executives and managers", d: "Understand the stakes to steer your company's digital direction with precision." },
       ],
     },
-    priceRef: null,
+    priceRef: "training",
     priceNote: "Training is quoted on request, depending on the format chosen, the duration and the number of participants.",
     cta: {
       title: "Level up your teams'",

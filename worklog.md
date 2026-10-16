@@ -811,3 +811,27 @@ Stage Summary:
 - Trois ceintures de sécurité à chaque étage : Web Speech→ASR serveur ; voix navigateur→TTS serveur ; OpenRouter→z-ai streamé réel.
 - IMPORTANT (client) : la clé OPENROUTER_API_KEY a de nouveau disparu du .env du sandbox — le site tourne impecébablement sur le repli z-ai streamé (TTFT ~0,5-6 s) ; remettre la clé dans .env réactivera OpenRouter automatiquement (aucun code à changer).
 - En attente client : contenus blog, logos interseas/emrod.
+
+---
+Task ID: 20
+Agent: Z.ai Code (principal)
+Task: Reprise de la session interrompue (ajout du 7e SaaS « Gestion de formation ») — complétion des 4 langues, corrections TS, et correction d'un bug majeur de contenu invisible (mode léger).
+
+Work Log:
+- Diagnostic : la session précédente avait été interrompue en pleine extension du catalogue (7e SaaS « gestion-formation », sur devis) — fr complet, en/es/zh/de incomplets, 3 erreurs TS composants.
+- Corrections composants : LogicielsPage (Section id="workflows" requis), ServiceDetailPage (import useLocalized manquant), TarifsPage (Reveal importé de @/components/motion au lieu de kit).
+- translations.ts ×4 langues : saas.items.formation (Centres de formation), pricing.tabs étendus à 6 onglets (community/acquisition/training), titres « Six → Sept/Seven/Siete/七款/Sieben », labels « SaaS & workflows », sous-titres mentionnant les workflows sur mesure.
+- saas-details/{en,es,zh,de}.ts : entrée « gestion-formation » complète (hero, vidéo, présentation, 10 caractéristiques, pour qui + 3 cas, prix sur devis, CTA, FAQ ×3) — montants JAMAIS écrits (renvoi catalogue).
+- logiciels.ts ×4 langues : produit gestion-formation (5 modules + pour qui), section workflows (title/gold/desc/ctaLabel), chips et sous-titres alignés sur fr.
+- tarifs.ts ×4 langues : traduction INTÉGRALE du TarifsContent (hero, 6 groupes — web 3 cartes + renouvellements + addon paiement + options + inclus + conditions, logiciels 3 cartes, SaaS + workflowsTitle/Desc, community 3 forfaits, acquisition 4 cartes, formations + 5 sujets, stratégie, FAQ ×6, CTA, liens croisés).
+- service-details/{en,es,zh,de}.ts : priceRef null → "community"/"acquisition"/"training" (fr seul à jour avant) — les pages de détail affichent désormais les vraies cartes tarifaires dans TOUTES les langues (avant : repli générique « Sur devis »).
+- PricingSection.PriceCard : note de bas d'offre rendue EN DOUBLE (PriceTag + PriceCard) — doublon supprimé (corrigé sur toutes les pages tarifs + bandes de détail).
+- Chatbot — prix inventés (« 7 000 000 GNF » pour la gestion de formation, qui est SUR DEVIS) : (a) nouvelle table ALIASES multilingues dans site-index.ts (training→formation, software→logiciel, schulung→formation, farmacia→pharmacie… ×60 entrées en/es/de) — la recherche contextuelle retrouve désormais les pages FR depuis une question EN/ES/DE ; (b) règle absolue ajoutée au prompt : offres sans AUCUN montant (gestion de formation, workflows, options customisées) = « sur devis » uniquement, jamais de chiffre. Vérifié : EN/FR/ES répondent correctement « sur devis », la pharmacie cite toujours 7 000 000 GNF/an exact.
+- BUG MAJEUR corrigé — contenu invisible sur appareils faibles (hardwareConcurrency ≤ 4) : le mode léger s'activait APRÈS montage (rAF post-hydratation) et framer-motion laissait les styles inline de `initial` (opacity:0, transform) sur tous les éléments pas encore révélés → sections entières (bande tarifaire, workflows, FAQ) invisibles POUR TOUJOURS. Confirmé : 2 cœurs sur la machine sandbox = le mode léger était actif dans l'aperçu. Fix : bascule de mode = remontade propre via key="fm"/"lm" sur Reveal, Stagger, StaggerItem, PopIn (+ DrawRule style transform:none) — les éléments repartent d'un DOM propre. Vérifié par balayage Playwright de 16 pages × défilement complet : 0 élément bloqué à opacity:0 (hors honeypots et points décoratifs).
+- Qualité : tsc 0 erreur, lint 0 erreur, 15+ routes 200, vérification navigateur (sombre + clair, desktop 1280 + mobile 390), dev.log sans erreur runtime.
+
+Stage Summary:
+- Le 7e SaaS « Gestion de formation » est complet sur les 5 langues partout : page hub (7e carte du carrousel), page détail /logiciels/gestion-formation, onglet SaaS des tarifs (carte « sur devis » + bande workflows), carrousel, chatbot, image produit dédiée.
+- Sécurité tarifaire renforcée : le chatbot ne peut plus inventer de montant pour les offres sur devis (double ceinture : liste officielle + interdiction explicite + contexte de page pertinent via alias multilingues).
+- Bug « contenu invisible en mode léger » éradiqué (remontade propre à la bascule) — impact réel : téléphones ≤ 4 cœurs ET l'aperçu sandbox lui-même (2 cœurs) ; la page /tarifs et toutes les sections animées redeviennent visibles.
+- En attente client : contenus blog, logos interseas/emrod, URLs vidéos produits, ressource FAQ.

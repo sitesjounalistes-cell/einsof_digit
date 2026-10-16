@@ -16,7 +16,14 @@ export type ServiceSlug =
   | "strategy";
 
 /** Référence catalogue pour la bande tarifaire de la page. */
-export type ServicePriceRef = "web" | "software" | "saas" | null;
+export type ServicePriceRef =
+  | "web"
+  | "software"
+  | "saas"
+  | "community"
+  | "acquisition"
+  | "training"
+  | null;
 
 export interface ServiceDetail {
   slug: ServiceSlug;

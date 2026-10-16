@@ -288,7 +288,7 @@ export const SERVICE_DETAILS_DE: LocalizedServiceDetails = {
         { k: "Marken im Start", d: "Ein sauberer Auftakt: Identität, Content, erste qualifizierte Follower." },
       ],
     },
-    priceRef: null,
+    priceRef: "community",
     priceNote: "Community-Management wird auf Angebot angeboten, je nach gewähltem Umfang: Betreuung allein oder mit Content-Erstellung durch unser Außenteam.",
     cta: {
       title: "Übergeben Sie Ihre Netzwerke",
@@ -361,7 +361,7 @@ export const SERVICE_DETAILS_DE: LocalizedServiceDetails = {
         { k: "Produkteinführungen", d: "Schnelle Dynamik mit verwertbaren Kontakten ab der ersten Woche." },
       ],
     },
-    priceRef: null,
+    priceRef: "acquisition",
     priceNote: "Kundengewinnung wird auf Angebot angeboten — je nach Ziel, eingesetzten Kanälen und Dauer der Begleitung.",
     cta: {
       title: "Definieren wir Ihr",
@@ -434,7 +434,7 @@ export const SERVICE_DETAILS_DE: LocalizedServiceDetails = {
         { k: "Führungskräfte und Manager", d: "Die Herausforderungen verstehen, um das Digitale Ihres Unternehmens klug zu steuern." },
       ],
     },
-    priceRef: null,
+    priceRef: "training",
     priceNote: "Schulungen werden auf Angebot angeboten — je nach gewähltem Format, Dauer und Teilnehmerzahl.",
     cta: {
       title: "Bringen Sie Ihre Teams",

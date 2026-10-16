@@ -42,6 +42,15 @@ const MOTION_TAGS = {
 
 type MotionTag = keyof typeof MOTION_TAGS;
 
+/* Style statique du mode léger — FILET DE SÉCURITÉ ANTI-CONTENT INVISIBLE :
+ * quand le mode léger s'active APRÈS le montage (appareil faible détecté
+ * en post-hydratation, ex. hardwareConcurrency ≤ 4), framer-motion laisse
+ * les styles inline de `initial` (opacity:0, transform) sur les éléments
+ * pas encore révélés — ils restaient invisibles POUR TOUJOURS. En posant
+ * explicitement opacity/transform/filter dans la branche light, React
+ * écrase ces styles obsolètes au re-render. */
+const STATIC_VISIBLE = { opacity: 1, transform: "none", filter: "none" } as const;
+
 /* HYDRATION (fix radix-_R_…) : en mode light on rend TOUJOURS LA MÊME
  * RÉFÉRENCE de composant (motion.div, motion.span…) qu'en mode complet —
  * uniquement sans props d'animation. Deux pièges à éviter :
@@ -91,7 +100,12 @@ export function Reveal({
 
   /* Même référence motion.* dans les deux modes (voir note HYDRATION)
      : mode light = motion.* sans props d'animation, zéro remontade. */
-  if (lightMode) return <Comp className={className}>{children}</Comp>;
+  if (lightMode)
+    return (
+      <Comp key="lm" className={className}>
+        {children}
+      </Comp>
+    );
 
   const base = REVEAL_OFFSETS[variant] ?? REVEAL_OFFSETS.up;
   const offset = variant === "blur"
@@ -100,6 +114,7 @@ export function Reveal({
 
   return (
     <Comp
+      key="fm"
       className={className}
       initial={offset}
       whileInView={{ opacity: 1, x: 0, y: 0, scale: 1, filter: "blur(0px)" }}
@@ -132,10 +147,16 @@ export function Stagger({
   const { lightMode } = useMotionMode();
   const Comp = MOTION_TAGS[as] ?? motion.div;
 
-  if (lightMode) return <Comp className={className}>{children}</Comp>;
+  if (lightMode)
+    return (
+      <Comp key="lm" className={className}>
+        {children}
+      </Comp>
+    );
 
   return (
     <Comp
+      key="fm"
       className={className}
       initial="hidden"
       whileInView="visible"
@@ -164,10 +185,16 @@ export function StaggerItem({
   const { lightMode } = useMotionMode();
   const Comp = MOTION_TAGS[as] ?? motion.div;
 
-  if (lightMode) return <Comp className={className}>{children}</Comp>;
+  if (lightMode)
+    return (
+      <Comp key="lm" className={className}>
+        {children}
+      </Comp>
+    );
 
   return (
     <Comp
+      key="fm"
       className={className}
       variants={{
         hidden: { opacity: 0, y, scale: 0.97, filter: "blur(6px)" },
@@ -337,7 +364,14 @@ export function DrawRule({
 }) {
   const { lightMode } = useMotionMode();
 
-  if (lightMode) return <motion.div aria-hidden className={`gold-rule ${className}`} />;
+  if (lightMode)
+    return (
+      <motion.div
+        aria-hidden
+        className={`gold-rule ${className}`}
+        style={{ transform: "none" }}
+      />
+    );
 
   return (
     <motion.div
@@ -710,10 +744,16 @@ export function PopIn({
   const { lightMode } = useMotionMode();
   const Comp = MOTION_TAGS[as] ?? motion.div;
 
-  if (lightMode) return <Comp className={className}>{children}</Comp>;
+  if (lightMode)
+    return (
+      <Comp key="lm" className={className}>
+        {children}
+      </Comp>
+    );
 
   return (
     <Comp
+      key="fm"
       className={className}
       initial={{ opacity: 0, scale: 0.4, rotate: -10 }}
       whileInView={{ opacity: 1, scale: 1, rotate: 0 }}

@@ -64,15 +64,15 @@ export const SERVICES_PAGE: Localized<ServicesPageContent> = {
         num: "01",
         title: "Sites web",
         mission:
-          "Concevoir des sites vitrines et boutiques en ligne qui inspirent confiance dès la première seconde et transforment vos visiteurs en clients. Chaque page est pensée pour votre image et pour vos objectifs commerciaux.",
+          "Concevoir des sites web qui inspirent confiance dès la première seconde et transforment vos visiteurs en clients. Trois catégories : site vitrine, site avec tableau de bord, site customisé — chaque page est pensée pour votre image et pour vos objectifs commerciaux.",
         includedLabel: "Inclus dans chaque site",
         included: [
-          "Site vitrine ou boutique e-commerce, adapté à votre image",
-          "Tableau de bord d'administration pour gérer vos contenus",
-          "Paiements en ligne sécurisés pour les boutiques",
-          "Version multilingue selon vos marchés",
-          "Chatbot écrit et formulaire de capture de contacts",
-          "Correction gratuite des bugs après la mise en ligne",
+          "Site vitrine, avec tableau de bord ou customisé, adapté à votre image",
+          "Nom de domaine, hébergement et deux adresses e-mail professionnelles",
+          "Chatbot IA intégré, alimenté par le contenu du site",
+          "Pages accueil, à propos, services, contact, galerie — et boutique en option",
+          "Capture de leads : les formulaires arrivent directement dans votre e-mail",
+          "SEO et indexation Google pris en charge",
         ],
         forWhoLabel: "Pour qui",
         forWho:
@@ -83,14 +83,14 @@ export const SERVICES_PAGE: Localized<ServicesPageContent> = {
         num: "02",
         title: "Logiciels & applications",
         mission:
-          "Développer des logiciels de gestion et applications mobiles sur mesure qui épousent vos processus réels, au lieu de vous forcer à changer votre façon de travailler. Nous partons de votre terrain, pas d'un modèle générique.",
+          "Concevoir sur mesure des logiciels uniques — usage interne ou SaaS à commercialiser — et des applications mobiles qui épousent vos processus réels, au lieu de vous forcer à changer votre façon de travailler.",
         includedLabel: "Inclus dans chaque projet",
         included: [
-          "Atelier de cadrage pour analyser vos processus",
-          "Développement itératif avec démonstrations régulières",
-          "Tableau de bord pour piloter votre activité",
-          "Formation complète de vos équipes",
-          "Maintenance et corrections gratuites",
+          "Logiciel d'usage interne à partir de 20 000 000 GNF",
+          "Logiciel SaaS destiné à la commercialisation à partir de 50 000 000 GNF",
+          "Applications mobiles à partir de 20 000 000 GNF",
+          "Fonctionnalités intégrées selon votre demande",
+          "Chiffrage après discussion sur mesure, poste par poste",
         ],
         forWhoLabel: "Pour qui",
         forWho:
@@ -99,34 +99,36 @@ export const SERVICES_PAGE: Localized<ServicesPageContent> = {
       {
         id: "saas",
         num: "03",
-        title: "SaaS de gestion",
+        title: "SaaS & workflows",
         mission:
-          "Mettre à disposition immédiate six logiciels métiers éprouvés, paramétrés pour votre activité dès le premier jour. Vous testez en conditions réelles avec un essai gratuit, puis vous démarrez rapidement.",
+          "Mettre à disposition immédiate sept logiciels métiers éprouvés — facturation, comptabilité, santé, école, immobilier, pharmacie, formation — et concevoir des workflows sur mesure qui automatisent vos processus de bout en bout.",
         includedLabel: "Inclus dans chaque abonnement",
         included: [
-          "Paramétrage initial adapté à votre activité",
+          "Sept SaaS prêts à l'emploi, paramétrés pour votre activité",
           "Import de vos données existantes",
           "Formation de vos équipes à l'outil",
           "Support et mises à jour inclus",
+          "Conception de workflows sur mesure, chiffrée après étude",
         ],
         forWhoLabel: "Pour qui",
         forWho:
-          "Entreprises, cabinets, écoles, cliniques, agences immobilières et pharmacies.",
+          "Entreprises, cabinets, écoles, cliniques, agences immobilières, pharmacies et centres de formation.",
         href: "/logiciels",
-        hrefLabel: "Voir les six logiciels",
+        hrefLabel: "Voir les sept logiciels",
       },
       {
         id: "community",
         num: "04",
         title: "Community management",
         mission:
-          "Animer vos réseaux sociaux pour construire une communauté engagée autour de votre marque. Notre équipe terrain crée des contenus qui parlent à votre audience et entretiennent la conversation.",
+          "Gérer vos réseaux sociaux avec des formules mensuelles claires : publications, vidéos courtes et publicité sponsorisée. La création de contenu et la gestion des plateformes sont deux métiers — nos forfaits combinent les deux.",
         includedLabel: "Inclus dans chaque formule",
         included: [
-          "Calendrier éditorial validé avec vous",
-          "Création de contenu par notre équipe terrain",
-          "Publication et modération au quotidien",
-          "Rapport mensuel pour mesurer les résultats",
+          "Facebook, Instagram, LinkedIn, TikTok, YouTube Shorts",
+          "Publications standards : texte et affiche conçus par notre équipe",
+          "Vidéos courtes de 30 à 45 secondes, jusqu'à 3 par jour",
+          "Publicité sponsorisée incluse : 10 $, 50 $ ou 100 $ par mois",
+          "Équipe de terrain dédiée avec le forfait Premium (2 interventions par semaine)",
         ],
         forWhoLabel: "Pour qui",
         forWho:
@@ -137,33 +139,36 @@ export const SERVICES_PAGE: Localized<ServicesPageContent> = {
         num: "05",
         title: "Acquisition client",
         mission:
-          "Remplir votre carnet de commandes avec des prospects qualifiés, pas seulement augmenter votre visibilité. Nous construisons des campagnes qui touchent les bonnes personnes et nous suivons chaque conversion.",
+          "Générer des leads et des prospects B2B selon votre domaine d'activité et le pays ciblé — partout dans le monde. Nous transférons les contacts qualifiés à votre équipe, et même les appels de prospection si vous le souhaitez.",
         includedLabel: "Inclus dans chaque dispositif",
         included: [
-          "Stratégie de génération de leads adaptée à votre marché",
-          "Landing pages conçues pour convertir",
-          "Campagnes suivies et ajustées en continu",
-          "Suivi des conversions jusqu'à la vente",
+          "Génération de leads B2B par secteur et par pays",
+          "Contacts transférés directement à votre équipe commerciale",
+          "Prospection téléphonique déléguée en option",
+          "Landing pages et campagnes publicitaires sur mesure",
+          "Suivi rigoureux et reporting détaillé",
         ],
         forWhoLabel: "Pour qui",
         forWho:
-          "Entreprises B2B et B2C qui veulent des contacts commerciaux, pas seulement de la visibilité.",
+          "Entreprises B2B qui veulent des contacts commerciaux qualifiés — en Guinée comme à l'international.",
       },
       {
         id: "training",
         num: "06",
         title: "Formations",
         mission:
-          "Rendre vos équipes réellement autonomes sur les outils digitaux du quotidien. Nos sessions pratiques laissent chaque participant manipuler, essayer et progresser à son rythme.",
-        includedLabel: "Inclus dans chaque session",
+          "Former vos équipes en entreprise aux stratégies qui font grandir le chiffre d'affaires : acquisition client, prospection téléphonique, neuromarketing, fidélisation et intelligence artificielle appliquée à votre métier.",
+        includedLabel: "Nos formations",
         included: [
-          "Sessions pratiques en petits groupes",
-          "Supports adaptés à votre contexte",
-          "Suivi post-formation pour consolider les acquis",
+          "Stratégie d'acquisition client — y compris via LinkedIn",
+          "Prospection téléphonique",
+          "Neuromarketing et stratégie de vente",
+          "Fidélisation client",
+          "Intelligence artificielle appliquée à votre domaine d'activité",
         ],
         forWhoLabel: "Pour qui",
         forWho:
-          "Équipes internes, directions et commerçants qui veulent maîtriser leurs outils digitaux.",
+          "Directions commerciales et équipes en entreprise — nous formons vos équipes, pas les particuliers.",
       },
       {
         id: "strategy",
@@ -191,8 +196,8 @@ export const SERVICES_PAGE: Localized<ServicesPageContent> = {
       items: [
         {
           href: "/logiciels",
-          title: "Six logiciels prêts pour votre métier",
-          desc: "Facturation, comptabilité, santé, école, immobilier, pharmacie : des outils de gestion prêts à l'emploi, avec essai gratuit de 7 jours.",
+          title: "Sept logiciels prêts pour votre métier",
+          desc: "Facturation, comptabilité, santé, école, immobilier, pharmacie, formation : des outils de gestion prêts à l'emploi, avec essai gratuit de 7 jours.",
         },
         {
           href: "/tarifs",

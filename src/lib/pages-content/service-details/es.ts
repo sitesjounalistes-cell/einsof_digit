@@ -283,7 +283,7 @@ export const SERVICE_DETAILS_ES: LocalizedServiceDetails = {
         { k: "Marcas en lanzamiento", d: "Un arranque limpio: identidad, contenido, primeros seguidores calificados." },
       ],
     },
-    priceRef: null,
+    priceRef: "community",
     priceNote: "El community management se ofrece a presupuesto, según el alcance elegido: solo gestión o con creación de contenido por nuestro equipo de campo.",
     cta: {
       title: "Confíe sus redes",
@@ -356,7 +356,7 @@ export const SERVICE_DETAILS_ES: LocalizedServiceDetails = {
         { k: "Lanzamientos de productos", d: "Una aceleración rápida con contactos aprovechables desde la primera semana." },
       ],
     },
-    priceRef: null,
+    priceRef: "acquisition",
     priceNote: "La adquisición de clientes se ofrece a presupuesto, según el objetivo, los canales utilizados y la duración del acompañamiento.",
     cta: {
       title: "Definamos su",
@@ -429,7 +429,7 @@ export const SERVICE_DETAILS_ES: LocalizedServiceDetails = {
         { k: "Dirigentes y managers", d: "Comprender los retos para pilotar lo digital de su empresa con precisión." },
       ],
     },
-    priceRef: null,
+    priceRef: "training",
     priceNote: "Las formaciones se ofrecen a presupuesto, según el formato elegido, la duración y el número de participantes.",
     cta: {
       title: "Haga crecer a sus equipos",

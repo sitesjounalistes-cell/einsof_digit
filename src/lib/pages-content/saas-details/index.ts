@@ -24,6 +24,7 @@ export const SAAS_DETAIL_SLUGS: SaasSlug[] = [
   "gestion-ecole",
   "gestion-immobiliere",
   "gestion-pharmacie",
+  "gestion-formation",
 ];
 
 /** Version hors hook (metadata serveur) : nom du produit en fr. */

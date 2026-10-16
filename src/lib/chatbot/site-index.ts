@@ -17,8 +17,12 @@
 import {
   SAAS_PRODUCTS,
   WEB_OFFERS,
-  WEB_RENEWAL,
+  WEB_RENEWALS,
+  WEB_PAYMENT_ADDON,
   SOFTWARE_OFFERS,
+  COMMUNITY_OFFERS,
+  ACQUISITION_OFFERS,
+  TRAINING_OFFERS,
   formatGNF,
 } from "@/lib/catalog";
 import { SERVICE_DETAILS, SERVICE_SLUGS } from "@/lib/pages-content/service-details";
@@ -126,7 +130,9 @@ export function buildSiteDocs(): SiteDoc[] {
   push(
     "Tarifs — Sites web",
     WEB_OFFERS.map((o) => `${o.name} : ${priceLine(o)}${o.footnote ? ` — ${o.footnote}` : ""}`).join("\n") +
-      `\nRenouvellement annuel (domaine + hébergement) : ${priceLine(WEB_RENEWAL)}.`,
+      `\n${WEB_RENEWALS.map((o) => `${o.name} : ${priceLine(o)}${o.footnote ? ` — ${o.footnote}` : ""}`).join("\n")}` +
+      `\n${WEB_PAYMENT_ADDON.name} : ${priceLine(WEB_PAYMENT_ADDON)}${WEB_PAYMENT_ADDON.footnote ? ` — ${WEB_PAYMENT_ADDON.footnote}` : ""}` +
+      `\nTous les sites incluent : domaine, hébergement, 2 e-mails pro, chatbot IA alimenté par le contenu, capture de leads, SEO et indexation Google. Site vitrine : sans tableau de bord, bugs vérifiés 6 mois puis remise des clés. Site à tableau de bord : 1 administrateur, messages reçus dans le tableau de bord + e-mail + WhatsApp, site téléchargeable en application, blog (1 article/mois, 12 intégrés), notifications, fonction Publicité push, statistiques ; bugs pris en charge pendant toute la collaboration. Site customisé : options sur mesure (chatbot WhatsApp, chatbot conversationnel entraîné pour la vente, section « réseau social »).`,
     "/tarifs"
   );
   push(
@@ -138,14 +144,33 @@ export function buildSiteDocs(): SiteDoc[] {
     "Tarifs — Logiciels SaaS de gestion",
     SAAS_PRODUCTS.map(
       (p) => `${p.name} : ${p.offers.map((o) => `${o.name} ${priceLine(o)}`).join(" ; ")}`
-    ).join("\n"),
+    ).join("\n") +
+      "\nConception de workflows sur mesure : chiffrée après étude (sur devis).",
+    "/tarifs"
+  );
+  push(
+    "Tarifs — Community management",
+    COMMUNITY_OFFERS.map((o) => `${o.name} : ${priceLine(o)}${o.footnote ? ` — ${o.footnote}` : ""}`).join("\n") +
+      "\nPlateformes : Facebook, Instagram, LinkedIn, TikTok, YouTube Shorts. Publicité sponsorisée incluse (10 $ / 50 $ / 100 $ par mois). Essentiel et Professionnel sans équipe de terrain ; Premium avec équipe dédiée (2 interventions/semaine) et 5 montages vidéo.",
+    "/tarifs"
+  );
+  push(
+    "Tarifs — Acquisition client (B2B)",
+    ACQUISITION_OFFERS.map((o) => `${o.name} : ${priceLine(o)}${o.footnote ? ` — ${o.footnote}` : ""}`).join("\n") +
+      "\nPrécision : contacts B2B par secteur et par pays, partout dans le monde ; nous garantissons la qualité des contacts, PAS leur passage à l'achat — la prospection et la conversion restent le travail de l'équipe du client, sauf avec la prospection téléphonique déléguée.",
+    "/tarifs"
+  );
+  push(
+    "Tarifs — Formations (équipes en entreprise)",
+    TRAINING_OFFERS.map((o) => `${o.name} : ${priceLine(o)}${o.footnote ? ` — ${o.footnote}` : ""}`).join("\n") +
+      "\nThèmes : stratégie d'acquisition client (y compris via LinkedIn), prospection téléphonique, neuromarketing et stratégie de vente, fidélisation client, intelligence artificielle appliquée au domaine d'activité. Nous formons les équipes des entreprises, pas les particuliers.",
     "/tarifs"
   );
 
   /* ── Méthode de travail ── */
   push(
     "Méthode de travail",
-    "Quatre étapes : écoute et cadrage du besoin, maquette et validation, développement avec points d'étape réguliers, mise en ligne avec formation du client. Les bugs, failles et erreurs sont corrigés sans frais pendant toute la collaboration.",
+    "Quatre étapes : écoute et cadrage du besoin, maquette et validation, développement avec points d'étape réguliers, mise en ligne avec formation du client. Sur un site vitrine, bugs et failles sont vérifiés sans frais pendant les 6 premiers mois puis toutes les clés sont remises ; sur un site avec tableau de bord et sur les logiciels, les bugs sont corrigés sans frais pendant toute la collaboration.",
     "/methode"
   );
 
@@ -201,6 +226,62 @@ function tokenize(s: string): string[] {
     .filter((t) => t.length > 1 && !STOP.has(t));
 }
 
+/**
+ * Alias multilingues (en/es/de) → vocabulaire FRANÇAIS de l'index.
+ * L'index est rédigé en fr ; sans cette table, une question en anglais
+ * (« training management software ») ne retrouve pas la page du logiciel
+ * correspondant (« gestion de formation ») et le modèle dérive sur les prix.
+ * Les cibles sont déjà normalisées (sans accents) comme le reste de l'index.
+ */
+const ALIASES: Record<string, string[]> = {
+  /* EN */
+  training: ["formation"], trainings: ["formation"], train: ["formation"],
+  software: ["logiciel", "logiciels"], apps: ["application", "mobile"], app: ["application", "mobile"],
+  invoice: ["facture", "facturation"], invoicing: ["facturation", "facture"],
+  accounting: ["comptable", "comptabilite"], bookkeeping: ["comptabilite"],
+  hospital: ["hopital", "clinique"], clinic: ["clinique", "hopital"],
+  school: ["ecole"], schools: ["ecole"], student: ["eleve", "apprenant"], students: ["eleve", "apprenant"],
+  pharmacy: ["pharmacie"], drug: ["medicament"], drugs: ["medicament"],
+  realestate: ["immobiliere", "immobilier"], property: ["immobilier", "bailleur"],
+  landlord: ["bailleur"], tenant: ["locataire"], rent: ["loyer"], rents: ["loyer"],
+  certificate: ["certificat", "attestation"], certificates: ["certificat", "attestation"],
+  learner: ["apprenant"], learners: ["apprenant"], attendance: ["presence"],
+  website: ["site", "vitrine"], websites: ["site"], webpage: ["site"],
+  dashboard: ["tableau", "bord"], backoffice: ["tableau", "bord"],
+  store: ["boutique"], shop: ["boutique"], ecommerce: ["boutique", "commerce"],
+  pricing: ["prix", "tarif"], price: ["prix", "tarif"], fee: ["prix", "tarif"], fees: ["prix", "tarif"], costs: ["prix"], cost: ["prix"],
+  lead: ["lead", "prospect"], leads: ["lead", "prospect"], prospecting: ["prospection", "prospect"],
+  advertising: ["publicite", "pub"], ads: ["publicite", "pub"], campaign: ["campagne"], campaigns: ["campagne"],
+  social: ["reseaux", "sociaux"],
+  bug: ["bug", "bugs"], bugs: ["bug", "bugs"],
+  renewal: ["renouvellement"], renewals: ["renouvellement"], domain: ["domaine"], hosting: ["hebergement"],
+  payment: ["paiement"], payments: ["paiement"],
+  demo: ["demo", "demonstration"], trial: ["essai", "gratuit"],
+  /* ES */
+  formacion: ["formation"], formaciones: ["formation"],
+  factura: ["factura", "facture"], facturacion: ["facturation"],
+  contable: ["comptable"], contabilidad: ["comptabilite"],
+  farmacia: ["pharmacie"], escuela: ["ecole"], colegio: ["ecole"],
+  inmobiliaria: ["immobiliere"], alquiler: ["loyer"],
+  certificado: ["certificat"], certificados: ["certificat"],
+  alumno: ["apprenant"], alumnos: ["apprenant"], asistencia: ["presence"],
+  prueba: ["essai"], gratis: ["gratuit"], mantenimiento: ["maintenance"],
+  dominio: ["domaine"], alojamiento: ["hebergement"], pago: ["paiement"],
+  demostracion: ["demonstration"], publicidad: ["publicite"],
+  /* DE */
+  schulung: ["formation"], schulungen: ["formation"],
+  buchhaltung: ["comptabilite"], krankenhaus: ["hopital"], klinik: ["clinique"],
+  apotheke: ["pharmacie"], immobilien: ["immobilier"], miete: ["loyer"],
+  rechnung: ["facture"], angebot: ["devis"], test: ["essai"],
+  wartung: ["maintenance"], zahlung: ["paiement"],
+};
+
+/** Résout un token en [token + alias] (dédupe). */
+function expand(tk: string): string[] {
+  const alts = ALIASES[tk];
+  return alts ? [tk, ...alts.filter((a) => a !== tk)] : [tk];
+}
+
 const DOCS = buildSiteDocs();
 const DOCS_TOKENS = DOCS.map((d) => ({
   titleTokens: new Set(tokenize(d.title)),
@@ -223,14 +304,22 @@ export function retrieveSiteDocs(query: string, k = 4): SiteDoc[] {
     const { titleTokens, bodyTokens, bodySet } = DOCS_TOKENS[i];
     let score = 0;
     let matched = 0;
-    for (const tk of tokens) {
+    for (const raw of tokens) {
+      /* chaque token teste aussi ses alias multilingues (training→formation…) */
+      const variants = expand(raw);
       let hit = 0;
-      if (titleTokens.has(tk)) hit += 3;
-      if (bodySet.has(tk)) hit += 1;
-      else {
+      for (const tk of variants) {
+        if (titleTokens.has(tk)) {
+          hit = Math.max(hit, 3);
+          continue;
+        }
+        if (bodySet.has(tk)) {
+          hit = Math.max(hit, 1);
+          continue;
+        }
         /* préfixe tolérant (pluriels, conjugaisons) */
         const pref = bodyTokens.find((b) => b.startsWith(tk.slice(0, Math.max(4, tk.length - 2))));
-        if (pref) hit += 0.5;
+        if (pref) hit = Math.max(hit, 0.5);
       }
       if (hit > 0) matched++;
       score += hit;

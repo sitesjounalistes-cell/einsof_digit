@@ -283,7 +283,7 @@ export const SERVICE_DETAILS_ZH: LocalizedServiceDetails = {
         { k: "初创品牌", d: "体面的起点：形象、内容与首批精准粉丝。" },
       ],
     },
-    priceRef: null,
+    priceRef: "community",
     priceNote: "社群运营按报价计费，视所选范围而定：纯代运营，或含实地团队内容创作。",
     cta: {
       title: "把您的账号，",
@@ -356,7 +356,7 @@ export const SERVICE_DETAILS_ZH: LocalizedServiceDetails = {
         { k: "新品上市", d: "快速起量，首周即有可用的客户线索。" },
       ],
     },
-    priceRef: null,
+    priceRef: "acquisition",
     priceNote: "客户获取按报价计费，视目标、使用渠道与合作周期而定。",
     cta: {
       title: "一起定下您的",
@@ -429,7 +429,7 @@ export const SERVICE_DETAILS_ZH: LocalizedServiceDetails = {
         { k: "管理者与决策层", d: "理解关键问题，精准掌舵企业数字化。" },
       ],
     },
-    priceRef: null,
+    priceRef: "training",
     priceNote: "培训按报价计费，视所选形式、时长与人数而定。",
     cta: {
       title: "让团队技能，",
