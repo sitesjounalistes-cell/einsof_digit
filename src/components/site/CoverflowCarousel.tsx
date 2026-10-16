@@ -207,15 +207,16 @@ export function CoverflowCarousel({
     [n, pos]
   );
 
-  /* Lecture automatique en boucle — ≈ 8 s par carte, pauses respectueuses.
-     La temporisation après interaction (3,6 s) ne bloque jamais un tempo
-     ≥ 5 s : la rotation reprend d'elle-même dès que l'utilisateur laisse
-     le carrousel tranquille. */
+  /* Lecture automatique en boucle — ≈ 8 s par carte (tempo configurable),
+     pauses respectueuses. La temporisation après interaction est
+     proportionnelle au tempo (55 %, plafonnée à 3,6 s) : elle ne bloque
+     jamais un tempo court comme celui des Réalisations (3 s). */
   useEffect(() => {
     if (lightMode || autoplayMs <= 0 || paused || n < 2) return;
+    const interactBuffer = Math.min(3600, Math.round(autoplayMs * 0.55));
     const id = window.setInterval(() => {
       if (document.hidden || drag.current) return;
-      if (Date.now() - lastInteract.current < 3600) return;
+      if (Date.now() - lastInteract.current < interactBuffer) return;
       const next = indexRef.current + 1 >= n ? 0 : indexRef.current + 1;
       goTo(next);
     }, autoplayMs);

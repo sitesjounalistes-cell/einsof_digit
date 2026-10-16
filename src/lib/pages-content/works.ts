@@ -17,6 +17,8 @@ export interface WorkEntry {
   domain: string;
   /** capture d'écran pleine page (aperçu animé au survol) */
   shot: string;
+  /** hauteur réelle de la capture (rapport d'aspect pour next/image) */
+  shotH: number;
   /** logo téléchargé depuis le site — null → texte typographique */
   logo: string | null;
   /** secteur, par langue */
@@ -32,6 +34,7 @@ export const WORKS: WorkEntry[] = [
     url: "https://www.captisguinee.com/",
     domain: "captisguinee.com",
     shot: "/images/works/captis.jpg",
+    shotH: 6483,
     logo: "/logos/captis.svg",
     sector: {
       fr: "Communication 360°",
@@ -54,6 +57,7 @@ export const WORKS: WorkEntry[] = [
     url: "https://www.ecometusguinee.online/",
     domain: "ecometusguinee.online",
     shot: "/images/works/ecometus.jpg",
+    shotH: 4374,
     logo: "/logos/ecometus.png",
     sector: {
       fr: "Industrie & BTP",
@@ -76,6 +80,7 @@ export const WORKS: WorkEntry[] = [
     url: "https://www.interseaslogistic.online/",
     domain: "interseaslogistic.online",
     shot: "/images/works/interseas.jpg",
+    shotH: 3944,
     logo: null,
     sector: {
       fr: "Logistique & transit",
@@ -98,6 +103,7 @@ export const WORKS: WorkEntry[] = [
     url: "https://www.emroddf.com/",
     domain: "emroddf.com",
     shot: "/images/works/emrod.jpg",
+    shotH: 6771,
     logo: null,
     sector: {
       fr: "Artisanat & mobilier",
@@ -120,6 +126,7 @@ export const WORKS: WorkEntry[] = [
     url: "https://www.referencemedia.online/",
     domain: "referencemedia.online",
     shot: "/images/works/referencemedia.jpg",
+    shotH: 5060,
     logo: "/logos/referencemedia.png",
     sector: {
       fr: "Portail d'information",
@@ -142,6 +149,7 @@ export const WORKS: WorkEntry[] = [
     url: "https://www.fmk224.online/",
     domain: "fmk224.online",
     shot: "/images/works/fmk224.jpg",
+    shotH: 4200,
     logo: "/logos/fmk224.png",
     sector: {
       fr: "Média d'actualité",
@@ -164,6 +172,7 @@ export const WORKS: WorkEntry[] = [
     url: "https://www.topguinee.online/",
     domain: "topguinee.online",
     shot: "/images/works/topguinee.jpg",
+    shotH: 6869,
     logo: "/logos/topguinee.png",
     sector: {
       fr: "Média d'actualité",
@@ -186,6 +195,7 @@ export const WORKS: WorkEntry[] = [
     url: "https://www.samoumedia.com/",
     domain: "samoumedia.com",
     shot: "/images/works/samoumedia.jpg",
+    shotH: 3051,
     logo: "/logos/samoumedia.jpg",
     sector: {
       fr: "Média d'actualité",

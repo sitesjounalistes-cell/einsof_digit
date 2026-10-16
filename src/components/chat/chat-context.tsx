@@ -12,9 +12,8 @@ import React, {
 import { useI18n, LANGS, type Lang } from "@/lib/i18n";
 import { useTheme } from "next-themes";
 import { useConsent, getVisitorId } from "@/lib/consent";
-import { scrollToSection, navigateSmart, openForm, type OpenFormType } from "@/lib/chat-bus";
+import { scrollToSection, navigateSmart, navigateToPath, openForm, type OpenFormType } from "@/lib/chat-bus";
 import { track } from "@/lib/analytics";
-import { SECTIONS } from "@/lib/sections-registry";
 
 export interface ChatSlotView {
   id: string;
@@ -52,17 +51,10 @@ interface ChatContextValue {
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 
-/** Which section is the visitor currently viewing (for chatbot context). */
-export function getCurrentSection(): string {
-  if (typeof window === "undefined") return "hero";
-  let current = "hero";
-  for (const s of SECTIONS) {
-    const el = document.getElementById(`section-${s.id}`);
-    if (el && el.getBoundingClientRect().top <= window.innerHeight * 0.4) {
-      current = s.id;
-    }
-  }
-  return current;
+/** Page actuellement vue par le visiteur (contrôle total du chatbot). */
+export function getCurrentPath(): string {
+  if (typeof window === "undefined") return "/";
+  return window.location.pathname + window.location.search;
 }
 
 interface SseEvent {
@@ -170,8 +162,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     (tool: string, args: Record<string, unknown>) => {
       switch (tool) {
         case "navigate": {
-          const section = String(args.section ?? "");
-          navigateSmart(section);
+          /* Contrôle total du site : chemin exact (pages, pôles, logiciels) */
+          const path = String(args.path ?? "");
+          if (path) {
+            navigateToPath(path);
+          } else {
+            navigateSmart(String(args.section ?? ""));
+          }
           break;
         }
         case "open_form": {
@@ -244,7 +241,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           body: JSON.stringify({
             sessionId: sessionRef.current,
             message: trimmed,
-            currentSection: getCurrentSection(),
+            currentPath: getCurrentPath(),
             locale: lang,
             history: sessionRef.current ? undefined : history.slice(0, -1),
           }),

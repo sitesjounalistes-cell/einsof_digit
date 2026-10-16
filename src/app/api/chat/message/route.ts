@@ -3,8 +3,17 @@ import { db } from "@/lib/db";
 import { upsertLead, normalizePhone } from "@/lib/leads";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import ZAI from "z-ai-web-dev-sdk";
-import { buildSystemPrompt, parseActions, type ModelAction } from "@/lib/chatbot/prompt";
-import { isValidSection } from "@/lib/sections-registry";
+import {
+  buildSystemPrompt,
+  parseActions,
+  type ModelAction,
+} from "@/lib/chatbot/prompt";
+import {
+  isOpenRouterConfigured,
+  streamOpenRouter,
+  type ChatMessage,
+} from "@/lib/chatbot/openrouter";
+import { isValidSitePath } from "@/lib/chatbot/site-routes";
 import {
   bookDemoSchema,
   bookDemoSlot,
@@ -23,7 +32,8 @@ const historySchema = z.array(
 const schema = z.object({
   sessionId: z.string().uuid().nullable().optional(),
   message: z.string().trim().min(1).max(1000),
-  currentSection: z.string().max(40).default("hero"),
+  /** page actuellement vue par le visiteur (contrôle total du site) */
+  currentPath: z.string().max(160).default("/"),
   locale: z.string().max(5).default("fr"),
   /** Ephemeral mode: client-provided recent history, nothing persisted. */
   history: historySchema.max(12).optional(),
@@ -87,20 +97,48 @@ export async function POST(req: Request): Promise<Response> {
     }
   }
 
-  const system = buildSystemPrompt(d.locale, isValidSection(d.currentSection) ? d.currentSection : "hero");
-  const messages = [
-    { role: "system" as const, content: system },
+  const system = buildSystemPrompt(d.locale, d.currentPath, d.message);
+  const llmMessages: ChatMessage[] = [
+    { role: "system", content: system },
     ...history.slice(-12),
-    { role: "user" as const, content: d.message },
+    { role: "user", content: d.message },
   ];
 
-  // LLM call with 15 s guard (spec §27: polite fallback beyond 15 s)
+  /* ── Moteur principal : OpenRouter en streaming réel (clé client).
+        Les tokens partent vers le navigateur au fil de l'eau — aucune
+        réponse pré-écrite. Repli transparent : z-ai (mot à mot). ── */
+  if (isOpenRouterConfigured()) {
+    const zaiFallback = async (): Promise<string> => {
+      const zai = await ZAI.create();
+      const withTimeout = Promise.race([
+        zai.chat.completions.create({
+          messages: llmMessages,
+          thinking: { type: "disabled" },
+        }),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 15_000)),
+      ]);
+      const completion = (await withTimeout) as Awaited<
+        ReturnType<typeof zai.chat.completions.create>
+      > | null;
+      const text = completion?.choices?.[0]?.message?.content ?? "";
+      if (!text.trim()) throw new Error("empty");
+      return text;
+    };
+    return streamResponse(
+      streamOpenRouter(llmMessages, { temperature: 0.6, maxTokens: 700 }),
+      { ip, persisted, sessionId: d.sessionId, savedUser, userMessage: d.message },
+      zaiFallback,
+      d.locale
+    );
+  }
+
+  // ── Repli direct : z-ai, LLM call with 15 s guard (spec §27) ──
   let text = "";
   try {
     const zai = await ZAI.create();
     const withTimeout = Promise.race([
       zai.chat.completions.create({
-        messages,
+        messages: llmMessages,
         thinking: { type: "disabled" },
       }),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 15_000)),
@@ -141,8 +179,6 @@ export async function POST(req: Request): Promise<Response> {
       const created = await handleCreateLead(a, ip);
       if (created) a.args = { ...a.args, _created: true };
     } else if (a.tool === "suggest_slots") {
-      // Les créneaux réels viennent de la base — aucune donnée inventée ;
-      // l'action est abandonnée s'il n'y a rien à proposer.
       const slots = await listUpcomingSlots(DEMO_CHAT_SLOTS_LIMIT).catch(() => []);
       if (slots.length > 0) a.args = { slots };
       else a.args = { _drop: true };
@@ -163,6 +199,138 @@ export async function POST(req: Request): Promise<Response> {
   return sse(events, 22);
 }
 
+/* ── Réponse en flux réel (OpenRouter) ───────────────────────────
+   Chaque delta du modèle est relayé immédiatement au navigateur.
+   À la fin : parsing des actions [[action:…]], exécution serveur
+   (créneaux, leads, démos) puis émission des événements action/done.
+   Si OpenRouter échoue SANS avoir émis un seul token → repli
+   transparent sur z-ai dans le même flux. */
+async function runServerActions(
+  actions: ModelAction[],
+  ip: string,
+  locale: string
+): Promise<ModelAction[]> {
+  for (const a of actions) {
+    if (a.tool === "create_lead") {
+      const created = await handleCreateLead(a, ip);
+      if (created) a.args = { ...a.args, _created: true };
+    } else if (a.tool === "suggest_slots") {
+      const slots = await listUpcomingSlots(DEMO_CHAT_SLOTS_LIMIT).catch(() => []);
+      if (slots.length > 0) a.args = { slots };
+      else a.args = { _drop: true };
+    } else if (a.tool === "book_demo") {
+      await handleBookDemo(a, ip, locale);
+    }
+  }
+  return actions;
+}
+
+function streamResponse(
+  iterator: AsyncGenerator<string>,
+  ctx: {
+    ip: string;
+    persisted: boolean;
+    sessionId?: string | null;
+    savedUser: boolean;
+    userMessage: string;
+  },
+  zaiFallback: () => Promise<string>,
+  locale: string
+): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (ev: SseEvent) =>
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(ev)}\n\n`));
+      let full = "";
+      let got = false;
+      try {
+        for await (const delta of iterator) {
+          if (!delta) continue;
+          got = true;
+          full += delta;
+          send({ type: "token", v: delta });
+        }
+        if (!got || !full.trim()) throw new Error("empty_stream");
+      } catch (e) {
+        console.error("[chat/message] openrouter stream", e);
+        if (!got) {
+          /* aucun token envoyé → repli z-ai complet, même flux */
+          try {
+            const text = await zaiFallback();
+            const { clean, actions } = parseActions(text);
+            const validActions = await runServerActions(filterActions(actions), ctx.ip, locale);
+            let messageId: number | undefined;
+            if (ctx.persisted && ctx.sessionId) {
+              try {
+                const saved = await db.chatMessage.create({
+                  data: { sessionId: ctx.sessionId, role: "assistant", content: clean },
+                });
+                messageId = saved.id;
+                if (!ctx.savedUser) {
+                  await db.chatMessage.create({
+                    data: { sessionId: ctx.sessionId, role: "user", content: ctx.userMessage },
+                  });
+                }
+              } catch (err) {
+                console.error("[chat/message] save assistant", err);
+              }
+            }
+            const tokens = clean.match(/\S+\s*/g) ?? [clean];
+            for (const tk of tokens) send({ type: "token", v: tk });
+            for (const a of validActions) {
+              if (a.args?._drop === true) continue;
+              send({ type: "action", tool: a.tool, args: a.args });
+            }
+            send({ type: "done", messageId });
+            controller.close();
+          } catch (err) {
+            console.error("[chat/message] zai fallback", err);
+            send({ type: "error", v: "llm" });
+            controller.close();
+          }
+          return;
+        }
+        /* coupure en cours de flux : on clôt proprement avec ce qui existe */
+      }
+
+      const { clean, actions } = parseActions(full);
+      const validActions = await runServerActions(filterActions(actions), ctx.ip, locale);
+
+      let messageId: number | undefined;
+      if (ctx.persisted && ctx.sessionId) {
+        try {
+          const saved = await db.chatMessage.create({
+            data: { sessionId: ctx.sessionId, role: "assistant", content: clean || full.trim() },
+          });
+          messageId = saved.id;
+          if (!ctx.savedUser) {
+            await db.chatMessage.create({
+              data: { sessionId: ctx.sessionId, role: "user", content: ctx.userMessage },
+            });
+          }
+        } catch (e) {
+          console.error("[chat/message] save assistant", e);
+        }
+      }
+
+      for (const a of validActions) {
+        if (a.args?._drop === true) continue;
+        send({ type: "action", tool: a.tool, args: a.args });
+      }
+      send({ type: "done", messageId });
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    },
+  });
+}
+
 const CHAT_LOCALES = ["fr", "en", "es", "zh", "de"] as const;
 const THEMES = ["dark", "light"] as const;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -171,7 +339,13 @@ function filterActions(actions: ModelAction[]): ModelAction[] {
   const out: ModelAction[] = [];
   for (const a of actions.slice(0, 1)) {
     // max one action per reply
-    if (a.tool === "navigate" && !isValidSection(String(a.args?.section ?? ""))) continue;
+    if (a.tool === "navigate") {
+      /* Contrôle total du site : le chemin doit exister dans la carte
+         du site (pages statiques + pages de pôles + pages logiciels). */
+      const path = String(a.args?.path ?? "").split("?")[0].split("#")[0];
+      if (!path || !isValidSitePath(path)) continue;
+      a.args = { path };
+    }
     if (a.tool === "open_form" && !["trial", "quote", "contact"].includes(String(a.args?.type ?? ""))) continue;
     if (a.tool === "create_lead") {
       const fn = String(a.args?.first_name ?? "").trim();
@@ -180,9 +354,6 @@ function filterActions(actions: ModelAction[]): ModelAction[] {
       if (fn.length < 2 || ln.length < 2 || ph.length < 6) continue;
     }
     if (a.tool === "book_demo") {
-      // Cap de sécurité : le LLM doit disposer de données réelles — jamais de
-      // données inventées ; si un champ manque ou est invalide, l'action est
-      // abandonnée (le modèle devra redemander l'information au visiteur).
       const fn = String(a.args?.first_name ?? "").trim();
       const ln = String(a.args?.last_name ?? "").trim();
       const ph = String(a.args?.phone ?? "").trim();
@@ -244,7 +415,7 @@ async function handleBookDemo(a: ModelAction, ip: string, locale: string): Promi
       saasSlug: args.saas_slug ? String(args.saas_slug).trim() : "",
       slotId: String(args.slot_id ?? "").trim(),
       locale: String(args.locale ?? locale ?? "fr").slice(0, 2) || "fr",
-      consentContact: true, // réserver une démo = accord d'être recontacté pour celle-ci
+      consentContact: true,
     });
     if (!parsed.success) {
       a.args = { ok: false, reason: "invalid_slot" };

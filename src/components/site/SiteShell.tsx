@@ -14,7 +14,7 @@ import { MobileActionBar } from "@/components/site/MobileActionBar";
 import { CustomCursor } from "@/components/site/CustomCursor";
 import { AdminOverlay } from "@/components/admin/AdminOverlay";
 import { RegisterServiceWorker } from "@/components/site/RegisterSW";
-import { onNavigate, scrollToSection } from "@/lib/chat-bus";
+import { onNavigate, onNavigatePath, scrollToSection } from "@/lib/chat-bus";
 import { SECTION_ROUTES } from "@/lib/routes";
 
 /**
@@ -68,6 +68,22 @@ export function SiteShell({ children }: { children: ReactNode }) {
         } else {
           router.push(route.page);
           scrollToSectionWhenReady(route.anchor ?? sectionId);
+        }
+      }),
+    [router]
+  );
+
+  /* Contrôle total du site (chatbot) : navigation directe par chemin
+     — le modèle peut emmener le visiteur sur n'importe quelle page. */
+  useEffect(
+    () =>
+      onNavigatePath((path) => {
+        const current = window.location.pathname.replace(/\/$/, "");
+        const target = path.replace(/\/$/, "") || "/";
+        if (current === target || (target === "/" && current === "")) {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          router.push(path);
         }
       }),
     [router]

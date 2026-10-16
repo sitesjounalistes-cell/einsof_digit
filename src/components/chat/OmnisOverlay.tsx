@@ -5,17 +5,10 @@ import { Mic, MicOff, X, Keyboard } from "lucide-react";
 import { useChat } from "./chat-context";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { useConsent } from "@/lib/consent";
+import { speakProfessional, pickBestVoice, invalidateVoiceCache, SPEECH_LOCALES } from "@/lib/voice";
 import { GoldButton } from "@/components/site/kit";
 
 type OmnisState = "idle" | "listening" | "thinking" | "speaking" | "unsupported" | "denied";
-
-const SPEECH_LOCALES: Record<Lang, string> = {
-  fr: "fr-FR",
-  en: "en-US",
-  es: "es-ES",
-  zh: "zh-CN",
-  de: "de-DE",
-};
 
 interface SpeechRecognitionLike {
   lang: string;
@@ -54,6 +47,16 @@ export function OmnisOverlay() {
 
   const supported = getRecognitionCtor() !== null;
 
+  /* Voix neuronale la plus professionnelle disponible (voiceschanged) */
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    invalidateVoiceCache();
+    pickBestVoice(lang);
+    const onChange = () => invalidateVoiceCache();
+    window.speechSynthesis.addEventListener?.("voiceschanged", onChange);
+    return () => window.speechSynthesis.removeEventListener?.("voiceschanged", onChange);
+  }, [lang]);
+
   const stopEverything = useCallback(() => {
     try {
       recognitionRef.current?.abort();
@@ -86,22 +89,10 @@ export function OmnisOverlay() {
 
   const speak = useCallback(
     (text: string) => {
-      const clean = text
-        .replace(/\[\[[^\]]*\]\]/g, "")
-        .replace(/[*_#`>]/g, "")
-        .trim();
-      if (!clean || !("speechSynthesis" in window)) {
-        return; // visual stays as-is; the text is shown anyway
-      }
-      window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(clean);
-      utter.lang = SPEECH_LOCALES[lang];
-      utter.rate = 1.02;
-      utter.pitch = 1;
-      utter.onstart = () => setState("speaking");
-      utter.onend = () => setState("idle");
-      utter.onerror = () => setState("idle");
-      window.speechSynthesis.speak(utter);
+      /* Voix professionnelle : sélection neuronale + débit posé +
+         découpage par phrases (voir lib/voice.ts). L'état « speaking »
+         est piloté par les callbacks ; le texte reste affiché à l'écran. */
+      speakProfessional(text, lang, () => setState("idle"), () => setState("speaking"));
     },
     [lang]
   );

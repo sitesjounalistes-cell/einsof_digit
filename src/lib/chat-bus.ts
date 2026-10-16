@@ -47,6 +47,20 @@ export function navigateSmart(sectionId: string) {
   navigateToSection(sectionId);
 }
 
+/* ── Navigation par chemin (contrôle total du site par le chatbot) ── */
+const NAVIGATE_PATH = "eins:navigate-path";
+
+/** Envoie le visiteur vers une page précise du site (ex. /services/web). */
+export function navigateToPath(path: string) {
+  window.dispatchEvent(new CustomEvent(NAVIGATE_PATH, { detail: { path } }));
+}
+
+export function onNavigatePath(handler: (path: string) => void) {
+  const fn = (e: Event) => handler((e as CustomEvent).detail?.path as string);
+  window.addEventListener(NAVIGATE_PATH, fn);
+  return () => window.removeEventListener(NAVIGATE_PATH, fn);
+}
+
 export function onNavigate(handler: (sectionId: string) => void) {
   const fn = (e: Event) =>
     handler((e as CustomEvent).detail?.sectionId as string);
