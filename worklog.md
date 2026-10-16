@@ -727,3 +727,24 @@ Stage Summary:
 - Repli z-ai maintenu : le chatbot ne tombe jamais en panne même si OpenRouter est indisponible.
 - Voix Omnis : sélection de la meilleure voix neuronale du navigateur + débit posé + découpage par phrases (headless sans voix → repli gracieux ; à l'écoute sur postes réels Edge/Chrome/Safari).
 - En attente client : contenus blog (thématiques annoncées), URLs vidéos produits, logos manquants interseas/emrod.
+
+---
+Task ID: 16
+Agent: Z.ai Code (principal)
+Task: Retour client itération 4 — (1) chatbot « très lent » diagnostiqué et corrigé de bout en bout, (2) mode Omnis réécrit : panneau flottant (site toujours visible) avec boucle conversationnelle temps réel et navigation visible en direct.
+
+Work Log:
+- Diagnostic latence (3 causes racines, prouvées par mesures) :
+  1. `openai/gpt-4o-mini` (modèle par défaut) répond HTTP 403 « This model is not available in your region » → CHAQUE message basculait sur le repli z-ai NON streamé + streaming simulé mot à mot (22 ms/mot) → lenteur systématique. Bench réel de ~20 modèles disponibles (scripts/bench-chat.ts) : OpenAI/Google/Anthropic/Mistral bloqués région ; retenus `deepseek/deepseek-v4-flash` et `~z-ai/glm-flash-latest`.
+  2. Header `X-Title: "EINSOF — Assistant commercial"` : le tiret cadratin (—, U+2014) fait REJETER le header par le fetch de Bun (« Cannot convert argument to a ByteString… value of 8212 » — constaté dans dev.log) → l'appel OpenRouter échouait AVANT la requête même quand le modèle était bon. Correctif : X-Title ASCII (« EINSOF Assistant commercial ») + garde-fou documenté.
+  3. Les modèles « flash » retenus sont des modèles à RAISONNEMENT : des tokens delta.reasoning étaient streamés avant tout texte visible (TTFT réel = fin du thinking ; à max_tokens 60 la réponse pouvait être VIDE). Correctif : `reasoning: { enabled: false }` dans le corps OpenRouter → TTFT divisé par ~3-5.
+- Latence — autres optimisations : prompt système compressé 13,5k → 8,4k caractères (règles tassées, faits inchangés), RAG top-k 6→4 + corps de documents tronqués à 600 caractères, historique tronqué à 600 caractères/message, sauvegarde du message utilisateur rendue NON bloquante (part en parallèle du LLM), session pré-créée dès l'ouverture du chat/Omnis (plus de aller-retour sur le 1er message).
+- Résilience LLM : `openrouter.ts` réécrit — chaîne de modèles (OPENROUTER_MODEL peut lister plusieurs IDs) avec watchdog « premier token » 7 s (AbortController), saut automatique des modèles en échec/vides, jamais de redémarrage si des tokens sont déjà partis ; flux vide = modèle suivant ; repli z-ai inchangé en dernier ressort. .env : `OPENROUTER_MODEL=~z-ai/glm-flash-latest,deepseek/deepseek-v4-flash`.
+- Affichage propre : les marqueurs d'action ([[action:…]] et dérives {"tool":…}) ne sont plus jamais streamés au navigateur (buffer d'émission « sûr » côté serveur) — le texte affiché reste propre pendant tout le streaming, l'action partant toujours via l'événement SSE dédié.
+- Mode Omnis réécrit (OmnisOverlay) : plein écran noir supprimé — nouveau PANNEAU FLOTTANT bas-droite (z-[82], même gabarit que la fenêtre chat, glass-panel) : le site reste ENTIÈREMENT visible et interactif derrière. Boucle conversationnelle mains libres (par défaut) : écoute → envoi → streaming → lecture voix → réécoute auto (garde anti-boucle : pause après 2 silences, reprise au tap du micro) ; transcript en direct (interim + réponse qui se streame) ; bandeau « Ouverture de {page}… » via onNavigatePath quand le robot navigue sur le site en temps réel ; bouton « écrire à la place » → bascule vers le chat texte ; Échap pour quitter. Nouvelles clés i18n chat.omnis.autoListen/handsFree/navigating ×5 langues.
+- Vérifications : bench SSE direct — TTFT 0,82-2,2 s (réponses complètes, tarifs exacts 1 500 000/500 000/7 000 000 GNF depuis le RAG, actions navigate correctes) ; chaîne testée avec 2 modèles morts → récupération TTFT 940 ms ; E2E navigateur — question « Amène-moi sur la page tarifs » → réponse propre (aucun marqueur) + URL /tarifs en direct ; dock Omnis vérifié desktop + mobile 390 px (correctif z-index vs bannière PWA), sombre + clair ; conversation salutation sans RAG → 0,8 s ; dev.log sans erreur après correctifs ; lint 0 erreur ; tsc 0 erreur.
+
+Stage Summary:
+- Latence perçue ramenée de « plusieurs secondes à chaque fois » (403 région + repli non streamé + thinking caché) à ~0,8-2 s TTFT en streaming réel, avec trois ceintures de sécurité : chaîne de modèles + watchdog 7 s + repli z-ai.
+- Mode Omnis : le site reste visible en permanence — le visiteur pose une question à la voix, l'assistant répond à voix haute ET déplace la page en direct sous le panneau (flash « Ouverture de {page}… ») ; mode mains libres pour une vraie conversation continue.
+- Scripts/bench-chat.ts conservé : re-mesurer la latence des modèles OpenRouter à tout moment.

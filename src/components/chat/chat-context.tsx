@@ -108,6 +108,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }
   }, [lang, chatStorage]);
 
+  /* Latence : la session est pré-créée dès l'ouverture du chat ou d'Omnis —
+     le premier message ne paie plus ce aller-retour. */
+  useEffect(() => {
+    if (open || omnisOpen) void ensureSession();
+  }, [open, omnisOpen, ensureSession]);
+
   /* ── Réservation de démonstration (actions suggest_slots / book_demo) ── */
 
   const pushDemoSlots = useCallback((slots: ChatSlotView[]) => {

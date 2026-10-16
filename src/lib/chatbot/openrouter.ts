@@ -4,12 +4,27 @@
  * au navigateur en temps réel. Zéro réponse pré-écrite : tout part du
  * modèle, nourri par le contexte du site (voir site-index.ts).
  *
- * Fallback : si la clé est absente ou si l'appel échoue, l'API route
- * bascule sur le fournisseur z-ai (voir message/route.ts) — le chatbot
- * ne meurt jamais.
+ * Latence (retour client : « c'est très lent ») :
+ * 1. Le modèle par défaut d'origine (openai/gpt-4o-mini) est BLOQUÉ par
+ *    région (HTTP 403) — chaque message basculait silencieusement sur le
+ *    repli z-ai non-streamé + streaming simulé mot à mot (22 ms/mot) :
+ *    d'où une réponse lente à chaque fois. Correctif : chaîne de modèles
+ *    testés en direct (bench scripts/bench-chat.ts) avec repli auto.
+ * 2. Chien de garde « premier token » : si un modèle n'émet rien dans les
+ *    7 s, il est abandonné et le suivant prend le relais — le visiteur
+ *    n'attend jamais longtemps sans flux.
+ *
+ * Fallback final : si toute la chaîne échoue, l'API route bascule sur
+ * z-ai (voir message/route.ts) — le chatbot ne meurt jamais.
  */
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+/** Chaîne par défaut : rapide et disponible dans la région du serveur. */
+const DEFAULT_MODELS = ["deepseek/deepseek-v4-flash", "~z-ai/glm-flash-latest"];
+
+/** Délai max d'attente du PREMIER token avant de changer de modèle. */
+export const FIRST_TOKEN_TIMEOUT_MS = 7_000;
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -20,8 +35,26 @@ export function isOpenRouterConfigured(): boolean {
   return Boolean(process.env.OPENROUTER_API_KEY);
 }
 
+/**
+ * Chaîne de modèles : OPENROUTER_MODEL peut contenir plusieurs IDs séparés
+ * par des virgules ; les modèles par défaut complètent toujours la liste
+ * (en dédupliquant) pour que le chatbot reste résilient.
+ */
+export function openRouterModels(): string[] {
+  const fromEnv = (process.env.OPENROUTER_MODEL ?? "")
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
+  const chain = [...fromEnv];
+  for (const m of DEFAULT_MODELS) {
+    if (!chain.includes(m)) chain.push(m);
+  }
+  return chain;
+}
+
+/** Compat : premier modèle de la chaîne (logs, diagnostics). */
 export function openRouterModel(): string {
-  return process.env.OPENROUTER_MODEL ?? "openai/gpt-4o-mini";
+  return openRouterModels()[0] ?? DEFAULT_MODELS[0];
 }
 
 /**
@@ -31,7 +64,12 @@ export function openRouterModel(): string {
  */
 export async function* streamOpenRouter(
   messages: ChatMessage[],
-  opts: { temperature?: number; maxTokens?: number; signal?: AbortSignal } = {}
+  opts: {
+    temperature?: number;
+    maxTokens?: number;
+    signal?: AbortSignal;
+    model?: string;
+  } = {}
 ): AsyncGenerator<string> {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) throw new Error("openrouter_not_configured");
@@ -42,16 +80,25 @@ export async function* streamOpenRouter(
     headers: {
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
-      /* OpenRouter recommande ces en-têtes d'attribution */
+      /* OpenRouter recommande ces en-têtes d'attribution.
+         ATTENTION : ASCII strict — un tiret cadratin (—) ou tout caractère
+         hors ISO-8859-1 fait REJETER le header par le fetch de Bun/Edge
+         avant même la requête (chaque appel échoue → repli lent). */
       "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL ?? "https://einsof.vercel.app",
-      "X-Title": "EINSOF — Assistant commercial",
+      "X-Title": "EINSOF Assistant commercial",
     },
     body: JSON.stringify({
-      model: openRouterModel(),
+      model: opts.model ?? openRouterModel(),
       messages,
       stream: true,
       temperature: opts.temperature ?? 0.6,
       max_tokens: opts.maxTokens ?? 700,
+      /* CRUCIAL (latence) : les modèles « flash » raisonnent AVANT de
+         répondre — les tokens de réflexion (delta.reasoning) retardaient
+         chaque réponse visible de plusieurs secondes et pouvaient
+         consommer tout le budget max_tokens (réponse vide !).
+         On désactive explicitement le raisonnement. */
+      reasoning: { enabled: false },
     }),
   });
 
@@ -91,4 +138,87 @@ export async function* streamOpenRouter(
       }
     }
   }
+}
+
+/**
+ * Enveloppe un générateur avec un chien de garde sur le PREMIER token :
+ * si rien n'arrive dans `ms`, le contrôleur est avorté et une erreur
+ * « first_token_timeout » est levée (le modèle suivant prend le relais).
+ */
+async function* withFirstTokenWatchdog(
+  gen: AsyncGenerator<string>,
+  ms: number,
+  abort: AbortController
+): AsyncGenerator<string> {
+  const it = gen[Symbol.asyncIterator]();
+  let first = true;
+  while (true) {
+    let result: IteratorResult<string> | "timeout";
+    if (first) {
+      result = await Promise.race([
+        it.next(),
+        new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), ms)),
+      ]);
+      if (result === "timeout") {
+        abort.abort();
+        try {
+          await it.return?.(undefined);
+        } catch {
+          /* flux déjà coupé */
+        }
+        throw new Error("first_token_timeout");
+      }
+      first = false;
+    } else {
+      result = await it.next();
+    }
+    if (result.done) return;
+    yield result.value;
+  }
+}
+
+/**
+ * Chaîne de modèles avec repli automatique : chaque modèle est essayé à
+ * son tour (fetch + premier token sous FIRST_TOKEN_TIMEOUT_MS). Un modèle
+ * n'est abandonné QUE si aucun token n'a encore été émis — si le flux est
+ * coupé en cours de réponse, on ne redémarre pas (les tokens sont déjà
+ * partis vers le navigateur).
+ */
+export async function* streamOpenRouterChain(
+  messages: ChatMessage[],
+  opts: { temperature?: number; maxTokens?: number } = {}
+): AsyncGenerator<string> {
+  const models = openRouterModels();
+  let lastErr: unknown = new Error("no_model");
+  for (const model of models) {
+    const abort = new AbortController();
+    let emitted = 0;
+    try {
+      const gen = withFirstTokenWatchdog(
+        streamOpenRouter(messages, { ...opts, model, signal: abort.signal }),
+        FIRST_TOKEN_TIMEOUT_MS,
+        abort
+      );
+      for await (const delta of gen) {
+        emitted++;
+        yield delta;
+      }
+      /* Flux terminé SANS aucun token (réponse vide, raisonnement consommé,
+         fournisseur dégradé) → on essaie le modèle suivant au lieu de
+         livrer un silence au visiteur. */
+      if (emitted === 0) {
+        lastErr = new Error(`empty_stream_from_${model}`);
+        console.error(`[chatbot] model "${model}" returned an empty stream, next model…`);
+        continue;
+      }
+      return;
+    } catch (e) {
+      lastErr = e;
+      console.error(`[chatbot] model "${model}" failed${emitted ? " (after tokens)" : ""}:`, e);
+      /* Des tokens ont déjà été envoyés → ne jamais redémarrer une réponse. */
+      if (emitted > 0) throw e;
+      /* sinon : modèle suivant */
+    }
+  }
+  throw lastErr;
 }

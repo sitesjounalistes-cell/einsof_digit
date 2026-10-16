@@ -496,6 +496,9 @@ const fr = {
       unsupported:
         "La voix n'est pas prise en charge par ce navigateur. Le mode texte reste disponible.",
       hint: "Appuyez sur le micro et parlez. Dites par exemple : « Montre-moi vos tarifs ».",
+      autoListen: "En écoute automatique",
+      handsFree: "Mains libres",
+      navigating: "Ouverture de {page}…",
       confirm: "Confirmez-vous cette action ?",
     },
     demo: {
@@ -1046,6 +1049,9 @@ const en: Dict = {
       unsupported:
         "Voice is not supported by this browser. Text mode remains available.",
       hint: "Tap the microphone and speak. Try: “Show me your pricing”.",
+      autoListen: "Auto-listening",
+      handsFree: "Hands-free",
+      navigating: "Opening {page}…",
       confirm: "Do you confirm this action?",
     },
     demo: {
@@ -1582,6 +1588,9 @@ const es: Dict = {
       micDenied: "El acceso al micrófono está denegado. Autorízalo en tu navegador o usa el teclado.",
       unsupported: "La voz no está disponible en este navegador. El modo texto sigue disponible.",
       hint: "Pulsa el micrófono y habla. Di por ejemplo: « Muéstrame tus precios ».",
+      autoListen: "En escucha automática",
+      handsFree: "Manos libres",
+      navigating: "Abriendo {page}…",
       confirm: "¿Confirmas esta acción?",
     },
     demo: {
@@ -2118,6 +2127,9 @@ const zh: Dict = {
       micDenied: "麦克风访问被拒绝。请在浏览器中授权，或改用键盘输入。",
       unsupported: "此浏览器不支持语音。文字模式仍然可用。",
       hint: "按下麦克风并说话。例如说：“给我看看你们的价格”。",
+      autoListen: "自动聆听中",
+      handsFree: "免提模式",
+      navigating: "正在打开{page}…",
       confirm: "确认执行此操作吗？",
     },
     demo: {
@@ -2654,6 +2666,9 @@ const de: Dict = {
       micDenied: "Der Mikrofonzugriff wurde verweigert. Erlauben Sie ihn in Ihrem Browser oder nutzen Sie die Tastatur.",
       unsupported: "Spracheingabe wird von diesem Browser nicht unterstützt. Der Textmodus bleibt verfügbar.",
       hint: "Tippen Sie aufs Mikrofon und sprechen Sie. Sagen Sie zum Beispiel: „Zeigen Sie mir Ihre Preise“.",
+      autoListen: "Automatisches Zuhören",
+      handsFree: "Freisprechen",
+      navigating: "{page} wird geöffnet…",
       confirm: "Bestätigen Sie diese Aktion?",
     },
     demo: {

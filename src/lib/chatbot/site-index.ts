@@ -212,8 +212,11 @@ const DOCS_TOKENS = DOCS.map((d) => ({
  * Retourne les extraits les plus pertinents pour une question.
  * Score : correspondances de titre (×3) + correspondances de corps,
  * avec bonus si le document contient TOUS les mots-clés principaux.
+ *
+ * Note latence : k=4 et corps tronqués — le prompt système est la première
+ * cause de latence TTFT chez les fournisseurs LLM.
  */
-export function retrieveSiteDocs(query: string, k = 6): SiteDoc[] {
+export function retrieveSiteDocs(query: string, k = 4): SiteDoc[] {
   const tokens = tokenize(query);
   if (tokens.length === 0) return [];
   const scored = DOCS.map((doc, i) => {
@@ -243,14 +246,18 @@ export function retrieveSiteDocs(query: string, k = 6): SiteDoc[] {
   return scored.map((s) => s.doc);
 }
 
+/** Taille max d'un extrait injecté dans le prompt (latence TTFT). */
+const DOC_BODY_MAX = 600;
+
 /** Bloc « CONTEXTE DU SITE » injecté dans le prompt système. */
 export function siteContextBlock(query: string): string {
   const docs = retrieveSiteDocs(query);
   if (docs.length === 0) return "";
-  const parts = docs.map((d) =>
-    d.path
-      ? `### ${d.title} (page : ${d.path})\n${d.body}`
-      : `### ${d.title}\n${d.body}`
-  );
+  const parts = docs.map((d) => {
+    const body = d.body.length > DOC_BODY_MAX ? `${d.body.slice(0, DOC_BODY_MAX).replace(/\s+\S*$/, "")}…` : d.body;
+    return d.path
+      ? `### ${d.title} (page : ${d.path})\n${body}`
+      : `### ${d.title}\n${body}`;
+  });
   return `CONTEXTE DU SITE — extraits pertinents des pages réelles (utilise ces informations en priorité ; le chemin entre parenthèses peut être ouvert pour le visiteur avec l'action navigate) :\n\n${parts.join("\n\n")}`;
 }

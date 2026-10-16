@@ -10,7 +10,7 @@ import {
 } from "@/lib/chatbot/prompt";
 import {
   isOpenRouterConfigured,
-  streamOpenRouter,
+  streamOpenRouterChain,
   type ChatMessage,
 } from "@/lib/chatbot/openrouter";
 import { isValidSitePath } from "@/lib/chatbot/site-routes";
@@ -65,7 +65,7 @@ export async function POST(req: Request): Promise<Response> {
   if (!parsed.success) return sse([{ type: "error", v: "bad_request" }]);
   const d = parsed.data;
 
-  // Load history
+  // Load history (contenus tronqués : la latence dépend de la taille du prompt)
   let history: { role: "user" | "assistant"; content: string }[] = [];
   let persisted = false;
   if (d.sessionId) {
@@ -75,27 +75,38 @@ export async function POST(req: Request): Promise<Response> {
         orderBy: { id: "desc" },
         take: 12,
       });
-      history = rows.reverse().map((r) => ({ role: r.role as "user" | "assistant", content: r.content ?? "" }));
+      history = rows
+        .reverse()
+        .map((r) => ({
+          role: r.role as "user" | "assistant",
+          content: (r.content ?? "").slice(0, 600),
+        }));
       persisted = true;
     } catch (e) {
       console.error("[chat/message] history", e);
     }
   } else if (d.history) {
-    history = d.history;
+    history = d.history.map((h) => ({ ...h, content: h.content.slice(0, 600) }));
   }
 
-  // Persist user message when the session is stored
+  /* Persistance du message utilisateur : NON BLOQUANTE (latence) —
+     elle part en parallèle de l'appel LLM ; la sauvegarde de secours
+     en fin de flux ne doublonne que si celle-ci a échoué. */
   let savedUser = false;
-  if (persisted && d.sessionId) {
-    try {
-      await db.chatMessage.create({
-        data: { sessionId: d.sessionId, role: "user", content: d.message },
-      });
-      savedUser = true;
-    } catch (e) {
-      console.error("[chat/message] save user", e);
-    }
-  }
+  const saveUserPromise: Promise<void> =
+    persisted && d.sessionId
+      ? db.chatMessage
+          .create({
+            data: { sessionId: d.sessionId, role: "user", content: d.message },
+          })
+          .then(() => {
+            savedUser = true;
+          })
+          .catch((e: unknown) => {
+            console.error("[chat/message] save user", e);
+          })
+      : Promise.resolve();
+  void saveUserPromise;
 
   const system = buildSystemPrompt(d.locale, d.currentPath, d.message);
   const llmMessages: ChatMessage[] = [
@@ -125,8 +136,17 @@ export async function POST(req: Request): Promise<Response> {
       return text;
     };
     return streamResponse(
-      streamOpenRouter(llmMessages, { temperature: 0.6, maxTokens: 700 }),
-      { ip, persisted, sessionId: d.sessionId, savedUser, userMessage: d.message },
+      streamOpenRouterChain(llmMessages, { temperature: 0.6, maxTokens: 700 }),
+      {
+        ip,
+        persisted,
+        sessionId: d.sessionId,
+        get savedUser() {
+          return savedUser;
+        },
+        saveUserPromise,
+        userMessage: d.message,
+      },
       zaiFallback,
       d.locale
     );
@@ -231,7 +251,8 @@ function streamResponse(
     ip: string;
     persisted: boolean;
     sessionId?: string | null;
-    savedUser: boolean;
+    savedUser: boolean | (() => boolean);
+    saveUserPromise?: Promise<void>;
     userMessage: string;
   },
   zaiFallback: () => Promise<string>,
@@ -242,21 +263,39 @@ function streamResponse(
     async start(controller) {
       const send = (ev: SseEvent) =>
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(ev)}\n\n`));
+      const savedUserNow = () => (typeof ctx.savedUser === "function" ? ctx.savedUser() : ctx.savedUser);
       let full = "";
       let got = false;
+      let sentLen = 0;
+      /* Affichage propre : les marqueurs d'action ([[action:…] ou dérives
+         {"tool":…}) sont parsés en FIN de flux — on ne les envoie JAMAIS
+         au navigateur. On n'émet que le texte sûr (avant le 1er marqueur). */
+      const sendSafe = () => {
+        let cut = full.length;
+        const i1 = full.indexOf("[[action");
+        if (i1 !== -1 && i1 < cut) cut = i1;
+        const i2 = full.indexOf('{"tool"');
+        if (i2 !== -1 && i2 < cut) cut = i2;
+        if (cut > sentLen) {
+          send({ type: "token", v: full.slice(sentLen, cut) });
+          sentLen = cut;
+        }
+      };
       try {
         for await (const delta of iterator) {
           if (!delta) continue;
           got = true;
           full += delta;
-          send({ type: "token", v: delta });
+          sendSafe();
         }
-        if (!got || !full.trim()) throw new Error("empty_stream");
+        /* Ni texte visible, ni marqueur exploitable → repli. */
+        if (!got || !full.trim() || sentLen === 0) throw new Error("empty_stream");
       } catch (e) {
         console.error("[chat/message] openrouter stream", e);
-        if (!got) {
-          /* aucun token envoyé → repli z-ai complet, même flux */
+        if (sentLen === 0) {
+          /* aucun token VISIBLE envoyé → repli z-ai complet, même flux */
           try {
+            await ctx.saveUserPromise;
             const text = await zaiFallback();
             const { clean, actions } = parseActions(text);
             const validActions = await runServerActions(filterActions(actions), ctx.ip, locale);
@@ -267,7 +306,7 @@ function streamResponse(
                   data: { sessionId: ctx.sessionId, role: "assistant", content: clean },
                 });
                 messageId = saved.id;
-                if (!ctx.savedUser) {
+                if (!savedUserNow()) {
                   await db.chatMessage.create({
                     data: { sessionId: ctx.sessionId, role: "user", content: ctx.userMessage },
                   });
@@ -304,7 +343,7 @@ function streamResponse(
             data: { sessionId: ctx.sessionId, role: "assistant", content: clean || full.trim() },
           });
           messageId = saved.id;
-          if (!ctx.savedUser) {
+          if (!savedUserNow()) {
             await db.chatMessage.create({
               data: { sessionId: ctx.sessionId, role: "user", content: ctx.userMessage },
             });

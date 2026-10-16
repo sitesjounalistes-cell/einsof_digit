@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Mic, MicOff, X, Keyboard } from "lucide-react";
+import { Mic, MicOff, X, Keyboard, Radar, Radar as RadarIcon, Volume2 } from "lucide-react";
 import { useChat } from "./chat-context";
-import { useI18n, type Lang } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { useConsent } from "@/lib/consent";
 import { speakProfessional, pickBestVoice, invalidateVoiceCache, SPEECH_LOCALES } from "@/lib/voice";
-import { GoldButton } from "@/components/site/kit";
+import { onNavigatePath } from "@/lib/chat-bus";
 
 type OmnisState = "idle" | "listening" | "thinking" | "speaking" | "unsupported" | "denied";
 
@@ -33,19 +33,45 @@ function getRecognitionCtor(): RecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
+/** « /logiciels/gestion-pharmacie » → « Gestion pharmacie » (libellé flash). */
+function pathToLabel(path: string): string {
+  const tail = path.split("?")[0].split("#")[0].split("/").filter(Boolean).pop() ?? "Accueil";
+  return tail
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 export function OmnisOverlay() {
-  const { omnisOpen, setOmnisOpen, messages, streaming, send, consentNoticeAck } = useChat();
+  const { omnisOpen, setOmnisOpen, messages, streaming, send, consentNoticeAck, setOpen } = useChat();
   const { t, lang } = useI18n();
   const { record } = useConsent();
 
   const [state, setState] = useState<OmnisState>("idle");
   const [interim, setInterim] = useState("");
-  const [spokenOnce, setSpokenOnce] = useState(false);
+  const [handsFree, setHandsFree] = useState(true);
+  const [navFlash, setNavFlash] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-  const prevStreaming = useRef(false);
-  const lastSpokenRef = useRef("");
+  const handsFreeRef = useRef(handsFree);
+  const silenceRef = useRef(0);
+  const restartTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const navTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const supported = getRecognitionCtor() !== null;
+
+  useEffect(() => {
+    handsFreeRef.current = handsFree;
+  }, [handsFree]);
+
+  /* État courant lisible dans les callbacks non-React (rec.onend, timers) */
+  const stateRef = useRef<OmnisState>(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  /* Auto-référence : rec.onend (déclaré DANS startListening) relance
+     l'écoute — la fonction ne peut pas se référencer directement. */
+  const startListeningRef = useRef<() => void>(() => {});
 
   /* Voix neuronale la plus professionnelle disponible (voiceschanged) */
   useEffect(() => {
@@ -57,20 +83,44 @@ export function OmnisOverlay() {
     return () => window.speechSynthesis.removeEventListener?.("voiceschanged", onChange);
   }, [lang]);
 
-  const stopEverything = useCallback(() => {
+  /* Flash de navigation : le site bouge SOUS le panneau, en temps réel */
+  useEffect(() => {
+    return onNavigatePath((path) => {
+      if (!omnisOpen) return;
+      setNavFlash(path);
+      if (navTimer.current) clearTimeout(navTimer.current);
+      navTimer.current = setTimeout(() => setNavFlash(null), 3200);
+    });
+  }, [omnisOpen]);
+
+  const stopRecognition = useCallback(() => {
     try {
       recognitionRef.current?.abort();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
+    recognitionRef.current = null;
+  }, []);
+
+  const stopEverything = useCallback(() => {
+    stopRecognition();
+    if (restartTimer.current) {
+      clearTimeout(restartTimer.current);
+      restartTimer.current = null;
+    }
     try {
       window.speechSynthesis?.cancel();
-    } catch { /* ignore */ }
-  }, []);
+    } catch {
+      /* ignore */
+    }
+  }, [stopRecognition]);
 
   const exit = useCallback(() => {
     stopEverything();
     setOmnisOpen(false);
     setState("idle");
     setInterim("");
+    silenceRef.current = 0;
   }, [setOmnisOpen, stopEverything]);
 
   // Escape exits Omnis
@@ -87,40 +137,25 @@ export function OmnisOverlay() {
     if (!omnisOpen) stopEverything();
   }, [omnisOpen, stopEverything]);
 
-  const speak = useCallback(
-    (text: string) => {
-      /* Voix professionnelle : sélection neuronale + débit posé +
-         découpage par phrases (voir lib/voice.ts). L'état « speaking »
-         est piloté par les callbacks ; le texte reste affiché à l'écran. */
-      speakProfessional(text, lang, () => setState("idle"), () => setState("speaking"));
-    },
-    [lang]
-  );
-
-  // When streaming finishes, speak the reply (Omnis reads it aloud)
-  useEffect(() => {
-    if (!omnisOpen) return;
-    if (prevStreaming.current && !streaming) {
-      const last = messages[messages.length - 1];
-      if (last?.role === "assistant" && last.content) {
-        lastSpokenRef.current = last.content;
-        prevStreaming.current = streaming;
-        const id = setTimeout(() => speak(last.content), 60);
-        return () => clearTimeout(id);
-      }
-    }
-    prevStreaming.current = streaming;
-  }, [streaming, omnisOpen]);
-
   const startListening = useCallback(() => {
     const Ctor = getRecognitionCtor();
     if (!Ctor) {
       setState("unsupported");
       return;
     }
-    stopEverything();
+    if (restartTimer.current) {
+      clearTimeout(restartTimer.current);
+      restartTimer.current = null;
+    }
+    try {
+      window.speechSynthesis?.cancel(); // jamais d'écoute pendant la voix
+    } catch {
+      /* ignore */
+    }
+    stopRecognition();
     record("microphone", true);
     setInterim("");
+    silenceRef.current = 0;
     try {
       const rec = new Ctor();
       recognitionRef.current = rec;
@@ -139,28 +174,100 @@ export function OmnisOverlay() {
         setInterim(interimText || finalText);
         if (finalText.trim()) {
           setState("thinking");
-          setSpokenOnce(true);
+          silenceRef.current = 0;
+          stopRecognition();
           void send(finalText.trim());
         }
       };
       rec.onerror = (e) => {
-        if (e.error === "not-allowed" || e.error === "service-not-allowed") setState("denied");
-        else setState("idle");
+        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+          setHandsFree(false);
+          setState("denied");
+        } else if (e.error === "no-speech") {
+          /* silence : comptabilisé, la boucle se met en pause au bout de 2 */
+          silenceRef.current += 1;
+          setState("idle");
+        } else {
+          setState("idle");
+        }
       };
       rec.onend = () => {
         setState((s) => (s === "listening" ? "idle" : s));
+        /* Mains libres : après une écoute restée sans résultat (silence),
+           relancer brièvement — pause après 2 silences consécutifs. */
+        if (
+          handsFreeRef.current &&
+          silenceRef.current > 0 &&
+          silenceRef.current < 2 &&
+          (stateRef.current === "idle" || stateRef.current === "listening")
+        ) {
+          restartTimer.current = setTimeout(() => {
+            restartTimer.current = null;
+            if (
+              handsFreeRef.current &&
+              (stateRef.current === "idle" || stateRef.current === "listening")
+            ) {
+              startListeningRef.current();
+            }
+          }, 500);
+        }
       };
       setState("listening");
       rec.start();
     } catch {
       setState("idle");
     }
-  }, [lang, record, send, stopEverything]);
+  }, [lang, record, send, stopRecognition]);
+
+  /* Synchronise l'auto-référence après chaque re-création du callback. */
+  useEffect(() => {
+    startListeningRef.current = startListening;
+  }, [startListening]);
+
+  /* ── Boucle conversationnelle temps réel ─────────────────────────
+     Dès qu'une RÉPONSE (à un tour utilisateur) est complète → lecture
+     à voix haute → fin de lecture → (mains libres) réécoute auto.
+     Garde fou : `spokenRef` mémorise le dernier énoncé — la mise à jour
+     du message (id serveur après done) ne re-déclenche pas la lecture.
+     Le site reste visible sous le panneau : les actions navigate
+     déplacent la page en direct. */
+  const spokenRef = useRef("");
+
+  // À l'ouverture d'Omnis, la transcription existante n'est pas relue.
+  useEffect(() => {
+    if (!omnisOpen) return;
+    const last = [...messages].reverse().find((m) => m.role === "assistant" && m.content);
+    spokenRef.current = last?.content ?? "";
+  }, [omnisOpen]);
+
+  useEffect(() => {
+    if (!omnisOpen || streaming) return;
+    const last = messages[messages.length - 1];
+    const isReplyToUser =
+      last?.role === "assistant" && last.content && messages.length > 1 && messages[messages.length - 2]?.role === "user";
+    if (isReplyToUser && last.content !== spokenRef.current) {
+      spokenRef.current = last.content;
+      speakProfessional(
+        last.content,
+        lang,
+        () => {
+          setState((s) => (s === "speaking" ? "idle" : s));
+          if (handsFreeRef.current && supported) {
+            restartTimer.current = setTimeout(() => {
+              restartTimer.current = null;
+              if (stateRef.current === "idle") startListening();
+            }, 350);
+          }
+        },
+        () => setState("speaking")
+      );
+    }
+  }, [streaming, messages, omnisOpen, lang, startListening, supported]);
 
   if (!omnisOpen) return null;
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant" && m.content);
-  const effState: OmnisState = streaming ? "thinking" : state;
+  const effState: OmnisState = streaming && state !== "listening" ? "thinking" : state;
 
   const statusLabel =
     state === "listening"
@@ -169,106 +276,143 @@ export function OmnisOverlay() {
         ? t("chat.omnis.thinking")
         : state === "speaking"
           ? t("chat.omnis.speaking")
-          : t("chat.omnis.idle");
+          : handsFree
+            ? t("chat.omnis.autoListen")
+            : t("chat.omnis.idle");
 
   return (
     <div
       role="dialog"
       aria-label={t("chat.omnis.title")}
-      className="fixed inset-0 z-[80] flex flex-col bg-bg/[0.985] backdrop-blur-xl"
+      className="glass-panel animate-in fade-in zoom-in-95 slide-in-from-bottom-3 fixed bottom-24 right-5 z-[82] flex w-[380px] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl shadow-2xl duration-300"
+      style={{ transformOrigin: "bottom right" }}
     >
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-4 sm:px-8">
-        <p className="label-caps">{t("chat.omnis.title")}</p>
+      {/* Header */}
+      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-line/60 px-4">
+        <span className="relative flex h-9 w-9 items-center justify-center rounded-full border border-gold/40 text-goldtext">
+          <Radar className="h-4 w-4" strokeWidth={1.5} />
+          {(state === "listening" || state === "speaking") && (
+            <span
+              className="absolute inset-0 rounded-full border border-gold/60"
+              style={{ animation: "breathe 2.4s ease-in-out infinite" }}
+            />
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-ink">{t("chat.omnis.title")}</p>
+          <p className="flex items-center gap-1.5 text-[0.6875rem] text-mute">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                state === "listening"
+                  ? "bg-[var(--success)]"
+                  : state === "speaking"
+                    ? "bg-gold"
+                    : "bg-mute/50"
+              }`}
+              style={{ animation: state === "listening" ? "pulse-dot 2s infinite" : undefined }}
+            />
+            {statusLabel}
+          </p>
+        </div>
         <button
           type="button"
           onClick={exit}
-          className="flex h-11 items-center gap-2 rounded-full border border-line px-4 text-sm text-mute transition-colors hover:border-gold hover:text-goldtext"
+          aria-label={t("chat.omnis.exit")}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-mute transition-colors hover:text-ink"
         >
           <X className="h-4 w-4" strokeWidth={1.5} />
-          {t("chat.omnis.exit")}
         </button>
       </div>
 
-      {/* Center stage */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-10 px-6 pb-24">
-        {/* Visual */}
-        <div className="relative flex h-[220px] w-[220px] items-center justify-center">
-          {effState === "speaking" ? (
-            <div className="flex h-24 items-center gap-1.5">
-              {Array.from({ length: 24 }).map((_, i) => (
-                <span
-                  key={i}
-                  className="w-1 rounded-full bg-gold"
-                  style={{
-                    height: `${8 + Math.abs(Math.sin(i * 1.7)) * 80}%`,
-                    animation: `eq 900ms ${(i % 6) * 120}ms infinite ease-in-out`,
-                    minHeight: 6,
-                  }}
-                />
-              ))}
-              <style>{`@keyframes eq { 0%,100% { transform: scaleY(.4)} 50% { transform: scaleY(1)} }`}</style>
+      {/* Flash navigation : « le robot m'emmène sur /tarifs » */}
+      <div className="px-4 pt-3">
+        <div
+          aria-live="polite"
+          className={`flex items-center gap-2 overflow-hidden rounded-lg border border-gold/40 bg-surface px-3 text-xs text-goldtext transition-all duration-300 ${
+            navFlash ? "max-h-12 py-2 opacity-100" : "max-h-0 border-transparent py-0 opacity-0"
+          }`}
+        >
+          <RadarIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+          <span className="truncate">
+            {(navFlash && t("chat.omnis.navigating").replace("{page}", pathToLabel(navFlash))) || ""}
+          </span>
+        </div>
+      </div>
+
+      {/* Conversation en direct */}
+      <div className="flex max-h-[280px] min-h-[120px] flex-1 flex-col justify-end space-y-3 overflow-y-auto px-4 py-3">
+        {lastAssistant && (
+          <div className="border-l-2 border-gold/50 pl-3">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">
+              {lastAssistant.content || "…"}
+            </p>
+          </div>
+        )}
+        {interim && (
+          <div className="flex justify-end">
+            <div className="max-w-[85%] rounded-2xl rounded-br-sm border border-line bg-surface2 px-4 py-2.5 text-sm italic text-mute">
+              {interim}…
             </div>
-          ) : effState === "thinking" ? (
-            <div
-              className="h-[160px] w-[160px] rounded-full border border-gold/20 border-t-gold"
-              style={{ animation: "spin-arc 1.2s linear infinite" }}
-            />
+          </div>
+        )}
+        {!lastAssistant && !interim && (
+          <p className="text-sm leading-relaxed text-mute">{t("chat.omnis.hint")}</p>
+        )}
+        {state === "denied" && (
+          <p className="text-sm leading-relaxed text-mute">{t("chat.omnis.micDenied")}</p>
+        )}
+        {!supported && (
+          <p className="text-sm leading-relaxed text-mute">{t("chat.omnis.unsupported")}</p>
+        )}
+      </div>
+
+      {/* Contrôles */}
+      <div className="flex shrink-0 items-center gap-2 border-t border-line/60 p-3">
+        <button
+          type="button"
+          onClick={startListening}
+          disabled={effState === "thinking" || !supported}
+          aria-label={t("chat.omnis.listening")}
+          className="fab-pulse flex h-11 w-11 shrink-0 items-center justify-center rounded-full gold-fill shadow-[0_8px_30px_rgba(212,175,55,0.35)] transition-transform active:scale-95 disabled:opacity-50"
+        >
+          {state === "denied" ? (
+            <MicOff className="h-5 w-5 text-ongold" strokeWidth={1.5} />
           ) : (
-            <div
-              className="flex h-[160px] w-[160px] items-center justify-center rounded-full border border-gold/40"
-              style={{ animation: "breathe 6s ease-in-out infinite" }}
-            >
-              <div className="h-[130px] w-[130px] rounded-full border border-gold/20" />
-            </div>
+            <Mic className="h-5 w-5 text-ongold" strokeWidth={1.5} />
           )}
-        </div>
-
-        {/* Status + transcript */}
-        <div className="min-h-[7rem] text-center">
-          <p className="label-caps">{statusLabel}</p>
-          <p className="mx-auto mt-3 max-w-xl font-serif text-xl leading-snug text-ink md:text-2xl">
-            {effState === "listening" && interim
-              ? interim
-              : effState === "speaking" || (effState === "thinking" && lastAssistant)
-                ? lastAssistant?.content
-                : state === "denied"
-                  ? t("chat.omnis.micDenied")
-                  : state === "unsupported"
-                    ? t("chat.omnis.unsupported")
-                    : !spokenOnce
-                      ? t("chat.omnis.hint")
-                      : ""}
-          </p>
-        </div>
-
-        {/* Controls */}
-        <div className="flex flex-col items-center gap-5">
-          <button
-            type="button"
-            onClick={startListening}
-            disabled={effState === "thinking"}
-            aria-label={t("chat.omnis.listening")}
-            className="fab-pulse flex h-16 w-16 items-center justify-center rounded-full gold-fill shadow-[0_8px_30px_rgba(212,175,55,0.35)] transition-transform active:scale-95 disabled:opacity-50"
-          >
-            {state === "denied" ? (
-              <MicOff className="h-6 w-6 text-ongold" strokeWidth={1.5} />
-            ) : (
-              <Mic className="h-6 w-6 text-ongold" strokeWidth={1.5} />
-            )}
-          </button>
-          <GoldButton variant="ghost" onClick={() => { stopEverything(); setOmnisOpen(false); }}>
-            <span className="inline-flex items-center gap-2">
-              <Keyboard className="h-4 w-4" strokeWidth={1.5} />
-              {t("chat.omnis.typeInstead")}
-            </span>
-          </GoldButton>
-        </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setHandsFree((v) => !v)}
+          aria-pressed={handsFree}
+          title={t("chat.omnis.handsFree")}
+          className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-full border px-3 text-xs transition-colors ${
+            handsFree
+              ? "border-gold/50 bg-gold/10 text-goldtext"
+              : "border-line text-mute hover:border-gold hover:text-goldtext"
+          }`}
+        >
+          <Volume2 className="h-4 w-4" strokeWidth={1.5} />
+          {t("chat.omnis.handsFree")}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            stopEverything();
+            setOmnisOpen(false);
+            setOpen(true);
+          }}
+          title={t("chat.omnis.typeInstead")}
+          aria-label={t("chat.omnis.typeInstead")}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-mute transition-colors hover:border-gold hover:text-goldtext"
+        >
+          <Keyboard className="h-4 w-4" strokeWidth={1.5} />
+        </button>
       </div>
 
       {/* Consent notice */}
       {!consentNoticeAck && (
-        <p className="absolute bottom-5 inset-x-0 px-6 text-center text-[0.6875rem] text-mute">
+        <p className="px-4 pb-2 text-center text-[0.6875rem] leading-snug text-mute">
           {t("chat.consent")}
         </p>
       )}
