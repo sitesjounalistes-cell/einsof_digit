@@ -7,9 +7,7 @@
     </style>
   </defs>
 
-  <!-- Background circle -->
-  <circle cx="250" cy="100" r="160" fill="#FFFFFF" />
-
+  <!-- Transparent background (no white disc: dark-mode inversion turns it into a blob) -->
   <!-- CAPTIS text -->
   <text x="30" y="120" class="cls-blue">C</text>
   <text x="105" y="120" class="cls-red">a</text>

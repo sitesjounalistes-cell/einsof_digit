@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 200" width="100%" height="100%" role="img" aria-label="Inter Seas Logistique">
+  <defs>
+    <style>
+      .is-navy { fill: #0B2545; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 58px; letter-spacing: 1px; }
+      .is-teal { fill: #0E7490; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 58px; letter-spacing: 1px; }
+      .is-sub { fill: #0B2545; font-family: 'Montserrat', sans-serif; font-weight: 500; font-size: 25px; letter-spacing: 8px; }
+    </style>
+  </defs>
+
+  <!-- Wordmark -->
+  <text x="40" y="98" class="is-navy">INTER</text>
+  <text x="216" y="98" class="is-teal">SEAS</text>
+
+  <!-- Sub-label -->
+  <text x="42" y="152" class="is-sub">LOGISTIQUE</text>
+
+  <!-- Waves, evoking maritime transit -->
+  <g stroke="#0E7490" stroke-width="7" fill="none" stroke-linecap="round">
+    <path d="M 400 118 q 14 -14 28 0 q 14 14 28 0 q 14 -14 28 0" />
+    <path d="M 408 142 q 14 -14 28 0 q 14 14 28 0 q 14 -14 28 0" opacity="0.55" />
+  </g>
+</svg>

@@ -81,7 +81,7 @@ export const WORKS: WorkEntry[] = [
     domain: "interseaslogistic.online",
     shot: "/images/works/interseas.jpg",
     shotH: 3944,
-    logo: null,
+    logo: "/logos/interseas.svg",
     sector: {
       fr: "Logistique & transit",
       en: "Logistics & Transit",
@@ -104,7 +104,7 @@ export const WORKS: WorkEntry[] = [
     domain: "emroddf.com",
     shot: "/images/works/emrod.jpg",
     shotH: 6771,
-    logo: null,
+    logo: "/logos/emrod.svg",
     sector: {
       fr: "Artisanat & mobilier",
       en: "Craft & Furniture",
@@ -196,7 +196,7 @@ export const WORKS: WorkEntry[] = [
     domain: "samoumedia.com",
     shot: "/images/works/samoumedia.jpg",
     shotH: 3051,
-    logo: "/logos/samoumedia.jpg",
+    logo: "/logos/samoumedia.png",
     sector: {
       fr: "Média d'actualité",
       en: "News Media",

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 200" width="100%" height="100%" role="img" aria-label="EMROD">
+  <defs>
+    <style>
+      .em-word { fill: #3B2A1E; font-family: Georgia, 'Times New Roman', serif; font-weight: 700; font-size: 88px; letter-spacing: 14px; }
+      .em-sub { fill: #8A6D4B; font-family: 'Montserrat', sans-serif; font-weight: 500; font-size: 21px; letter-spacing: 7px; }
+      .em-frame { fill: none; stroke: #8A6D4B; stroke-width: 5; }
+      .em-wood { fill: #8A6D4B; }
+    </style>
+  </defs>
+
+  <!-- Monogram square, evoking crafted joinery -->
+  <rect x="38" y="52" width="86" height="86" rx="6" class="em-frame" />
+  <rect x="56" y="70" width="50" height="50" rx="3" class="em-wood" opacity="0.85" />
+
+  <!-- Wordmark -->
+  <text x="150" y="118" class="em-word">EMROD</text>
+
+  <!-- Sub-label -->
+  <text x="152" y="156" class="em-sub">MOBILIER SUR MESURE</text>
+</svg>

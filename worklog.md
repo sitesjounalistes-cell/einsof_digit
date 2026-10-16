@@ -835,3 +835,24 @@ Stage Summary:
 - Sécurité tarifaire renforcée : le chatbot ne peut plus inventer de montant pour les offres sur devis (double ceinture : liste officielle + interdiction explicite + contexte de page pertinent via alias multilingues).
 - Bug « contenu invisible en mode léger » éradiqué (remontade propre à la bascule) — impact réel : téléphones ≤ 4 cœurs ET l'aperçu sandbox lui-même (2 cœurs) ; la page /tarifs et toutes les sections animées redeviennent visibles.
 - En attente client : contenus blog, logos interseas/emrod, URLs vidéos produits, ressource FAQ.
+
+---
+Task ID: 21
+Agent: Z.ai Code (principal)
+Task: Reprise « continue » — traitement des éléments en attente client réalisables sans leurs apports : (1) logos interseas/emrod (fichiers corrompus détectés), (2) contenus blog (3 articles fr/en uniquement + 1 article PÉRIMÉ sur les prix), (3) QA complète.
+
+Work Log:
+- DIAGNOSTIC des « logos interseas/emrod en attente » : public/logos/interseas.png et emrod.png étaient en réalité des DOCUMENTS HTML (téléchargements ratés d'une session précédente — le fetch avait enregistré la page au lieu de l'image). Fichiers supprimés ; extraction des vrais logos sur les sites clients tentée (interseaslogistic.online = bundle JS haché sans URL d'assets exploitable, emroddf.com injoignable) → abandon au profit de logotypes SVG typographiques propres (règle anti-invention : aucun slogan inventé — « LOGISTIQUE » fait partie du nom réel, « MOBILIER SUR MESURE » reprend le descriptif vérifié du site).
+- Création public/logos/interseas.svg (wordmark INTER|SEAS bicolore navy/teal + vagues) et emrod.svg (monogramme carré « menuiserie » + EMROD serif, sous-titre mobilier sur mesure) — branchés dans works.ts (logo: null → svg). Bandeau clients vérifié : rendu net dans les deux thèmes.
+- BUG affiché au passage : captis.svg portait un disque blanc opaque → en sombre le filtre dark:brightness-0+invert le transformait en BLOB blanc illisible. Disque supprimé (fond transparent).
+- BALAYAGE des 8 logos : 3 fichiers à fond OPAQUE (fmk224.png noir, samoumedia.jpg noir, topguinee.png blanc à 82,5 %) devenaient des rectangles blancs pleins en mode sombre. Nouveau script scripts/fix-logos.ts : détourage par flood-fill BFS connecté AU BORD uniquement (l'intérieur du logo préservé : blancs/noirs internes intacts) + feather 1 px. Résultats : fmk224 52 % transparent, samoumedia 91 %, topguinee 83 % ; samoumedia.jpg → samoumedia.png (works.ts mis à jour). Bandeau vérifié visuellement : sombre = silhouettes blanches propres ×8, clair = logos réels sans boîtes.
+- BLOG — découverte CRITIQUE : l'article « Combien coûte un site web en Guinée » (publié) datait d'avant la refonte tarifaire et annonçait 2 500 000 GNF le site à tableau de bord + une offre « boutique » à 3 500 000 — le catalogue actuel (itération 20) dit tableau de bord 3 500 000, customisé sur devis, paiement +1 000 000, renouvellements 500 000/700 000. Le chatbot (catalogue) CONTRASAIT avec le blog. Article RÉÉCRIT en 5 langues sur les faits du catalogue (scripts/seed-blog.ts).
+- BLOG — complétion 5 langues : title/excerpt/body es+zh+de pour « Nos deux engagements » et « Factura Pro » (les seuls fr/en avant).
+- BLOG — 3 nouveaux articles × 5 langues, 100 % adossés au catalogue : « Un site en plusieurs langues » (agence, 16/10), « Site vitrine ou site à tableau de bord » (web, 21/09), « Sept logiciels de gestion, un même partenaire » (saas, 14/09) — montants exacts uniquement (1,5/3,5 M, +1 M paiement, 100 k Factura, 1-5 M hospitalière, 500 k école/immobilière, 7 M pharmacie, 20 M logiciel interne, 9 mois facturés école).
+- Vérifications : /api/posts → 6 articles × {fr,en,es,zh,de} ; pages /blog (6 cartes) + /blog/[slug] rendues en EN et ZH (titres, dates localisées, temps de lecture) ; chatbot re-testé en direct : « site vitrine 1 500 000 / tableau de bord 3 500 000 » — blog et assistant enfin ALIGNÉS ; 18 routes 200 (7 services, 8 logiciels incl. gestion-formation, 3 articles) ; realisations : 8 logos, 0 cassé ; lint 0 erreur ; dev.log propre.
+
+Stage Summary:
+- Les deux « en attente client » traitables sont clos : logos interseas/emrod remplacés par des logotypes SVG propres (à substituer par les vrais fichiers quand le client les fournira — un simple remplacement de public/logos/*.svg suffit), et le Journal compte désormais 6 articles complets en 5 langues.
+- L'article tarifs périmé (2,5 M GNF) était une bombe à contradiction avec le chatbot — corrigé à la racine ; la règle « un seul jeu de prix » (catalogue) est maintenant respectée partout.
+- Détourage flood-fill réutilisable (scripts/fix-logos.ts) : tout futur logo raster à fond opaque pourra être traité en une commande.
+- Toujours en attente client : URLs vidéos produits, ressource FAQ, vrais fichiers logos interseas/emrod si différents des logotypes.
