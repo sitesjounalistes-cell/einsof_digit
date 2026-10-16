@@ -42,13 +42,18 @@ const MOTION_TAGS = {
 
 type MotionTag = keyof typeof MOTION_TAGS;
 
-/** Élément HTML brut — utilisé en mode light : change le type d'élément
- *  par rapport à motion.*, ce qui force React à remonter un nœud propre
- *  (les styles initiaux opacity:0 appliqués par framer-motion disparaissent). */
-function Plain({ tag, className, children }: { tag: MotionTag; className?: string; children: ReactNode }) {
-  const Tag = tag as keyof React.JSX.IntrinsicElements;
-  return <Tag className={className}>{children}</Tag>;
-}
+/* HYDRATION (fix radix-_R_…) : en mode light on rend TOUJOURS LA MÊME
+ * RÉFÉRENCE de composant (motion.div, motion.span…) qu'en mode complet —
+ * uniquement sans props d'animation. Deux pièges à éviter :
+ *  1. rendrre un <div> natif à la place de motion.div changerait le TYPE
+ *     de l'élément → React démonte et remonte toute la sous-arbre au
+ *     basculement post-montage du mode light (appareil faible /
+ *     prefers-reduced-motion) → tous les useId (Radix Tabs/Accordion)
+ *     sont régénérés → l'appariement d'hydratation casse quand le
+ *     basculement chevauche celle-ci (IDs radix-_R_… ≠ radix-_r_…).
+ *  2. envelopper dans un composant intermédiaire (<Static>) change
+ *     AUSSI le type de fiber au même niveau → même remontade.
+ * La seule forme sûre : <Comp className=…> avec Comp = motion.* identique. */
 
 /* ── Reveal : entrée au défilement, 6 variantes riches ──────── */
 /* variantes : up | down | left | right | scale | blur           */
@@ -84,7 +89,9 @@ export function Reveal({
   const { lightMode } = useMotionMode();
   const Comp = MOTION_TAGS[as] ?? motion.div;
 
-  if (lightMode) return <Plain tag={as} className={className}>{children}</Plain>;
+  /* Même référence motion.* dans les deux modes (voir note HYDRATION)
+     : mode light = motion.* sans props d'animation, zéro remontade. */
+  if (lightMode) return <Comp className={className}>{children}</Comp>;
 
   const base = REVEAL_OFFSETS[variant] ?? REVEAL_OFFSETS.up;
   const offset = variant === "blur"
@@ -125,7 +132,7 @@ export function Stagger({
   const { lightMode } = useMotionMode();
   const Comp = MOTION_TAGS[as] ?? motion.div;
 
-  if (lightMode) return <Plain tag={as} className={className}>{children}</Plain>;
+  if (lightMode) return <Comp className={className}>{children}</Comp>;
 
   return (
     <Comp
@@ -157,7 +164,7 @@ export function StaggerItem({
   const { lightMode } = useMotionMode();
   const Comp = MOTION_TAGS[as] ?? motion.div;
 
-  if (lightMode) return <Plain tag={as} className={className}>{children}</Plain>;
+  if (lightMode) return <Comp className={className}>{children}</Comp>;
 
   return (
     <Comp
@@ -200,7 +207,7 @@ export function Parallax({
   const raw = useTransform(scrollYProgress, [0, 1], [speed * 120, speed * -120]);
   const y = useSpring(raw, { stiffness: 55, damping: 22, mass: 0.6 });
 
-  if (lightMode) return <div ref={ref} className={className}>{children}</div>;
+  if (lightMode) return <motion.div ref={ref} className={className}>{children}</motion.div>;
 
   return (
     <motion.div ref={ref} style={{ y }} className={className}>
@@ -228,7 +235,7 @@ export function Float({
 }) {
   const { lightMode } = useMotionMode();
 
-  if (lightMode) return <div className={className}>{children}</div>;
+  if (lightMode) return <motion.div className={className}>{children}</motion.div>;
 
   return (
     <motion.div
@@ -330,7 +337,7 @@ export function DrawRule({
 }) {
   const { lightMode } = useMotionMode();
 
-  if (lightMode) return <div aria-hidden className={`gold-rule ${className}`} />;
+  if (lightMode) return <motion.div aria-hidden className={`gold-rule ${className}`} />;
 
   return (
     <motion.div
@@ -463,7 +470,7 @@ export function VelocityRow({
   if (lightMode) {
     return (
       <div className={`overflow-hidden ${className}`}>
-        <div className="flex w-max items-center">{children}</div>
+        <motion.div className="flex w-max items-center">{children}</motion.div>
       </div>
     );
   }
@@ -568,7 +575,7 @@ export function ScrollProgress() {
   const scaleX = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4 });
 
   if (lightMode) {
-    return <div aria-hidden className="fixed left-0 top-0 z-[70] h-[2px] w-full origin-left gold-fill" />;
+    return <motion.div aria-hidden className="fixed left-0 top-0 z-[70] h-[2px] w-full origin-left gold-fill" />;
   }
   return (
     <motion.div
@@ -703,7 +710,7 @@ export function PopIn({
   const { lightMode } = useMotionMode();
   const Comp = MOTION_TAGS[as] ?? motion.div;
 
-  if (lightMode) return <Plain tag={as} className={className}>{children}</Plain>;
+  if (lightMode) return <Comp className={className}>{children}</Comp>;
 
   return (
     <Comp
@@ -798,7 +805,7 @@ export function CollapseMotion({
   const { lightMode } = useMotionMode();
 
   if (lightMode) {
-    return open ? <div className={className}>{children}</div> : null;
+    return open ? <motion.div className={className}>{children}</motion.div> : null;
   }
 
   return (

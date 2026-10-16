@@ -499,6 +499,9 @@ const fr = {
       autoListen: "En écoute automatique",
       handsFree: "Mains libres",
       navigating: "Ouverture de {page}…",
+      placeholder: "Ou écrivez votre question ici…",
+      send: "Envoyer",
+      transcript: "Réponse en direct",
       confirm: "Confirmez-vous cette action ?",
     },
     demo: {
@@ -1052,6 +1055,9 @@ const en: Dict = {
       autoListen: "Auto-listening",
       handsFree: "Hands-free",
       navigating: "Opening {page}…",
+      placeholder: "Or type your question here…",
+      send: "Send",
+      transcript: "Live reply",
       confirm: "Do you confirm this action?",
     },
     demo: {
@@ -1591,6 +1597,9 @@ const es: Dict = {
       autoListen: "En escucha automática",
       handsFree: "Manos libres",
       navigating: "Abriendo {page}…",
+      placeholder: "O escribe tu pregunta aquí…",
+      send: "Enviar",
+      transcript: "Respuesta en directo",
       confirm: "¿Confirmas esta acción?",
     },
     demo: {
@@ -2130,6 +2139,9 @@ const zh: Dict = {
       autoListen: "自动聆听中",
       handsFree: "免提模式",
       navigating: "正在打开{page}…",
+      placeholder: "或在此输入您的问题…",
+      send: "发送",
+      transcript: "实时回复",
       confirm: "确认执行此操作吗？",
     },
     demo: {
@@ -2669,6 +2681,9 @@ const de: Dict = {
       autoListen: "Automatisches Zuhören",
       handsFree: "Freisprechen",
       navigating: "{page} wird geöffnet…",
+      placeholder: "Oder tippen Sie hier Ihre Frage…",
+      send: "Senden",
+      transcript: "Live-Antwort",
       confirm: "Bestätigen Sie diese Aktion?",
     },
     demo: {

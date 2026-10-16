@@ -20,11 +20,20 @@
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-/** Chaîne par défaut : rapide et disponible dans la région du serveur. */
-const DEFAULT_MODELS = ["deepseek/deepseek-v4-flash", "~z-ai/glm-flash-latest"];
+/** Chaîne par défaut : mesurée en direct (bench curl, TTFB streaming,
+ *  reasoning désactivé) — llama-3.3-70b ≈ 0,6 s, mistral-small ≈ 0,8 s.
+ *  deepseek-v4-flash en 3e : un peu plus lent (1,6 s) mais très robuste.
+ *  gpt-4o-mini est BLOQUÉ par région (403) — ne pas le remettre. */
+const DEFAULT_MODELS = [
+  "meta-llama/llama-3.3-70b-instruct",
+  "mistralai/mistral-small-24b-instruct-2501",
+  "deepseek/deepseek-v4-flash",
+];
 
-/** Délai max d'attente du PREMIER token avant de changer de modèle. */
-export const FIRST_TOKEN_TIMEOUT_MS = 7_000;
+/** Délai max d'attente du PREMIER token avant de changer de modèle.
+ *  Les modèles retenus répondent en < 1 s ; 5 s couvre largement les
+ *  démarrages à froid d'OpenRouter sans faire patienter le visiteur. */
+export const FIRST_TOKEN_TIMEOUT_MS = 5_000;
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";

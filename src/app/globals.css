@@ -671,3 +671,10 @@ html.reduce-motion * {
 [data-sonner-toast] {
   border-left: 2px solid var(--gold) !important;
 }
+
+/* Omnis : rotation lente du radar lors d'une navigation en direct */
+@keyframes omnis-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

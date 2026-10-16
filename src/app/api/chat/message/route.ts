@@ -5,6 +5,7 @@ import { clientIp, rateLimit } from "@/lib/rate-limit";
 import ZAI from "z-ai-web-dev-sdk";
 import {
   buildSystemPrompt,
+  languageReminder,
   parseActions,
   type ModelAction,
 } from "@/lib/chatbot/prompt";
@@ -112,6 +113,10 @@ export async function POST(req: Request): Promise<Response> {
   const llmMessages: ChatMessage[] = [
     { role: "system", content: system },
     ...history.slice(-12),
+    /* Rappel de langue juste avant la question — quand l'historique
+       contient d'anciennes réponses dans une autre langue, la directive
+       du prompt système seul est trop loin pour peser sur le modèle. */
+    { role: "system", content: languageReminder(d.locale) },
     { role: "user", content: d.message },
   ];
 
@@ -208,15 +213,19 @@ export async function POST(req: Request): Promise<Response> {
   }
   const emitActions = validActions.filter((a) => a.args?._drop !== true);
 
-  // Stream tokens word-by-word (simulated flow, LLM is non-streaming)
+  /* Flux simulé rapide : 3 mots par événement, 8 ms — le repli reste
+     réactif (un repli lent donne l'impression d'un site cassé). */
   const tokens = clean.match(/\S+\s*/g) ?? [clean];
-  const events: SseEvent[] = tokens.map((tk) => ({ type: "token", v: tk }));
+  const events: SseEvent[] = [];
+  for (let i = 0; i < tokens.length; i += 3) {
+    events.push({ type: "token", v: tokens.slice(i, i + 3).join("") });
+  }
   for (const a of emitActions) {
     events.push({ type: "action", tool: a.tool, args: a.args });
   }
   events.push({ type: "done", messageId });
 
-  return sse(events, 22);
+  return sse(events, 8);
 }
 
 /* ── Réponse en flux réel (OpenRouter) ───────────────────────────
@@ -267,15 +276,29 @@ function streamResponse(
       let full = "";
       let got = false;
       let sentLen = 0;
+      let lastSafeCut = 0;
+      /* Longueur des préfixes de marqueurs d'action — les deltas du modèle
+         peuvent COUPER un marqueur en deux (« …\n[[ac » + « tion:… ») :
+         sans rétention, le fragment « [[ac » partirait vers le navigateur
+         et s'afficherait. On retient donc les 12 derniers caractères tant
+         que le flux n'est pas terminé (12 > longueur de « [[action:{ » et
+         de « {\"tool\" »), puis on rince à la fin. */
+      const HOLD = 12;
       /* Affichage propre : les marqueurs d'action ([[action:…] ou dérives
          {"tool":…}) sont parsés en FIN de flux — on ne les envoie JAMAIS
          au navigateur. On n'émet que le texte sûr (avant le 1er marqueur). */
-      const sendSafe = () => {
+      const safeCut = () => {
         let cut = full.length;
         const i1 = full.indexOf("[[action");
         if (i1 !== -1 && i1 < cut) cut = i1;
         const i2 = full.indexOf('{"tool"');
         if (i2 !== -1 && i2 < cut) cut = i2;
+        return cut;
+      };
+      const sendSafe = (final = false) => {
+        const cutAll = safeCut();
+        lastSafeCut = cutAll;
+        const cut = final ? cutAll : Math.min(cutAll, Math.max(0, full.length - HOLD));
         if (cut > sentLen) {
           send({ type: "token", v: full.slice(sentLen, cut) });
           sentLen = cut;
@@ -288,11 +311,12 @@ function streamResponse(
           full += delta;
           sendSafe();
         }
+        sendSafe(true);
         /* Ni texte visible, ni marqueur exploitable → repli. */
-        if (!got || !full.trim() || sentLen === 0) throw new Error("empty_stream");
+        if (!got || !full.trim() || lastSafeCut === 0) throw new Error("empty_stream");
       } catch (e) {
         console.error("[chat/message] openrouter stream", e);
-        if (sentLen === 0) {
+        if (lastSafeCut === 0) {
           /* aucun token VISIBLE envoyé → repli z-ai complet, même flux */
           try {
             await ctx.saveUserPromise;
@@ -316,7 +340,9 @@ function streamResponse(
               }
             }
             const tokens = clean.match(/\S+\s*/g) ?? [clean];
-            for (const tk of tokens) send({ type: "token", v: tk });
+            for (let i = 0; i < tokens.length; i += 3) {
+              send({ type: "token", v: tokens.slice(i, i + 3).join("") });
+            }
             for (const a of validActions) {
               if (a.args?._drop === true) continue;
               send({ type: "action", tool: a.tool, args: a.args });

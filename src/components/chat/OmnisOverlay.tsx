@@ -1,7 +1,19 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Mic, MicOff, X, Keyboard, Radar, Radar as RadarIcon, Volume2 } from "lucide-react";
+import {
+  Mic,
+  MicOff,
+  X,
+  Keyboard,
+  Radar,
+  Radar as RadarIcon,
+  Volume2,
+  VolumeX,
+  SendHorizonal,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { useChat } from "./chat-context";
 import { useI18n } from "@/lib/i18n";
 import { useConsent } from "@/lib/consent";
@@ -42,6 +54,15 @@ function pathToLabel(path: string): string {
     .join(" ");
 }
 
+/**
+ * MODE OMNIS — v2 « interface visible ».
+ * Contrairement à une prise d'écran plein fond, Omnis est une CAPSULE
+ * flottante en haut au centre : le site reste ENTIEREMENT visible autour,
+ * l'IA peut naviguer en direct (router.push via chat-bus) et le visiteur
+ * VOIT la page changer sous la capsule. Une carte discrète en bas à droite
+ * conserve la dernière réponse, un champ texte intégré permet de poser la
+ * question au clavier sans quitter le mode vocal.
+ */
 export function OmnisOverlay() {
   const { omnisOpen, setOmnisOpen, messages, streaming, send, consentNoticeAck, setOpen } = useChat();
   const { t, lang } = useI18n();
@@ -51,11 +72,15 @@ export function OmnisOverlay() {
   const [interim, setInterim] = useState("");
   const [handsFree, setHandsFree] = useState(true);
   const [navFlash, setNavFlash] = useState<string | null>(null);
+  const [kbOpen, setKbOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [cardOpen, setCardOpen] = useState(true);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const handsFreeRef = useRef(handsFree);
   const silenceRef = useRef(0);
   const restartTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const supported = getRecognitionCtor() !== null;
 
@@ -83,7 +108,7 @@ export function OmnisOverlay() {
     return () => window.speechSynthesis.removeEventListener?.("voiceschanged", onChange);
   }, [lang]);
 
-  /* Flash de navigation : le site bouge SOUS le panneau, en temps réel */
+  /* Flash de navigation : le site bouge SOUS la capsule, en temps réel */
   useEffect(() => {
     return onNavigatePath((path) => {
       if (!omnisOpen) return;
@@ -120,6 +145,8 @@ export function OmnisOverlay() {
     setOmnisOpen(false);
     setState("idle");
     setInterim("");
+    setKbOpen(false);
+    setDraft("");
     silenceRef.current = 0;
   }, [setOmnisOpen, stopEverything]);
 
@@ -229,8 +256,8 @@ export function OmnisOverlay() {
      à voix haute → fin de lecture → (mains libres) réécoute auto.
      Garde fou : `spokenRef` mémorise le dernier énoncé — la mise à jour
      du message (id serveur après done) ne re-déclenche pas la lecture.
-     Le site reste visible sous le panneau : les actions navigate
-     déplacent la page en direct. */
+     Le site reste visible sous la capsule : les actions navigate
+     déplacent la page en direct, sous les yeux du visiteur. */
   const spokenRef = useRef("");
 
   // À l'ouverture d'Omnis, la transcription existante n'est pas relue.
@@ -264,9 +291,23 @@ export function OmnisOverlay() {
     }
   }, [streaming, messages, omnisOpen, lang, startListening, supported]);
 
+  /* Envoi clavier sans quitter Omnis */
+  const submitDraft = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const text = draft.trim();
+      if (!text || streaming) return;
+      setDraft("");
+      setState("thinking");
+      void send(text);
+    },
+    [draft, streaming, send]
+  );
+
   if (!omnisOpen) return null;
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant" && m.content);
+  const lastUser = [...messages].reverse().find((m) => m.role === "user" && m.content);
   const effState: OmnisState = streaming && state !== "listening" ? "thinking" : state;
 
   const statusLabel =
@@ -280,142 +321,219 @@ export function OmnisOverlay() {
             ? t("chat.omnis.autoListen")
             : t("chat.omnis.idle");
 
-  return (
-    <div
-      role="dialog"
-      aria-label={t("chat.omnis.title")}
-      className="glass-panel animate-in fade-in zoom-in-95 slide-in-from-bottom-3 fixed bottom-24 right-5 z-[82] flex w-[380px] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl shadow-2xl duration-300"
-      style={{ transformOrigin: "bottom right" }}
-    >
-      {/* Header */}
-      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-line/60 px-4">
-        <span className="relative flex h-9 w-9 items-center justify-center rounded-full border border-gold/40 text-goldtext">
-          <Radar className="h-4 w-4" strokeWidth={1.5} />
-          {(state === "listening" || state === "speaking") && (
-            <span
-              className="absolute inset-0 rounded-full border border-gold/60"
-              style={{ animation: "breathe 2.4s ease-in-out infinite" }}
-            />
-          )}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-ink">{t("chat.omnis.title")}</p>
-          <p className="flex items-center gap-1.5 text-[0.6875rem] text-mute">
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                state === "listening"
-                  ? "bg-[var(--success)]"
-                  : state === "speaking"
-                    ? "bg-gold"
-                    : "bg-mute/50"
-              }`}
-              style={{ animation: state === "listening" ? "pulse-dot 2s infinite" : undefined }}
-            />
-            {statusLabel}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={exit}
-          aria-label={t("chat.omnis.exit")}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-mute transition-colors hover:text-ink"
-        >
-          <X className="h-4 w-4" strokeWidth={1.5} />
-        </button>
-      </div>
+  const dotCls =
+    state === "listening"
+      ? "bg-[var(--success)]"
+      : state === "speaking"
+        ? "bg-gold"
+        : effState === "thinking"
+          ? "bg-gold/70"
+          : "bg-mute/50";
 
-      {/* Flash navigation : « le robot m'emmène sur /tarifs » */}
-      <div className="px-4 pt-3">
+  return (
+    <>
+      {/* ═══ Capsule Omnis — haut centre : le site reste visible partout ═══ */}
+      <div
+        role="dialog"
+        aria-label={t("chat.omnis.title")}
+        className="animate-in fade-in slide-in-from-top-3 duration-300 fixed left-1/2 top-[4.75rem] z-[82] flex w-[min(94vw,660px)] -translate-x-1/2 flex-col gap-2 md:top-[5.5rem]"
+      >
+        {/* Ligne principale : état + voix + clavier + fermer */}
+        <div className="glass-panel flex items-center gap-2.5 rounded-2xl border border-line/60 px-3 py-2 shadow-2xl">
+          <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold/40 text-goldtext">
+            <Radar className="h-4 w-4" strokeWidth={1.5} />
+            {(state === "listening" || state === "speaking") && (
+              <span
+                className="absolute inset-0 rounded-full border border-gold/60"
+                style={{ animation: "breathe 2.4s ease-in-out infinite" }}
+              />
+            )}
+          </span>
+
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center gap-1.5 text-sm font-medium text-ink">
+              <span
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotCls}`}
+                style={{
+                  animation:
+                    state === "listening"
+                      ? "pulse-dot 2s infinite"
+                      : effState === "thinking"
+                        ? "pulse-dot 1s infinite"
+                        : undefined,
+                }}
+              />
+              <span className="truncate">{statusLabel}</span>
+            </p>
+            <p className="truncate text-xs italic text-mute">
+              {interim
+                ? `« ${interim} »`
+                : lastUser
+                  ? `« ${lastUser.content.slice(0, 80)} »`
+                  : t("chat.omnis.hint")}
+            </p>
+          </div>
+
+          {/* Micro : bascule écoute (désactivé pendant réflexion) */}
+          <button
+            type="button"
+            onClick={startListening}
+            disabled={effState === "thinking" || !supported}
+            aria-label={t("chat.omnis.listening")}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 disabled:opacity-50 ${
+              state === "listening"
+                ? "gold-fill shadow-[0_8px_30px_rgba(212,175,55,0.35)]"
+                : "border border-gold/50 text-goldtext hover:bg-gold/10"
+            }`}
+          >
+            {state === "denied" ? (
+              <MicOff className="h-4.5 w-4.5 text-goldtext" strokeWidth={1.5} />
+            ) : (
+              <Mic className={`h-4.5 w-4.5 ${state === "listening" ? "text-ongold" : ""}`} strokeWidth={1.5} />
+            )}
+          </button>
+
+          {/* Mains libres */}
+          <button
+            type="button"
+            onClick={() => setHandsFree((v) => !v)}
+            aria-pressed={handsFree}
+            title={t("chat.omnis.handsFree")}
+            aria-label={t("chat.omnis.handsFree")}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors ${
+              handsFree
+                ? "border-gold/50 bg-gold/10 text-goldtext"
+                : "border-line text-mute hover:border-gold hover:text-goldtext"
+            }`}
+          >
+            {handsFree ? (
+              <Volume2 className="h-4 w-4" strokeWidth={1.5} />
+            ) : (
+              <VolumeX className="h-4 w-4" strokeWidth={1.5} />
+            )}
+          </button>
+
+          {/* Clavier : champ intégré sans quitter Omnis */}
+          <button
+            type="button"
+            onClick={() => {
+              setKbOpen((v) => !v);
+              setTimeout(() => inputRef.current?.focus(), 60);
+            }}
+            aria-expanded={kbOpen}
+            title={t("chat.omnis.typeInstead")}
+            aria-label={t("chat.omnis.typeInstead")}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors ${
+              kbOpen
+                ? "border-gold/50 bg-gold/10 text-goldtext"
+                : "border-line text-mute hover:border-gold hover:text-goldtext"
+            }`}
+          >
+            <Keyboard className="h-4 w-4" strokeWidth={1.5} />
+          </button>
+
+          <button
+            type="button"
+            onClick={exit}
+            aria-label={t("chat.omnis.exit")}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-mute transition-colors hover:text-ink"
+          >
+            <X className="h-4 w-4" strokeWidth={1.5} />
+          </button>
+        </div>
+
+        {/* Champ texte intégré (pose une question sans quitter le mode) */}
+        {kbOpen && (
+          <form
+            onSubmit={submitDraft}
+            className="glass-panel animate-in fade-in slide-in-from-top-2 flex items-center gap-2 rounded-2xl border border-line/60 px-3 py-2 shadow-xl duration-200"
+          >
+            <input
+              ref={inputRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={t("chat.omnis.placeholder")}
+              aria-label={t("chat.omnis.placeholder")}
+              maxLength={1000}
+              className="h-10 min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-mute"
+            />
+            <button
+              type="submit"
+              disabled={!draft.trim() || streaming}
+              aria-label={t("chat.omnis.send")}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gold-fill text-ongold transition-transform active:scale-95 disabled:opacity-40"
+            >
+              <SendHorizonal className="h-4 w-4" strokeWidth={1.5} />
+            </button>
+          </form>
+        )}
+
+        {/* Toast navigation temps réel : « la page bouge sous vos yeux » */}
         <div
           aria-live="polite"
-          className={`flex items-center gap-2 overflow-hidden rounded-lg border border-gold/40 bg-surface px-3 text-xs text-goldtext transition-all duration-300 ${
-            navFlash ? "max-h-12 py-2 opacity-100" : "max-h-0 border-transparent py-0 opacity-0"
+          className={`flex items-center justify-center gap-2 overflow-hidden rounded-full border border-gold/40 bg-surface/95 px-4 text-xs text-goldtext shadow-xl backdrop-blur transition-all duration-300 ${
+            navFlash ? "max-h-10 py-2.5 opacity-100" : "max-h-0 border-transparent py-0 opacity-0"
           }`}
         >
-          <RadarIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
-          <span className="truncate">
+          <RadarIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} style={{ animation: navFlash ? "omnis-spin 2.4s linear infinite" : undefined }} />
+          <span className="truncate font-medium">
             {(navFlash && t("chat.omnis.navigating").replace("{page}", pathToLabel(navFlash))) || ""}
           </span>
         </div>
+
+        {/* Consent notice */}
+        {!consentNoticeAck && (
+          <p className="px-2 text-center text-[0.6875rem] leading-snug text-mute drop-shadow">
+            {t("chat.consent")}
+          </p>
+        )}
       </div>
 
-      {/* Conversation en direct */}
-      <div className="flex max-h-[280px] min-h-[120px] flex-1 flex-col justify-end space-y-3 overflow-y-auto px-4 py-3">
-        {lastAssistant && (
-          <div className="border-l-2 border-gold/50 pl-3">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">
-              {lastAssistant.content || "…"}
-            </p>
+      {/* ═══ Carte réponse — bas droite, discrète, repliable ═══ */}
+      {(lastAssistant || state === "denied" || !supported) && (
+        <div className="animate-in fade-in slide-in-from-bottom-3 fixed bottom-24 right-5 z-[81] w-[320px] max-w-[calc(100vw-2.5rem)] duration-300">
+          <div className="glass-panel overflow-hidden rounded-2xl border border-line/60 shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setCardOpen((v) => !v)}
+              aria-expanded={cardOpen}
+              className="flex min-h-[44px] w-full items-center gap-2 px-4 py-2.5 text-left"
+            >
+              <span
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotCls}`}
+                style={{ animation: state === "speaking" ? "pulse-dot 1.4s infinite" : undefined }}
+              />
+              <span className="flex-1 truncate text-xs font-medium uppercase tracking-[0.14em] text-goldtext">
+                {t("chat.omnis.transcript")}
+              </span>
+              {cardOpen ? (
+                <ChevronDown className="h-4 w-4 shrink-0 text-mute" strokeWidth={1.5} />
+              ) : (
+                <ChevronUp className="h-4 w-4 shrink-0 text-mute" strokeWidth={1.5} />
+              )}
+            </button>
+            {cardOpen && (
+              <div className="max-h-[210px] space-y-2.5 overflow-y-auto border-t border-line/40 px-4 py-3 omnis-card-scroll">
+                {lastAssistant ? (
+                  <div className="border-l-2 border-gold/50 pl-3">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">
+                      {lastAssistant.content || "…"}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm leading-relaxed text-mute">{t("chat.omnis.hint")}</p>
+                )}
+                {state === "denied" && (
+                  <p className="text-xs leading-relaxed text-mute">{t("chat.omnis.micDenied")}</p>
+                )}
+                {!supported && (
+                  <p className="text-xs leading-relaxed text-mute">{t("chat.omnis.unsupported")}</p>
+                )}
+              </div>
+            )}
           </div>
-        )}
-        {interim && (
-          <div className="flex justify-end">
-            <div className="max-w-[85%] rounded-2xl rounded-br-sm border border-line bg-surface2 px-4 py-2.5 text-sm italic text-mute">
-              {interim}…
-            </div>
-          </div>
-        )}
-        {!lastAssistant && !interim && (
-          <p className="text-sm leading-relaxed text-mute">{t("chat.omnis.hint")}</p>
-        )}
-        {state === "denied" && (
-          <p className="text-sm leading-relaxed text-mute">{t("chat.omnis.micDenied")}</p>
-        )}
-        {!supported && (
-          <p className="text-sm leading-relaxed text-mute">{t("chat.omnis.unsupported")}</p>
-        )}
-      </div>
-
-      {/* Contrôles */}
-      <div className="flex shrink-0 items-center gap-2 border-t border-line/60 p-3">
-        <button
-          type="button"
-          onClick={startListening}
-          disabled={effState === "thinking" || !supported}
-          aria-label={t("chat.omnis.listening")}
-          className="fab-pulse flex h-11 w-11 shrink-0 items-center justify-center rounded-full gold-fill shadow-[0_8px_30px_rgba(212,175,55,0.35)] transition-transform active:scale-95 disabled:opacity-50"
-        >
-          {state === "denied" ? (
-            <MicOff className="h-5 w-5 text-ongold" strokeWidth={1.5} />
-          ) : (
-            <Mic className="h-5 w-5 text-ongold" strokeWidth={1.5} />
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={() => setHandsFree((v) => !v)}
-          aria-pressed={handsFree}
-          title={t("chat.omnis.handsFree")}
-          className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-full border px-3 text-xs transition-colors ${
-            handsFree
-              ? "border-gold/50 bg-gold/10 text-goldtext"
-              : "border-line text-mute hover:border-gold hover:text-goldtext"
-          }`}
-        >
-          <Volume2 className="h-4 w-4" strokeWidth={1.5} />
-          {t("chat.omnis.handsFree")}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            stopEverything();
-            setOmnisOpen(false);
-            setOpen(true);
-          }}
-          title={t("chat.omnis.typeInstead")}
-          aria-label={t("chat.omnis.typeInstead")}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-mute transition-colors hover:border-gold hover:text-goldtext"
-        >
-          <Keyboard className="h-4 w-4" strokeWidth={1.5} />
-        </button>
-      </div>
-
-      {/* Consent notice */}
-      {!consentNoticeAck && (
-        <p className="px-4 pb-2 text-center text-[0.6875rem] leading-snug text-mute">
-          {t("chat.consent")}
-        </p>
+        </div>
       )}
-    </div>
+    </>
   );
 }

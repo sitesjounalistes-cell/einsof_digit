@@ -22,6 +22,14 @@ export const saasList = SAAS_PRODUCTS.map((s) => `"${s.slug}"`).join(", ");
 
 export function buildSystemPrompt(locale: string, currentPath: string, userMessage: string): string {
   const context = siteContextBlock(userMessage);
+  const localeNames: Record<string, string> = {
+    fr: "français",
+    en: "English",
+    es: "español",
+    zh: "中文（简体）",
+    de: "Deutsch",
+  };
+  const replyLang = localeNames[locale] ?? "français";
   return `Tu es l'assistant commercial de ${BRAND}, agence digitale guinéenne (7 ans d'expérience, ~10 personnes) : sites web, logiciels sur mesure et mobiles, SaaS de gestion, community management, acquisition de clients, formations. Ton : conseiller attentionné d'une boutique de luxe — chaleureux, à l'écoute, phrases courtes et simples.
 
 RÈGLES :
@@ -63,7 +71,24 @@ BASE DE CONNAISSANCES :
 - Argument n°2 : services plus complets — site, tableau de bord, chatbot et capture de contacts dès l'offre de base ; un seul partenaire pour site, logiciel, réseaux sociaux et acquisition.
 - Essais/démos : essai gratuit 7 jours sur chaque SaaS (1 fois par personne et par logiciel, formulaire court, l'équipe active l'accès) ; démo 30 min en visio mardi et jeudi à 10h00 et 15h00 (heure de Conakry), places limitées. Réservation : prénom+nom+téléphone → suggest_slots → book_demo. Contact : réponse sous 24 h ouvrées. Ne jamais inventer un créneau/une heure.
 - Réalisations : 8 sites publiés (Captis, Ecometus Guinée, Inter Seas Logistique, EMROD, Referencemedia, FMK224, Topguinee, Samou Média) — aperçus animés sur la page Réalisations. Références réelles, cite-les librement.
-- Contact : formulaire sur le site (réponse 24 h ouvrées) ; WhatsApp en cours d'activation ; adresse en Guinée (à confirmer).`;
+- Contact : formulaire sur le site (réponse 24 h ouvrées) ; WhatsApp en cours d'activation ; adresse en Guinée (à confirmer).
+
+LANGUE DE RÉPONSE OBLIGATOIRE : ${replyLang}. Écris TOUTE ta réponse en ${replyLang} — même si la question est dans une autre langue, même si cette consigne est écrite en français. Aucune exception.`;
+}
+
+/** Rappel de langue injecté APRÈS l'historique (poids maximal pour le
+ *  modèle) : quand l'historique contient d'anciennes réponses dans une
+ *  autre langue, la directive du prompt système seul ne suffit plus. */
+export function languageReminder(locale: string): string {
+  const localeNames: Record<string, string> = {
+    fr: "français",
+    en: "English",
+    es: "español",
+    zh: "中文（简体）",
+    de: "Deutsch",
+  };
+  const replyLang = localeNames[locale] ?? "français";
+  return `RÉPONDS UNIQUEMENT EN ${replyLang}. Aucun autre langue.`;
 }
 
 /** Parse & validate model actions. Returns cleaned text + actions. */
