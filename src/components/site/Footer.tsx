@@ -50,6 +50,7 @@ const NAV_ROUTES = [
   { id: "tarifs", path: "/tarifs" },
   { id: "realisations", path: "/realisations" },
   { id: "blog", path: "/blog" },
+  { id: "podcast", path: "/podcast" },
   { id: "a-propos", path: "/a-propos" },
   { id: "faq", path: "/faq" },
   { id: "contact", path: "/contact" },

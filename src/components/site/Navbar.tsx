@@ -30,7 +30,7 @@ import { SAAS_PRODUCTS } from "@/lib/catalog";
    chaque pôle / chaque logiciel — l'utilisateur ne se perd
    jamais : depuis une page de détail, tout reste à un clic. */
 const NAV_MAIN = ["services", "logiciels", "tarifs", "faq", "a-propos", "contact"] as const;
-const NAV_XL = ["realisations", "blog"] as const;
+const NAV_XL = ["realisations", "blog", "podcast"] as const;
 const NAV_DRAWER = [
   "services",
   "logiciels",
@@ -39,6 +39,7 @@ const NAV_DRAWER = [
   "tarifs",
   "realisations",
   "blog",
+  "podcast",
   "a-propos",
   "faq",
   "contact",
@@ -53,6 +54,7 @@ const ROUTES: Record<NavId, string> = {
   tarifs: "/tarifs",
   realisations: "/realisations",
   blog: "/blog",
+  podcast: "/podcast",
   "a-propos": "/a-propos",
   faq: "/faq",
   contact: "/contact",

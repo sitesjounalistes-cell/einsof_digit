@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { Download, LogOut, Plus, RefreshCw, Send, Trash2, X } from "lucide-react";
+import { Download, LogOut, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { GoldButton, Monogram } from "@/components/site/kit";
 import { onAdminToggle } from "@/lib/chat-bus";
 import { SAAS_PRODUCTS } from "@/lib/catalog";
@@ -23,6 +23,9 @@ import { DemosPanel } from "@/components/admin/DemosPanel";
 import { PartnersPanel } from "@/components/admin/PartnersPanel";
 import { TestimonialsPanel } from "@/components/admin/TestimonialsPanel";
 import { DocumentsPanel } from "@/components/admin/DocumentsPanel";
+import { PodcastsPanel } from "@/components/admin/PodcastsPanel";
+import { StatsPanel } from "@/components/admin/StatsPanel";
+import { PublicitePanel } from "@/components/admin/PublicitePanel";
 
 /* ── Typage des données (aucun any) ─────────────────────────── */
 
@@ -82,20 +85,24 @@ type AdminTab =
   | "temoignages"
   | "documents"
   | "emails"
-  | "push";
+  | "podcasts"
+  | "stats"
+  | "publicite";
 
 const TABS: { id: AdminTab; label: string }[] = [
   { id: "flux", label: "Flux" },
   { id: "site", label: "Site & Contact" },
   { id: "logiciels", label: "Logiciels" },
   { id: "journal", label: "Journal" },
+  { id: "podcasts", label: "Podcasts" },
   { id: "realisations", label: "Réalisations" },
   { id: "demos", label: "Démos" },
   { id: "partners", label: "Partenaires" },
   { id: "temoignages", label: "Témoignages" },
   { id: "documents", label: "Documents" },
   { id: "emails", label: "E-mails" },
-  { id: "push", label: "Push" },
+  { id: "stats", label: "Statistiques" },
+  { id: "publicite", label: "Publicité" },
 ];
 
 const EMAIL_STATUS: Record<string, string> = {
@@ -119,19 +126,6 @@ interface EmailAdminRow {
   provider: string;
   error: string | null;
   createdAt: string;
-}
-
-interface PushSubRow {
-  id: string;
-  endpoint: string;
-  locale: string | null;
-  createdAt: string;
-}
-
-interface PushAdminData {
-  publicKey: string;
-  count: number;
-  subscriptions: PushSubRow[];
 }
 
 /* ── Libellés statiques (outil interne francophone) ─────────── */
@@ -371,147 +365,6 @@ function EmailsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
               </span>
             </article>
           ))
-        )}
-      </div>
-    </section>
-  );
-}
-
-/* ── Onglet Push — abonnés + envoi de test ──────────────────── */
-
-function PushPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
-  const [data, setData] = useState<PushAdminData | null>(null);
-  const [reload, setReload] = useState(0);
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/admin/push")
-      .then(async (res) => {
-        if (res.status === 401) {
-          onUnauthorized();
-          return;
-        }
-        const json = (await res.json()) as { ok: boolean; data?: PushAdminData };
-        if (!cancelled && json.ok && json.data) setData(json.data);
-      })
-      .catch(() => {
-        /* état conservé */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [onUnauthorized, reload]);
-
-  const send = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (busy) return;
-    setFeedback(null);
-    setBusy(true);
-    try {
-      const res = await fetch("/api/admin/push", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), body: body.trim() }),
-      });
-      if (res.status === 401) {
-        onUnauthorized();
-        return;
-      }
-      const json = (await res.json()) as {
-        ok: boolean;
-        data?: { sent: number; failed: number; removed: number };
-      };
-      if (json.ok && json.data) {
-        setFeedback(
-          `Envoi terminé : ${json.data.sent} délivrée(s), ${json.data.failed} échec(s)${json.data.removed ? `, ${json.data.removed} abonnement(s) nettoyé(s)` : ""}.`
-        );
-        setTitle("");
-        setBody("");
-        setReload((k) => k + 1);
-      } else {
-        setFeedback("Envoi impossible — vérifiez les champs.");
-      }
-    } catch {
-      setFeedback("Erreur réseau. Réessayez.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <section aria-labelledby="admin-push-t">
-      <h2 id="admin-push-t" className="font-serif text-xl">
-        Notifications push
-      </h2>
-      <p className="mt-1 text-sm text-mute">
-        Abonnements des visiteurs (bouton « Notifications » du pied de page). Clés VAPID :
-        variables d'environnement, sinon paire générée et persistée automatiquement.
-      </p>
-
-      <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
-        <div className="rounded-xl border border-line bg-surface p-5">
-          <p className="font-serif text-3xl text-goldtext">{data?.count ?? "—"}</p>
-          <p className="mt-1 text-xs uppercase tracking-wide text-mute">Abonnés</p>
-        </div>
-        <form onSubmit={send} className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-5">
-          <p className="text-xs uppercase tracking-[0.14em] text-mute">Notification de test</p>
-          <input
-            className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm focus:border-gold focus:outline-none"
-            placeholder="Titre (80 caractères max.)"
-            aria-label="Titre de la notification"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={80}
-          />
-          <input
-            className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm focus:border-gold focus:outline-none"
-            placeholder="Message (280 caractères max.)"
-            aria-label="Message de la notification"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            maxLength={280}
-          />
-          {feedback && <p className="text-sm text-mute">{feedback}</p>}
-          <div>
-            <GoldButton type="submit" disabled={busy || !title.trim() || !body.trim()} className="min-h-10! px-4! text-xs!">
-              <Send className="h-4 w-4" strokeWidth={1.25} aria-hidden />
-              Envoyer
-            </GoldButton>
-          </div>
-        </form>
-      </div>
-
-      <div className="mt-4 flex flex-col gap-3">
-        {data === null ? (
-          <Skeleton className="h-24 rounded-lg" />
-        ) : data.subscriptions.length === 0 ? (
-          <EmptyRow />
-        ) : (
-          data.subscriptions.map((s) => {
-            let host = s.endpoint;
-            try {
-              host = new URL(s.endpoint).host;
-            } catch {
-              /* endpoint brut */
-            }
-            return (
-              <article
-                key={s.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{host}</p>
-                  <p className="mt-0.5 truncate text-xs text-mute">
-                    {s.locale ?? "—"} · {fmtDate(s.createdAt)}
-                  </p>
-                </div>
-              </article>
-            );
-          })
         )}
       </div>
     </section>
@@ -966,7 +819,9 @@ export function AdminOverlay() {
             {tab === "temoignages" && <TestimonialsPanel onUnauthorized={() => goto("login")} />}
             {tab === "documents" && <DocumentsPanel onUnauthorized={() => goto("login")} />}
             {tab === "emails" && <EmailsPanel onUnauthorized={() => goto("login")} />}
-            {tab === "push" && <PushPanel onUnauthorized={() => goto("login")} />}
+            {tab === "podcasts" && <PodcastsPanel onUnauthorized={() => goto("login")} />}
+            {tab === "stats" && <StatsPanel onUnauthorized={() => goto("login")} />}
+            {tab === "publicite" && <PublicitePanel onUnauthorized={() => goto("login")} />}
           </>
         )}
       </div>

@@ -1144,3 +1144,55 @@ Stage Summary:
 - /realisations : section Témoignages déjà en place sous les travaux (vérifiée), cross-links conservés.
 - Fichiers : créés src/app/api/portfolio-categories/route.ts ; modifiés src/app/api/projects/route.ts, src/app/api/testimonials/route.ts, src/components/site/WorksShowcase.tsx, src/components/site/TestimonialsSection.tsx, src/components/site/PartnersSection.tsx, src/components/site/ClientLogosBand.tsx ; scripts/seed-portfolio-categories.ts utilisé puis SUPPRIMÉ ; partners/route.ts et RealisationsPage.tsx contrôlés sans modification nécessaire.
 - Base rendue à son état initial (PortfolioCategory 0, Testimonial 0, Partner 0, Project 8 détachés) ; serveur redémarré avec client Prisma à jour ; aucune nouvelle erreur lint/tsc/dev.log.
+---
+Task ID: BLOG-1 (finalisé par l'orchestrateur)
+Agent: Z.ai Code (BLOG-1, interrompu puis vérifié/complété par l'orchestrateur)
+Task: Blog refondu + section Podcast publique
+
+Work Log:
+- (Agent interrompu après implémentation — code livré complet, QA et nettoyage terminés par l'orchestrateur)
+- /api/posts enrichi (coverImageUrl, isFeatured, videoUrl) ; /api/podcasts public (GET défensif, published, tri publishedAt desc)
+- BlogPage refondu : bande de catégories sticky scrollable avec compteurs + filtre client fonctionnel, section « À la une » (max 2, grande carte cover + badge featured), grille avec images de couverture (fallback dégradé/monogramme), date, catégorie, temps de lecture, bouton Partager (navigator.share → clipboard + toast) + track(article_shared)
+- ArticlePage : cover en tête, iframe youtube-nocookie si videoUrl + auto-embed des liens YouTube nus dans le body, barre de partage WhatsApp/Facebook/X/LinkedIn/Copier, track(article_read)
+- Podcast : page /podcast (hero, chips, liste d'épisodes, bouton Écouter, état vide, CTA), PodcastPlayerProvider (context + <audio> unique qui survit aux navigations client) + PodcastPlayerBar sticky (cover, titre, play/pause, progression, temps, fermer, positionné au-dessus du MobileActionBar), track(podcast_play) ; provider monté dans (site)/layout.tsx ; PAGE_KEYWORDS.podcast ajouté à seo.ts
+- Cleanup test data : 2 podcasts + 1 article test restaurés via scripts/cleanup-blog-podcast-test.ts (scripts supprimés ensuite)
+
+Stage Summary:
+- Blog « magazine » opérationnel : rubriques déroulantes, à la une, images, partage — design Obsidienne & Or intact
+- Podcast public + lecteur persistant vérifiés E2E navigateur : lecture réelle, audio qui continue après navigation client /podcast → /realisations (currentTime 2,4 s), barre au-dessus du MobileActionBar en 390 px
+- Base nettoyée (0 podcast, 0 featured/cover/vidéo article)
+---
+Task ID: DASH-5 (finalisé par l'orchestrateur)
+Agent: Z.ai Code (DASH-5, interrompu après implémentation — vérifié E2E par l'orchestrateur)
+Task: Panels admin — Podcasts, blog enrichi, catégories réalisations, témoignages photo/vidéo
+
+Work Log:
+- (Agent interrompu après implémentation — code livré complet, vérifié E2E par l'orchestrateur)
+- /api/admin/podcasts CRUD (zod, slug auto unique, toPlayableAudioUrl sur sourceUrl → audioUrl, publish → notifyAll « 🎙️ Nouveau podcast EINSOF » fire-and-forget), /api/admin/portfolio-categories CRUD (slug auto, nameJson fr, DELETE avec détachement SetNull)
+- /api/admin/posts étendu : coverImageUrl, isFeatured, videoUrl (validée parseYouTubeId) + AUTO-PUSH notifyAll({title:"📰 Nouvel article", url:/blog/slug, kind:article}) à la publication
+- PodcastsPanel (upload cover, validation Drive live, ordre, publier), PostsPanel (+couverture upload/aperçu, switch À la une, champ vidéo YouTube), ProjectsPanel (Select catégorie + gestionnaire de catégories repliable créer/renommer/ordonner/supprimer), TestimonialsPanel (+upload photo, champ vidéo YouTube validé), PartnersPanel (logoUrl déjà géré — vérifié)
+- Vérifié navigateur par l'orchestrateur : onglets Podcasts (liste + « NOUVEL ÉPISODE » + aide Drive), Journal (éditeur avec « Image de couverture », « À la une », « Vidéo YouTube »), Réalisations (« Catégorie »), Témoignages (photo ronde affichée + champ « Témoignage vidéo (YouTube, optionnel) »)
+
+Stage Summary:
+- CRUD complet opérationnel et testé E2E dans l'Espace équipe ; notifications push automatiques à la publication d'un article ou d'un épisode podcast (journalisées NotificationLog)
+- Base nettoyée après vérification (0 podcast, 0 catégorie, 0 témoignage, flags articles réinitialisés)
+---
+Task ID: INT-COCKPIT (orchestrateur)
+Agent: Z.ai Code
+Task: Intégration finale — câblage overlay, navigation, corrections, vérification E2E complète
+
+Work Log:
+- Câblage AdminOverlay : onglets « Podcasts » (<PodcastsPanel>), « Statistiques » (<StatsPanel>), « Publicité » (<PublicitePanel>) ; bloc push inline remplacé par PublicitePanel (PushPanel/PushAdminData/PushSubRow supprimés, import Send nettoyé) ; onglet Push retiré
+- Correction préexistante : EmailsPanel indexait EMAIL_DOT.status]/EMAIL_STATUS.status] au lieu de [m.status] (les pastilles/statuts e-mails affichaient des undefined) — corrigé ; incident FS transient (lectures contradictoires sur le fichier) résolu par réécriture via nouvel inode + commit propre
+- Navigation : lien « Podcast » ajouté à Navbar (NAV_XL + drawer mobile + ROUTES), Footer (NAV_ROUTES), sitemap.ts (/podcast, 53e URL), llms.txt
+- Photo du gérant : /upload/DG.png → public/uploads/dg-gerant.png + SiteSettings.managerPhotoUrl/Alt définis — /a-propos affiche le portrait rond bordé or avec le mot du gérant (2 paragraphes)
+- Vérifications E2E navigateur (agent-browser, desktop 1440 + mobile 390) : /blog (bande catégories avec compteurs, filtre Websites → 3 articles, à la une, images, bouton partage), article (iframe youtube-nocookie, 4 liens partage, cover), /podcast (liste, bouton Écouter), lecteur persistant (audio réellement joué, survit à la navigation client, barre mobile au-dessus du MobileActionBar), /realisations (filtre SITE VITRINE → 2 cartes, carrousel témoignages prev/next, dialog vidéo YouTube ouvre/se démonte), /a-propos (photo gérant + mot du gérant), chatbot (besoin pharmacie → recommandation SaaS + prix officiel 7 000 000 GNF/an + démo proposée, réponse dans la langue de l'UI)
+- Espace équipe E2E : login → 13 onglets ; Statistiques (8 KPI, graphiques jours/heures/semaine, zones cliquées, recommandations), Publicité (composer + aperçu notification + 4 rappels pré-remplis + envoi réel → toast « Envoyées : 0 · Échecs : 0 » + NotificationLog créé en base + historique), Podcasts, Journal, Réalisations, Témoignages vérifiés
+- Nettoyage : toutes les données de test supprimées (podcasts, témoignages, catégories, flags articles, NotificationLog), scripts temporaires retirés ; lint 0 erreur, tsc 0 erreur projet, dev.log sans erreur
+
+Stage Summary:
+- Le site est un cockpit complet : blog magazine (rubriques/à la une/images/partage/vidéos/pubs), podcast avec lecteur persistant toutes pages, réalisations catégorisées, témoignages carrousel photo/vidéo, partenaires, mot du gérant avec photo
+- L'Espace équipe pilote tout : contenu (journal enrichi + podcasts), confiance (témoignages/partenaires/catégories), croissance (Publicité push + Statistiques & Cockpit avec heatmaps, heures de pic, recommandations automatiques)
+- Notifications push : article publié → notification aux abonnés ; podcast publié → notification ; publicités manuelles avec journalisation (délivrées/échecs/ouvertes via sw.js + /api/push/open)
+- Statistiques comportementales : page_view par route (device/referrer), session_beat 45 s, click_heat % viewport, pwa_installed/accepted/dismissed, article_read/shared, podcast_play — gate consentement respecté
+- Chatbot = vendeur professionnel : découverte une question à la fois, recommandation par besoin, playbook d'objections, closing systématique, prix officiels uniquement, mode oral (réponses courtes)

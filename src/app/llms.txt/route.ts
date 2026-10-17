@@ -48,6 +48,7 @@ export async function GET() {
 - [Méthode](${SITE_URL}/methode) : notre méthode de travail en 5 étapes
 - [À propos](${SITE_URL}/a-propos) : l'agence, ses valeurs, son équipe
 - [Journal](${SITE_URL}/blog) : articles et guides sur le digital en Guinée
+- [Podcast](${SITE_URL}/podcast) : audios EINSOF — conseils business, tech et vente pour les entrepreneurs guinéens
 - [FAQ](${SITE_URL}/faq) : réponses aux questions fréquentes (propriété, tarifs, délais, maintenance)
 - [Contact](${SITE_URL}/contact) : devis, démonstrations, rendez-vous
 
