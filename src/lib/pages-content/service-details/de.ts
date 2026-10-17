@@ -169,7 +169,7 @@ export const SERVICE_DETAILS_DE: LocalizedServiceDetails = {
       title: "Erprobte Werkzeuge,",
       gold: "ab dieser Woche aktiv.",
       paragraphs: [
-        "Nicht jedes Unternehmen braucht eine von Grund auf entwickelte Software. Für sechs Branchen haben wir vollständige Verwaltungslösungen bereits entwickelt, erprobt und verfeinert: Sie decken das Wesentliche des Alltags ab und passen sich in wenigen Tagen Ihrer Tätigkeit an.",
+        "Nicht jedes Unternehmen braucht eine von Grund auf entwickelte Software. Für sieben Branchen haben wir vollständige Verwaltungslösungen bereits entwickelt, erprobt und verfeinert: Sie decken das Wesentliche des Alltags ab und passen sich in wenigen Tagen Ihrer Tätigkeit an.",
         "Jede Software wird im Abonnement gemietet: Sie zahlen für den Monat, wir kümmern uns um alles — Hosting, Updates, Backups und Support. Sie beginnen mit einem kostenlosen 7-Tage-Test, ohne Verpflichtung, um zu prüfen, ob das Werkzeug zu Ihnen passt.",
       ],
       facts: [
@@ -208,7 +208,7 @@ export const SERVICE_DETAILS_DE: LocalizedServiceDetails = {
     audience: {
       label: "Für wen?",
       title: "Sechs Branchen,",
-      gold: "sechs dedizierte Werkzeuge.",
+      gold: "sieben dedizierte Werkzeuge.",
       items: [
         { k: "Handel und Dienstleister", d: "Factura Pro für saubere Rechnungen und Zahlungsüberwachung ohne Tabellenkalkulation." },
         { k: "Kliniken, Schulen, Agenturen", d: "Klinikverwaltung, Schulverwaltung und Immobilienverwaltung — jeweils für die Branche gedacht." },

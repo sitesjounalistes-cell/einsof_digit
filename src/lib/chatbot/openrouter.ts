@@ -11,12 +11,14 @@
  *    d'où une réponse lente à chaque fois. Correctif : chaîne de modèles
  *    testés en direct (bench scripts/bench-chat.ts) avec repli auto.
  * 2. Chien de garde « premier token » : si un modèle n'émet rien dans les
- *    7 s, il est abandonné et le suivant prend le relais — le visiteur
+ *    5 s (FIRST_TOKEN_TIMEOUT_MS), il est abandonné et le suivant prend le relais — le visiteur
  *    n'attend jamais longtemps sans flux.
  *
  * Fallback final : si toute la chaîne échoue, l'API route bascule sur
  * z-ai (voir message/route.ts) — le chatbot ne meurt jamais.
  */
+
+import { BRAND } from "@/lib/brand";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -92,9 +94,11 @@ export async function* streamOpenRouter(
       /* OpenRouter recommande ces en-têtes d'attribution.
          ATTENTION : ASCII strict — un tiret cadratin (—) ou tout caractère
          hors ISO-8859-1 fait REJETER le header par le fetch de Bun/Edge
-         avant même la requête (chaque appel échoue → repli lent). */
-      "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL ?? "https://einsof.vercel.app",
-      "X-Title": "EINSOF Assistant commercial",
+         avant même la requête (chaque appel échoue → repli lent).
+         Audit F-20 : URL et titre par défaut alignés sur la marque dynamique
+         et la même URL canonique par défaut que lib/seo.ts. */
+      "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.einsof.gn",
+      "X-Title": `${BRAND} Assistant commercial`,
     },
     body: JSON.stringify({
       model: opts.model ?? openRouterModel(),

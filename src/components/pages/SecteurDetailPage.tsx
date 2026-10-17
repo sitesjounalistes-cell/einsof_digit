@@ -43,6 +43,7 @@ import { openForm } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
 import { SECTOR_SEO } from "@/lib/seo";
 import { SECTEUR_DETAILS } from "@/lib/pages-content/secteur-details";
+import { brandizeDeep } from "@/lib/brand";
 
 /**
  * Page de détail d'un secteur /secteurs/[slug] — landing SEO longue
@@ -88,7 +89,8 @@ const OFFER_ICONS: Record<string, LucideIcon> = {
 export function SecteurDetailPage({ slug }: { slug: string }) {
   const { t } = useI18n();
   const sector = SECTOR_SEO.find((s) => s.slug === slug);
-  const detail = SECTEUR_DETAILS[slug];
+  /* Audit F-05 : résolution du jeton {brand} (contenu jamais codé en dur). */
+  const detail = brandizeDeep(SECTEUR_DETAILS[slug]);
 
   if (!sector || !detail) return null;
 

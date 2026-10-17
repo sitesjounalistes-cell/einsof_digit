@@ -7,7 +7,9 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: { code: "unauthorized" } }, { status: 401 });
   }
   try {
-    const [totalLeads, newLeads, trials, unreadMessages, chats, recentLeads, messages, trialRows] =
+    /* Audit F-15 : la requête trialRequest était exécutée EN DOUBLE dans le
+       même Promise.all (trials + trialRows) — une seule suffit désormais. */
+    const [totalLeads, newLeads, trials, unreadMessages, chats, recentLeads, messages] =
       await Promise.all([
         db.lead.count(),
         db.lead.count({ where: { status: "new" } }),
@@ -16,7 +18,6 @@ export async function GET() {
         db.chatSession.count(),
         db.lead.findMany({ orderBy: { createdAt: "desc" }, take: 30 }),
         db.contactMessage.findMany({ orderBy: { createdAt: "desc" }, take: 30, include: { lead: true } }),
-        db.trialRequest.findMany({ orderBy: { createdAt: "desc" }, take: 20, include: { lead: true } }),
       ]);
 
     return NextResponse.json({
@@ -25,7 +26,7 @@ export async function GET() {
         stats: { totalLeads, newLeads, unreadMessages, chats, trials: trials.length },
         leads: recentLeads,
         messages,
-        trials: trialRows,
+        trials,
       },
     });
   } catch (e) {

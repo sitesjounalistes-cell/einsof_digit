@@ -15,6 +15,68 @@ export const DEMO_TIMEZONE = "Africa/Conakry";
 export const DEMO_SLOTS_LIMIT = 12;
 export const DEMO_CHAT_SLOTS_LIMIT = 4;
 
+/* ── Régénération des créneaux (audit F-02, 17/10/2026) ────────────
+   Les créneaux étaient un seed STATIQUE : après le dernier créneau
+   (03/11/2026), plus aucune démo bookable alors que le chatbot continue
+   de promettre « mardi/jeudi 10h et 15h ». Désormais la grille est
+   auto-entretenue : mardi/jeudi 10h00 et 15h00 (UTC = heure de Conakry),
+   capacité 2, horizon de 4 semaines, cible de 12 créneaux futurs ACTIFS.
+   Appelée par /api/demo/slots, l'outil suggest_slots et le cron quotidien
+   — idempotente (aucun doublon : on ne crée que les startsAt absents). */
+const SLOT_HOURS = [10, 15]; // heure de Conakry (GMT+0)
+const SLOT_WEEKDAYS = [2, 4]; // mardi (2) et jeudi (4)
+export const DEMO_SLOT_CAPACITY = 2;
+export const DEMO_SLOT_HORIZON_WEEKS = 4;
+export const DEMO_SLOT_TARGET = 12;
+
+/** Dates de créneaux voulues entre « maintenant » et l'horizon. */
+function upcomingSlotDates(from = new Date()): Date[] {
+  const dates: Date[] = [];
+  const day = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()));
+  for (let i = 0; i < DEMO_SLOT_HORIZON_WEEKS * 7 + 7; i++) {
+    const d = new Date(day);
+    d.setUTCDate(day.getUTCDate() + i);
+    if (!SLOT_WEEKDAYS.includes(d.getUTCDay())) continue;
+    for (const h of SLOT_HOURS) {
+      const slot = new Date(d);
+      slot.setUTCHours(h, 0, 0, 0);
+      if (slot.getTime() > from.getTime() + 30 * 60_000) dates.push(slot); // marge 30 min
+    }
+  }
+  return dates;
+}
+
+/** Complète la grille si nécessaire : au moins DEMO_SLOT_TARGET créneaux
+ *  futurs actifs. Ne touche à rien sinon. Retourne le nombre créés. */
+export async function ensureUpcomingSlots(): Promise<number> {
+  const now = new Date();
+  const existing = await db.demoSlot.findMany({
+    where: { startsAt: { gt: now }, isActive: true },
+    select: { startsAt: true },
+  });
+  if (existing.length >= DEMO_SLOT_TARGET) return 0;
+  const taken = new Set(existing.map((s) => s.startsAt.getTime()));
+  const wanted = upcomingSlotDates(now)
+    .filter((d) => !taken.has(d.getTime()))
+    .slice(0, DEMO_SLOT_TARGET - existing.length);
+  if (wanted.length === 0) return 0;
+  const res = await db.demoSlot.createMany({
+    data: wanted.map((startsAt) => ({ startsAt, capacity: DEMO_SLOT_CAPACITY, isActive: true })),
+    skipDuplicates: true,
+  });
+  return res.count;
+}
+
+/** Hygiène du cron : déssaffecte les créneaux passés (reste en base pour
+ *  l'historique des réservations, n'apparaît plus dans les listes). */
+export async function deactivatePastSlots(): Promise<number> {
+  const res = await db.demoSlot.updateMany({
+    where: { startsAt: { lte: new Date() }, isActive: true },
+    data: { isActive: false },
+  });
+  return res.count;
+}
+
 /* ── Vue d'un créneau (API + actions chat) ──────────────────── */
 
 export interface DemoSlotView {

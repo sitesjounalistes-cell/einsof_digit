@@ -25,7 +25,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/methode", priority: 0.7, freq: "monthly" as const },
     { path: "/a-propos", priority: 0.7, freq: "monthly" as const },
     { path: "/blog", priority: 0.8, freq: "weekly" as const },
-    { path: "/podcast", priority: 0.8, freq: "weekly" as const },
+    /* /podcast : retiré de la liste statique — règle §20.4 (audit F-16),
+       la page n'est référencée que si au moins un épisode est publié. */
     { path: "/faq", priority: 0.75, freq: "monthly" as const },
     { path: "/contact", priority: 0.85, freq: "yearly" as const },
   ].map((r) => ({
@@ -58,6 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   let blogRoutes: MetadataRoute.Sitemap = [];
+  let podcastRoutes: MetadataRoute.Sitemap = [];
   try {
     const posts = await db.blogPost.findMany({
       where: { isPublished: true },
@@ -69,6 +71,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.6,
     }));
+    /* §20.4 : /podcast n'est référencée que si au moins un épisode est publié. */
+    const publishedPodcasts = await db.podcast.count({ where: { isPublished: true } });
+    if (publishedPodcasts > 0) {
+      podcastRoutes = [
+        { url: `${SITE_URL}/podcast`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+      ];
+    }
   } catch {
     /* base indisponible → sitemap statique uniquement */
   }
@@ -79,5 +88,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...saasRoutes,
     ...sectorRoutes,
     ...blogRoutes,
+    ...podcastRoutes,
   ];
 }

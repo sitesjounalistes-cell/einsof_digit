@@ -1,18 +1,27 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { db } from "@/lib/db";
+import { ensureUpcomingSlots, deactivatePastSlots } from "@/lib/demo";
 
 /**
  * Tâche planifiée de maintenance (spécification §25 : /api/cron/*).
  * Protégée par `Authorization: Bearer <CRON_SECRET>` (Vercel Cron en production).
+ *
+ * Correctif audit S-03 (17/10/2026) : plus de secret par défaut — sans
+ * CRON_SECRET configurée, la route répond 503 (fail-closed). Personne ne
+ * peut déclencher purges/expirations avec un secret « public » codé en dur.
  *
  * À planifier quotidiennement :
  *   vercel.json → { "crons": [{ "path": "/api/cron/maintenance", "schedule": "0 3 * * *" }] }
  * En local : curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/maintenance
  */
 function authorized(req: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim() || "eins-cron-dev";
+  const secret = process.env.CRON_SECRET?.trim();
+  if (!secret || secret.length < 16) return false; // fail-closed
   const header = req.headers.get("authorization") ?? "";
-  return header === `Bearer ${secret}`;
+  const given = Buffer.from(header);
+  const expected = Buffer.from(`Bearer ${secret}`);
+  return given.length === expected.length && timingSafeEqual(given, expected);
 }
 
 async function runMaintenance() {
@@ -55,12 +64,20 @@ async function runMaintenance() {
     where: { createdAt: { lt: emailCutoff } },
   });
 
+  // 5. Grille de démos auto-entretenue (audit F-02) : les créneaux
+  //    mardi/jeudi 10h/15h sont régénérés à l'horizon de 4 semaines et
+  //    les créneaux passés sont déssaffectés — plus de grille morte.
+  const slotsDeactivated = await deactivatePastSlots();
+  const slotsCreated = await ensureUpcomingSlots();
+
   return {
     ranAt: now.toISOString(),
     trialsExpired,
     chatsClosed: chatsClosed.count,
     analyticsPurged: analyticsPurged.count,
     emailsPurged: emailsPurged.count,
+    slotsDeactivated,
+    slotsCreated,
   };
 }
 

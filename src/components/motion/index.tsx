@@ -20,6 +20,7 @@ import {
   type Variants,
 } from "framer-motion";
 import { useMotionMode } from "@/components/providers";
+import { BRAND } from "@/lib/brand";
 
 /* ── Courbes & ressorts partagés (design §22 / §32) ─────────── */
 
@@ -795,7 +796,7 @@ export function PulseGlow({
 
 /* ── CurtainIntro : rideau d'ouverture or & obsidienne ──────── */
 
-export function CurtainIntro({ brand = "EINSOF" }: { brand?: string }) {
+export function CurtainIntro({ brand = `${BRAND}` }: { brand?: string }) {
   const { lightMode } = useMotionMode();
   const [gone, setGone] = useState(false);
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { MethodPage } from "@/components/pages/MethodPage";
 import { JsonLd } from "@/components/site/JsonLd";
 import {
+import { BRAND } from "@/lib/brand";
   GEO,
   PAGE_KEYWORDS,
   buildMetadata,
@@ -49,9 +50,9 @@ export default function MethodeRoute() {
         data={[
           howToJsonLd({
             path: "/methode",
-            name: "Comment EINSOF crée un site web ou un logiciel en Guinée — 5 étapes",
+            name: `Comment ${BRAND} crée un site web ou un logiciel en Guinée — 5 étapes`,
             description:
-              "La méthode EINSOF en cinq étapes pour créer un site web, un logiciel ou une application en Guinée : écoute, conception, développement, livraison et suivi.",
+              `La méthode ${BRAND} en cinq étapes pour créer un site web, un logiciel ou une application en Guinée : écoute, conception, développement, livraison et suivi.`,
             steps: HOWTO_STEPS,
           }),
           breadcrumbJsonLd([

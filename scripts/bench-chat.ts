@@ -76,7 +76,15 @@ const Q2 = "Vous gérez une pharmacie ?";
 const sys = buildSystemPrompt("fr", "/", Q1);
 console.log(`System prompt : ${sys.length} chars ≈ ${Math.round(sys.length / 3.6)} tokens`);
 
-const MODELS = ["deepseek/deepseek-v4-flash", "~z-ai/glm-flash-latest"];
+/* Audit F-21 : la chaîne complète par défaut est couverte par le bench
+   (llama-3.3-70b et mistral-small étaient absents alors que le commentaire
+   d'openrouter.ts prétendait l'inverse). */
+const MODELS = [
+  "meta-llama/llama-3.3-70b-instruct",
+  "mistralai/mistral-small-24b-instruct-2501",
+  "deepseek/deepseek-v4-flash",
+  "~z-ai/glm-flash-latest",
+];
 
 for (const m of MODELS) {
   await bench(m, sys, Q1);

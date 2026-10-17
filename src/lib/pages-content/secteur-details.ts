@@ -161,7 +161,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
     heroSub:
       "Sites web pour cliniques, cabinets et pharmacies, SaaS de gestion hospitalière, suivi des stocks de médicaments : des outils pensés pour les réalités du terrain guinéen.",
     intro: [
-      "En Guinée, la gestion d'une clinique, d'un cabinet médical ou d'une pharmacie repose encore trop souvent sur le papier. Dossiers patients égarés, rendez-vous confirmés au téléphone un par un, stocks de médicaments suivis à la main : chaque erreur se paie en santé comme en trésorerie. À Conakry comme à l'intérieur du pays, EINSOF équipe les structures de santé avec des outils simples, conçus pour rester utilisables même quand la connexion faiblit.",
+      "En Guinée, la gestion d'une clinique, d'un cabinet médical ou d'une pharmacie repose encore trop souvent sur le papier. Dossiers patients égarés, rendez-vous confirmés au téléphone un par un, stocks de médicaments suivis à la main : chaque erreur se paie en santé comme en trésorerie. À Conakry comme à l'intérieur du pays, {brand} équipe les structures de santé avec des outils simples, conçus pour rester utilisables même quand la connexion faiblit.",
       "Nous livrons un SaaS de gestion hospitalière prêt à l'emploi — dossiers patients, rendez-vous, facturation — avec essai gratuit de 7 jours, ainsi que des sites web vitrines dès 1 500 000 GNF pour présenter vos services, vos horaires et votre équipe. Pour des besoins plus larges (laboratoire, imagerie, multi-établissements), nous concevons un logiciel sur mesure dès 20 000 000 GNF, étudié directement avec vos praticiens.",
     ],
     offers: [
@@ -232,7 +232,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
     heroSub:
       "Logiciel de gestion d'école, site web pour établissements et centres de formation, communication avec les parents : des outils simples pour les équipes administratives guinéennes.",
     intro: [
-      "Inscriptions gérées en paperasse, suivi des paiements de scolarité dispersé entre cahiers et reçus, communication avec les parents limitée à quelques appels : les établissements scolaires guinéens perdent un temps considérable dans des tâches qui peuvent être informatisées. EINSOF équipe écoles privées, universités et centres de formation à Conakry et dans toutes les régions, avec des outils que les équipes non technophiles prennent en main en quelques jours.",
+      "Inscriptions gérées en paperasse, suivi des paiements de scolarité dispersé entre cahiers et reçus, communication avec les parents limitée à quelques appels : les établissements scolaires guinéens perdent un temps considérable dans des tâches qui peuvent être informatisées. {brand} équipe écoles privées, universités et centres de formation à Conakry et dans toutes les régions, avec des outils que les équipes non technophiles prennent en main en quelques jours.",
       "Notre SaaS de gestion d'école couvre les inscriptions, les classes, les notes et les paiements de scolarité, avec essai gratuit de 7 jours et formation des équipes administratives à la livraison. Côté visibilité, un site web vitrine dès 1 500 000 GNF présente votre établissement, vos filières et vos résultats, avec formulaire d'admission en ligne. Un logiciel sur mesure dès 20 000 000 GNF couvre les besoins spécifiques : bulletins, enseignants, multi-sites.",
     ],
     offers: [
@@ -304,7 +304,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
       "Catalogue de biens en ligne, logiciel de gestion des loyers et des locataires, visibilité Google : équipez votre agence immobilière à Conakry et dans tout le pays.",
     intro: [
       "Biens gérés sur plusieurs carnets, dossiers locataires au format papier, suivi des loyers fait manuellement et souvent après échéance : la gestion immobilière en Guinée demande une rigueur que le papier ne tient plus. Pendant ce temps, les acheteurs et les locataires — expatriés, diaspora, entreprises — cherchent d'abord en ligne. Une agence sans vitrine numérique perd des mandats chaque semaine.",
-      "EINSOF propose aux agences immobilières de Conakry et de l'intérieur du pays un site vitrine dès 1 500 000 GNF avec catalogue de biens, photos et demandes de visite, ou un site à 3 500 000 GNF avec tableau de bord pour gérer le catalogue vous-même. Notre SaaS de gestion immobilière — biens, baux, locataires, loyers — est livré avec essai gratuit de 7 jours. Pour des portefeuilles étendus ou la promotion immobilière, un logiciel sur mesure dès 20 000 000 GNF est étudié avec vous.",
+      "{brand} propose aux agences immobilières de Conakry et de l'intérieur du pays un site vitrine dès 1 500 000 GNF avec catalogue de biens, photos et demandes de visite, ou un site à 3 500 000 GNF avec tableau de bord pour gérer le catalogue vous-même. Notre SaaS de gestion immobilière — biens, baux, locataires, loyers — est livré avec essai gratuit de 7 jours. Pour des portefeuilles étendus ou la promotion immobilière, un logiciel sur mesure dès 20 000 000 GNF est étudié avec vous.",
     ],
     offers: [
       {
@@ -374,7 +374,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
     heroSub:
       "Boutique en ligne, logiciel de facturation, caisse et stock synchronisés : des outils pour vendre au-delà du quartier, de Conakry à l'intérieur du pays.",
     intro: [
-      "Stock réparti entre dépôt et boutiques, ventes consignées sur cahier, marges réelles connues seulement à la fin du mois : les commerces guinéens volent à l'aveugle. Ajoutez des commandes reçues sur WhatsApp sans trace ni historique, et la croissance devient un pari. EINSOF équipe commerces et distributeurs à Conakry et dans toutes les régions avec des outils qui rendent chaque vente visible.",
+      "Stock réparti entre dépôt et boutiques, ventes consignées sur cahier, marges réelles connues seulement à la fin du mois : les commerces guinéens volent à l'aveugle. Ajoutez des commandes reçues sur WhatsApp sans trace ni historique, et la croissance devient un pari. {brand} équipe commerces et distributeurs à Conakry et dans toutes les régions avec des outils qui rendent chaque vente visible.",
       "Notre SaaS de caisse et de stock synchronisé suit les ventes, les marges et les inventaires en temps réel, avec essai gratuit de 7 jours ; pour la facturation, Factura Pro à 100 000 GNF/mois génère factures et reçus en un clic. Côté canaux, une boutique en ligne — site vitrine dès 1 500 000 GNF, tableau de bord à 3 500 000 GNF — ouvre votre catalogue à tout le pays, et le community management dès 1 500 000 GNF/mois anime vos ventes sur Facebook et Instagram.",
     ],
     offers: [
@@ -446,7 +446,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
       "Site web pour hôtels, auberges et restaurants, réservation en ligne, visibilité Google : transformez les voyageurs de passage en clients, avant même leur arrivée en Guinée.",
     intro: [
       "Les voyageurs comparent les établissements en ligne avant de réserver : sans site, votre hôtel, votre auberge ou votre restaurant n'existe tout simplement pas dans leur décision. En Guinée, les réservations sont encore prises au téléphone ou sur WhatsApp, sans planning centralisé, et les avis clients restent sans réponse alors qu'ils décident de la saison suivante.",
-      "EINSOF crée des sites web d'hôtellerie dès 1 500 000 GNF : chambres, services, galerie photos, localisation et avis — le site avec tableau de bord à 3 500 000 GNF vous laisse gérer le contenu vous-même. Le module de réservation en ligne se chiffre sur devis, et l'application mobile dédiée démarre à 20 000 000 GNF. Pour la facturation courante, Factura Pro à 100 000 GNF/mois suffit à la réception ; pour un logiciel de gestion complet, nous étudions un sur mesure dès 20 000 000 GNF.",
+      "{brand} crée des sites web d'hôtellerie dès 1 500 000 GNF : chambres, services, galerie photos, localisation et avis — le site avec tableau de bord à 3 500 000 GNF vous laisse gérer le contenu vous-même. Le module de réservation en ligne se chiffre sur devis, et l'application mobile dédiée démarre à 20 000 000 GNF. Pour la facturation courante, Factura Pro à 100 000 GNF/mois suffit à la réception ; pour un logiciel de gestion complet, nous étudions un sur mesure dès 20 000 000 GNF.",
     ],
     offers: [
       {
@@ -517,7 +517,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
       "Logiciels sur mesure pour la gestion des prêts et des échéanciers, sites institutionnels sécurisés, tableaux de bord du portefeuille : des outils fiables pour un secteur sans marge d'erreur.",
     intro: [
       "Portefeuille clients étendu, échéances de remboursement suivies manuellement, exigences de reporting d'un niveau que le papier ne tient plus : les institutions de microfinance et les banques guinéennes ont besoin d'outils dont la fiabilité n'est pas négociable. Les données clients, les accès et les historiques ne se confient pas à n'importe quel système.",
-      "EINSOF développe pour les institutions financières de Guinée des logiciels sur mesure dès 20 000 000 GNF : gestion des prêts, échéanciers, impayés, reporting consolidé et tableaux de bord du portefeuille en temps réel. Votre image mérite la même rigueur : un site institutionnel dès 1 500 000 GNF — ou 3 500 000 GNF avec tableau de bord — présente vos produits dans un cadre sécurisé, et les fonctions avancées se chiffrent sur devis.",
+      "{brand} développe pour les institutions financières de Guinée des logiciels sur mesure dès 20 000 000 GNF : gestion des prêts, échéanciers, impayés, reporting consolidé et tableaux de bord du portefeuille en temps réel. Votre image mérite la même rigueur : un site institutionnel dès 1 500 000 GNF — ou 3 500 000 GNF avec tableau de bord — présente vos produits dans un cadre sécurisé, et les fonctions avancées se chiffrent sur devis.",
     ],
     offers: [
       {
@@ -588,7 +588,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
       "Site web vitrine de référence, suivi de chantiers, gestion d'équipes et de matériaux : des outils à la hauteur des entreprises de bâtiment et travaux publics en Guinée.",
     intro: [
       "Avancement des chantiers consigné sur des cahiers, photos éparpillées sur les téléphones, matériaux suivis à la main : dans le BTP guinéen, les pertes sont réelles mais rarement chiffrées. Surtout, les appels d'offres se gagnent aujourd'hui avec des références visibles en ligne — une entreprise sans site pèse moins face au maître d'ouvrage.",
-      "EINSOF construit des sites web d'entreprise de BTP dès 1 500 000 GNF : réalisations, références, certifications et appels d'offres — avec tableau de bord à 3 500 000 GNF pour publier vos projets vous-même. Côté opérations, un logiciel sur mesure dès 20 000 000 GNF centralise chantiers, équipes, matériaux et rapports, même depuis des sites isolés à connexion faible. Le chiffrage précis se fait sur devis après étude de vos processus.",
+      "{brand} construit des sites web d'entreprise de BTP dès 1 500 000 GNF : réalisations, références, certifications et appels d'offres — avec tableau de bord à 3 500 000 GNF pour publier vos projets vous-même. Côté opérations, un logiciel sur mesure dès 20 000 000 GNF centralise chantiers, équipes, matériaux et rapports, même depuis des sites isolés à connexion faible. Le chiffrage précis se fait sur devis après étude de vos processus.",
     ],
     offers: [
       {
@@ -659,7 +659,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
       "Sites institutionnels multilingues, rapports en ligne, outils de suivi de projets : communiquez votre impact aux bailleurs et partenaires internationaux en Guinée et partout ailleurs.",
     intro: [
       "Les bailleurs et les partenaires vérifient votre crédibilité en ligne avant tout partenariat : une ONG sans site dépend entièrement de ses rapports PDF. En Guinée, les rapports d'activités sont assemblés à la main et en retard sur les échéances, tandis que les équipes dispersées entre Conakry et les régions ne partagent aucune donnée centralisée.",
-      "EINSOF crée des sites institutionnels dès 1 500 000 GNF — missions, projets, publications, dons — et à 3 500 000 GNF avec tableau de bord pour publier vos contenus vous-même ; les versions multilingues se chiffrent sur devis. Pour le suivi d'activités et des indicateurs, un logiciel sur mesure dès 20 000 000 GNF consolide les données de terrain et produit des rapports bailleurs sans ressaisie. Le community management dès 1 500 000 GNF/mois entretient votre visibilité entre deux cycles de reporting.",
+      "{brand} crée des sites institutionnels dès 1 500 000 GNF — missions, projets, publications, dons — et à 3 500 000 GNF avec tableau de bord pour publier vos contenus vous-même ; les versions multilingues se chiffrent sur devis. Pour le suivi d'activités et des indicateurs, un logiciel sur mesure dès 20 000 000 GNF consolide les données de terrain et produit des rapports bailleurs sans ressaisie. Le community management dès 1 500 000 GNF/mois entretient votre visibilité entre deux cycles de reporting.",
     ],
     offers: [
       {
@@ -730,7 +730,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
       "Sites web pour sociétés de transport, logiciels de suivi des expéditions, gestion de flotte : des outils qui suivent le rythme du terrain guinéen.",
     intro: [
       "Expéditions suivies au téléphone, bordereaux papier, preuves de livraison introuvables quand un litige survient, facturation client reconstruite après coup avec des oublis : la logistique guinéenne perd de l'argent dans l'invisible. Les routes et la connectivité varient d'un jour à l'autre — vos outils doivent tenir le terrain, pas seulement le bureau.",
-      "EINSOF développe des logiciels sur mesure dès 20 000 000 GNF pour le transport en Guinée : expéditions, chauffeurs, livraisons, preuves de livraison et stocks centralisés, avec saisie terrain pensée pour les connexions instables. Une application mobile dédiée démarre aussi à 20 000 000 GNF. Côté commercial, un site web dès 1 500 000 GNF — ou 3 500 000 GNF avec tableau de bord — présente vos services et vos flottes, et le chiffrage des modules de suivi client se fait sur devis.",
+      "{brand} développe des logiciels sur mesure dès 20 000 000 GNF pour le transport en Guinée : expéditions, chauffeurs, livraisons, preuves de livraison et stocks centralisés, avec saisie terrain pensée pour les connexions instables. Une application mobile dédiée démarre aussi à 20 000 000 GNF. Côté commercial, un site web dès 1 500 000 GNF — ou 3 500 000 GNF avec tableau de bord — présente vos services et vos flottes, et le chiffrage des modules de suivi client se fait sur devis.",
     ],
     offers: [
       {
@@ -801,7 +801,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
       "Gestion de coopératives, suivi de production, sites web pour producteurs et transformateurs, mise en relation avec les acheteurs : le digital au service des filières guinéennes.",
     intro: [
       "Récoltes et stocks consignés sur des cahiers, acheteurs contactés au dernier moment, prix subis plutôt que négociés : les filières agricoles guinéennes manquent de données pour valoriser leur production. Les coopératives, dispersées sur plusieurs préfectures, n'ont aucune vision consolidée, alors que la traçabilité est devenue une exigence des acheteurs internationaux.",
-      "EINSOF équipe producteurs, coopératives et transformateurs en Guinée : un site web dès 1 500 000 GNF — ou 3 500 000 GNF avec tableau de bord — présente votre filière, vos volumes et vos contacts commerciaux, avec catalogue et commandes en option sur devis. Pour la gestion, un logiciel sur mesure dès 20 000 000 GNF suit parcelles, récoltes, stocks et achats avec traçabilité. La vente en ligne et l'application mobile dédiée démarrent respectivement à 1 500 000 GNF (site) et 20 000 000 GNF (app).",
+      "{brand} équipe producteurs, coopératives et transformateurs en Guinée : un site web dès 1 500 000 GNF — ou 3 500 000 GNF avec tableau de bord — présente votre filière, vos volumes et vos contacts commerciaux, avec catalogue et commandes en option sur devis. Pour la gestion, un logiciel sur mesure dès 20 000 000 GNF suit parcelles, récoltes, stocks et achats avec traçabilité. La vente en ligne et l'application mobile dédiée démarrent respectivement à 1 500 000 GNF (site) et 20 000 000 GNF (app).",
     ],
     offers: [
       {
@@ -872,7 +872,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
       "Logiciels sur mesure pour le suivi des opérations, sites institutionnels, tableaux de bord consolidés : des outils fiables pour un secteur exigeant, en Guinée et sur tous vos sites.",
     intro: [
       "Sites d'exploitation isolés, connectivité variable d'un jour à l'autre, données de production encore collectées à la main sur le terrain puis ressaisies le soir : le secteur minier et énergétique guinéen exige un niveau de fiabilité que le papier ne tient plus. Rapports HSE, conformité et consolidation multi-sites attendent des outils d'un autre niveau.",
-      "EINSOF développe des logiciels sur mesure dès 20 000 000 GNF pour les mines et l'énergie en Guinée : production, logistique, HSE et reporting multi-sites sans ressaisie, conçus pour rester utilisables en connexion instable. Une application mobile de saisie terrain démarre à 20 000 000 GNF. Votre image institutionnelle mérite la même exigence : site web dès 1 500 000 GNF, ou 3 500 000 GNF avec tableau de bord ; les portails (carrières, fournisseurs) se chiffrent sur devis.",
+      "{brand} développe des logiciels sur mesure dès 20 000 000 GNF pour les mines et l'énergie en Guinée : production, logistique, HSE et reporting multi-sites sans ressaisie, conçus pour rester utilisables en connexion instable. Une application mobile de saisie terrain démarre à 20 000 000 GNF. Votre image institutionnelle mérite la même exigence : site web dès 1 500 000 GNF, ou 3 500 000 GNF avec tableau de bord ; les portails (carrières, fournisseurs) se chiffrent sur devis.",
     ],
     offers: [
       {
@@ -943,7 +943,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
       "Sites d'information rapides et modernes, rubriques éditoriales, sections vidéo, monétisation : des plateformes qui portent votre audience en Guinée et dans la diaspora.",
     intro: [
       "L'actualité se consomme sur mobile : un site lent ou dépendant d'un webmaster externe perd des lecteurs à chaque Une. En Guinée, les rédactions publient encore en double saisie entre le site, Facebook et WhatsApp, sans mesurer leur audience — impossible alors de vendre l'espace publicitaire à sa juste valeur.",
-      "EINSOF construit des plateformes d'information pour les médias guinéens : un site avec tableau de bord à 3 500 000 GNF permet à votre rédaction de publier en autonomie — rubriques, articles, vidéos, alertes — tandis que la vitrine démarre à 1 500 000 GNF. La monétisation (espaces publicitaires, abonnements) et les fonctionnalités avancées se chiffrent sur devis. Le community management dès 1 500 000 GNF/mois synchronise vos Une sur tous les canaux et fidélise l'audience.",
+      "{brand} construit des plateformes d'information pour les médias guinéens : un site avec tableau de bord à 3 500 000 GNF permet à votre rédaction de publier en autonomie — rubriques, articles, vidéos, alertes — tandis que la vitrine démarre à 1 500 000 GNF. La monétisation (espaces publicitaires, abonnements) et les fonctionnalités avancées se chiffrent sur devis. Le community management dès 1 500 000 GNF/mois synchronise vos Une sur tous les canaux et fidélise l'audience.",
     ],
     offers: [
       {
@@ -1014,7 +1014,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
       "Sites web pour prestataires, billetterie en ligne, communication digitale d'événements, applications dédiées : des outils qui font le show, avant comme pendant l'événement.",
     intro: [
       "Billetterie gérée à la main avec ses files d'attente et ses faux billets, événements promus uniquement par affiches et relais WhatsApp, données participants éparpillées et jamais réutilisées : l'événementiel guinéen gagne à être outillé. Les prestataires télécoms et fournisseurs d'équipements, eux, restent souvent sans vitrine en ligne crédible face à leurs donneurs d'ordre.",
-      "EINSOF crée des sites événementiels dès 1 500 000 GNF — programme, artistes, partenaires — ou à 3 500 000 GNF avec tableau de bord ; la billetterie en ligne avec paiement mobile money se chiffre sur devis. Pour un outil dédié (accréditations, engagement du public), une application événementielle démarre à 20 000 000 GNF. Le community management dès 1 500 000 GNF/mois porte le teasing, la couverture en direct et les contenus d'après-événement.",
+      "{brand} crée des sites événementiels dès 1 500 000 GNF — programme, artistes, partenaires — ou à 3 500 000 GNF avec tableau de bord ; la billetterie en ligne avec paiement mobile money se chiffre sur devis. Pour un outil dédié (accréditations, engagement du public), une application événementielle démarre à 20 000 000 GNF. Le community management dès 1 500 000 GNF/mois porte le teasing, la couverture en direct et les contenus d'après-événement.",
     ],
     offers: [
       {
@@ -1085,7 +1085,7 @@ export const SECTEUR_DETAILS: Record<string, SecteurDetail> = {
       "Plateformes d'offres d'emploi, sites web de cabinets, gestion des candidatures, marque employeur : des outils pour recruter plus vite et plus juste en Guinée.",
     intro: [
       "CV reçus par WhatsApp et e-mail sans suivi, offres diffusées en bouche-à-oreille que les bons profils ne voient jamais, présélections manuelles et sans traçabilité : le recrutement en Guinée perd des talents dans le bruit. Pendant ce temps, les candidats qualifiés — au pays comme dans la diaspora — cherchent d'abord sur Google.",
-      "EINSOF équipe cabinets et services RH : un site de recrutement dès 1 500 000 GNF — ou 3 500 000 GNF avec tableau de bord pour publier vos offres et recevoir les candidatures — constitue la base. Une plateforme complète d'offres et de candidatures, avec base de CV, statuts et historiques, se chiffre sur devis ; l'application mobile dédiée démarre à 20 000 000 GNF. Le community management dès 1 500 000 GNF/mois construit votre marque employeur.",
+      "{brand} équipe cabinets et services RH : un site de recrutement dès 1 500 000 GNF — ou 3 500 000 GNF avec tableau de bord pour publier vos offres et recevoir les candidatures — constitue la base. Une plateforme complète d'offres et de candidatures, avec base de CV, statuts et historiques, se chiffre sur devis ; l'application mobile dédiée démarre à 20 000 000 GNF. Le community management dès 1 500 000 GNF/mois construit votre marque employeur.",
     ],
     offers: [
       {

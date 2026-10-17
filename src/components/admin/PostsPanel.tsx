@@ -1070,7 +1070,7 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
                               className={`${textareaCls} min-h-[56px]`}
                               value={ad.text}
                               maxLength={600}
-                              placeholder="Ex. EINSOF conçoit des logiciels de gestion sur mesure pour les entreprises guinéennes."
+                              placeholder="Ex. Notre agence conçoit des logiciels de gestion sur mesure pour les entreprises guinéennes."
                               onChange={(e) => updateAd(i, { text: e.target.value })}
                             />
                           </label>

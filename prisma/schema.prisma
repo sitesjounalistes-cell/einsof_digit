@@ -42,6 +42,7 @@ model LeadEvent {
   leadId    String
   lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   // created | status_changed | note | trial_requested | demo_requested | message
+  // (+ interaction, chat_lead, trial_expired — écrits par le code, audit F-22)
   type      String
   data      String?
   createdAt DateTime @default(now())
@@ -201,7 +202,7 @@ model SiteSettings {
   /// Photo du gérant (URL /uploads/… ou /images/…)
   managerPhotoUrl  String?
   managerPhotoAlt  String?
-  /// {"fr":"…","en":"…"} — mot du gérant (2 paragraphes \n\n)
+  /// {"fr":"…"} — mot du gérant (2 paragraphes \n\n) ; en/es/zh/de optionnels (repli fr)
   managerMessageJson String?
   managerName   String?
   managerRole   String?
@@ -284,7 +285,7 @@ model NotificationLog {
   body      String
   /// Lien ouvert au clic sur la notification
   url       String?
-  /// article | promo | test
+  /// article | promo | test | podcast
   kind      String   @default("promo")
   sentTo    Int      @default(0)
   delivered Int      @default(0)

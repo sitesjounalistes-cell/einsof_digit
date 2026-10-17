@@ -59,7 +59,12 @@ const isoDate = z.string().refine((v) => !Number.isNaN(Date.parse(v)), "bad_date
 
 const slugField = z.string().trim().regex(SLUG_RE, "bad_slug").min(3).max(80);
 const readingMinField = z.coerce.number().int().min(1).max(60);
-const categoryField = z.string().trim().min(2).max(40);
+/* Audit F-23 : la catégorie est validée contre le vocabulaire traduit
+   (journal.categories.* dans les 5 langues) — les 6 articles seedés en
+   catégories libres (« logiciels », « marketing », « formations »)
+   affichaient des badges non traduits. */
+const POST_CATEGORIES = ["agence", "web", "saas", "logiciels", "marketing", "formations"] as const;
+const categoryField = z.enum(POST_CATEGORIES);
 
 /* ── SEO par article (DASH-3) — chaîne vide = retour au repli automatique ── */
 const metaTitleField = z

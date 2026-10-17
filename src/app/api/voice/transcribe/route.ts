@@ -18,7 +18,7 @@ const schema = z.object({
  * Pourquoi une transcription serveur ? L'API Web Speech du navigateur
  * (webkitSpeechRecognition) est absente de Firefox, bloquée dans certains
  * contextes d'iframe et dépendante des serveurs du navigateur : le mode
- * vocal EINSOF ne peut pas reposer uniquement dessus. Cette route garantit
+ * vocal de l’agence ne peut pas reposer uniquement dessus. Cette route garantit
  * une reconnaissance disponible sur TOUS les navigateurs modernes.
  */
 export async function POST(req: Request) {

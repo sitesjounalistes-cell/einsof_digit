@@ -91,7 +91,7 @@ export const ZONES_PAGE: Localized<ZonesContent> = {
       label: "09 — Zones",
       title: "Partout en Guinée,",
       gold: "sans exception.",
-      sub: "De Conakry à Nzérékoré, de Kankan à Labé et Boké : EINSOF crée des sites web, des logiciels et des solutions digitales pour les entreprises de toutes les régions de Guinée — avec un suivi à distance inclus, où que vous soyez.",
+      sub: "De Conakry à Nzérékoré, de Kankan à Labé et Boké : {brand} crée des sites web, des logiciels et des solutions digitales pour les entreprises de toutes les régions de Guinée — avec un suivi à distance inclus, où que vous soyez.",
       chips: [
         "Conakry & intérieur du pays",
         "Suivi à distance inclus",
@@ -99,7 +99,7 @@ export const ZONES_PAGE: Localized<ZonesContent> = {
       ],
     },
     intro: {
-      p1: "Depuis Conakry, EINSOF assure la création de site web partout en Guinée. Agence digitale présente à Conakry comme dans les régions, nous livrons des sites vitrines, des boutiques en ligne et des logiciels de gestion à Kankan, Nzérékoré, Boké, Kindia, Labé, Mamou et Faranah — avec les mêmes délais, les mêmes prix affichés et la même qualité de finition qu'au siège.",
+      p1: "Depuis Conakry, {brand} assure la création de site web partout en Guinée. Agence digitale présente à Conakry comme dans les régions, nous livrons des sites vitrines, des boutiques en ligne et des logiciels de gestion à Kankan, Nzérékoré, Boké, Kindia, Labé, Mamou et Faranah — avec les mêmes délais, les mêmes prix affichés et la même qualité de finition qu'au siège.",
       p2: "Notre organisation 100 % numérique — visioconférence, WhatsApp, échange de documents en ligne — garantit un suivi à distance fluide, sans frais de déplacement pour vous. Et quand le projet le mérite, nos équipes se déplacent sur rendez-vous : relevés sur site, formation des équipes, lancement officiel. Où que soit votre entreprise, votre projet avance tous les jours.",
       naturellesLabel: "Les quatre régions naturelles couvertes",
     },

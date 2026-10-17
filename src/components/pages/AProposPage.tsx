@@ -28,7 +28,7 @@ const WHY_ICONS: Record<WhyIcon, LucideIcon> = {
 /**
  * Page /a-propos (architecture multi-pages) :
  * hero « À propos », chiffres clés animés, récit & valeurs existants,
- * bloc « pourquoi EINSOF », mot du gérant (réglages éditables),
+ * bloc « pourquoi {brand} », mot du gérant (réglages éditables),
  * documents téléchargeables, CTA final.
  */
 export function AProposPage() {
@@ -51,7 +51,7 @@ export function AProposPage() {
       {/* Récit + valeurs existants */}
       <AboutSection />
 
-      {/* Pourquoi EINSOF */}
+      {/* Pourquoi l-agence */}
       <Section id="why-us" tone="surface" className="border-b border-line">
         <Container>
           <SectionHeading

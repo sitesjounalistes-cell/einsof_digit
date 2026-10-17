@@ -32,9 +32,23 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
+
+# secrets & data locales (audit 17/10/2026 — jamais de DB ni de secret dans git)
+/db/
+*.db
+*.db-journal
+
+# artefacts d'agent / plateforme (jamais trackés)
+/tool-results/
+/upload/
+/download/
+/agent-ctx/
+/.zscripts/
+*.pid
 
 
 # typescript

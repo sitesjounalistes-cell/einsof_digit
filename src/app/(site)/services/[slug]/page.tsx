@@ -8,6 +8,7 @@ import {
   type ServiceSlug,
 } from "@/lib/pages-content/service-details";
 import { breadcrumbJsonLd, buildMetadata, serviceJsonLd } from "@/lib/seo";
+import { BRAND } from "@/lib/brand";
 
 /** Pages statiques : un paramètre par pôle de service. */
 export function generateStaticParams() {
@@ -134,7 +135,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const detail = SERVICE_DETAILS.fr[slug as ServiceSlug];
-  if (!detail) return { title: `Service — EINSOF` };
+  if (!detail) return { title: `Service — ${BRAND}` };
   const seo = SEO_BY_SLUG[slug as ServiceSlug];
   return buildMetadata({
     path: `/services/${slug}`,

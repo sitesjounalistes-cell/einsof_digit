@@ -1,16 +1,22 @@
 /**
  * Carte de navigation complète du site pour le chatbot — « contrôle total » :
  * le modèle peut envoyer le visiteur vers N'IMPORTE QUELLE page du site
- * (accueil, pages de pôles, pages logiciels, tarifs, réalisations…)
- * en temps réel via l'action navigate { path: "..." }.
+ * (accueil, pages de pôles, pages logiciels, secteurs, zones, tarifs,
+ * réalisations, podcast…) en temps réel via l'action navigate { path: "..." }.
  *
- * Source de vérité : lib/routes.ts (PAGES) + catalogue (services, SaaS).
+ * Source de vérité : lib/routes.ts (PAGES) + catalogue (services, SaaS)
+ * + pages secteurs (SECTOR_SEO). Audit F-09 (17/10/2026) : /zones et les
+ * 14 pages /secteurs/[slug] sont désormais navigables (auparavant filtrées
+ * silencieusement par isValidSitePath alors que le prompt promettait
+ * « emmène le visiteur PARTOUT »).
  */
 
 import { SAAS_PRODUCTS } from "@/lib/catalog";
 import { SERVICE_SLUGS, getServiceNameFr } from "@/lib/pages-content/service-details";
 import { getSaasNameFr } from "@/lib/pages-content/saas-details";
+import { SECTOR_SEO } from "@/lib/seo";
 import { PAGES } from "@/lib/routes";
+import { BRAND } from "@/lib/brand";
 
 export interface SiteRoute {
   /** chemin exact attendu dans l'action navigate */
@@ -41,16 +47,19 @@ const SAAS_PAGES: SiteRoute[] = SAAS_PRODUCTS.map((p) => ({
   hint: p.slug,
 }));
 
+/** Pages secteurs — /secteurs/[slug] (SEO longue traîne par métier). */
+const SECTOR_PAGES: SiteRoute[] = SECTOR_SEO.map((s) => ({
+  path: `/secteurs/${s.slug}`,
+  label: `Secteur ${s.name}`,
+  hint: s.slug,
+}));
+
 export const SITE_ROUTES: SiteRoute[] = [
   { path: "/", label: "Accueil" },
   ...STATIC_PAGES,
-  /* Podcast — page éditée par un autre chantier (PAGES pas encore à jour) :
-     déclarée ici pour que le chatbot puisse y emmener le visiteur et
-     s'en servir comme preuve d'expertise (audios sur le digital et la
-     vente en Guinée). */
-  { path: "/podcast", label: "Podcast EINSOF", hint: "podcast audio digital vente guinée" },
   ...SERVICE_PAGES,
   ...SAAS_PAGES,
+  ...SECTOR_PAGES,
 ];
 
 export const SITE_ROUTE_PATHS = SITE_ROUTES.map((r) => r.path);
@@ -61,5 +70,8 @@ export function isValidSitePath(path: string): boolean {
 
 /** Liste lisible pour le prompt système. */
 export function siteRoutesForPrompt(): string {
-  return SITE_ROUTES.map((r) => `- ${r.path} → ${r.label}`).join("\n");
+  return SITE_ROUTES.map((r) => `- ${r.path} → ${r.label}${r.hint ? ` (${r.hint})` : ""}`).join("\n");
 }
+
+/** Marque (jamais en dur — audit F-05). */
+export const SITE_BRAND = BRAND;

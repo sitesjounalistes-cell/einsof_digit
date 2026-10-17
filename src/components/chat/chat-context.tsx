@@ -12,7 +12,7 @@ import React, {
 import { useI18n, LANGS, type Lang } from "@/lib/i18n";
 import { useTheme } from "next-themes";
 import { useConsent, getVisitorId } from "@/lib/consent";
-import { scrollToSection, navigateSmart, navigateToPath, openForm, type OpenFormType } from "@/lib/chat-bus";
+import { navigateToPath, openForm, type OpenFormType } from "@/lib/chat-bus";
 import { track } from "@/lib/analytics";
 
 export interface ChatSlotView {
@@ -52,14 +52,15 @@ interface ChatContextValue {
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 
-/** Page actuellement vue par le visiteur (contrôle total du chatbot). */
+/** Page actuellement vue par le visiteur (contrôle total du chatbot).
+ *  Tronquée à 300 car. : la validation serveur borne currentPath (audit F-13). */
 export function getCurrentPath(): string {
   if (typeof window === "undefined") return "/";
-  return window.location.pathname + window.location.search;
+  return (window.location.pathname + window.location.search).slice(0, 300);
 }
 
 interface SseEvent {
-  type: "token" | "action" | "done" | "error" | "lead";
+  type: "token" | "action" | "done" | "error";
   v?: string;
   tool?: string;
   args?: Record<string, unknown>;
@@ -97,8 +98,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           visitorId: getVisitorId(),
           locale: lang,
-          mode: "text",
-          entryPath: "/",
+          /* Audit F-17 : le mode réel (vocal via Omnis) et la vraie page
+             d'entrée sont enregistrés — la colonne mode ne restait qu'à
+             "text" et entryPath qu'à "/" codés en dur. */
+          mode: omnisOpen ? "omnis" : "text",
+          entryPath: getCurrentPath(),
           consentChatStorage: chatStorage,
         }),
       });
@@ -107,7 +111,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     } catch {
       sessionRef.current = null;
     }
-  }, [lang, chatStorage]);
+  }, [lang, chatStorage, omnisOpen]);
 
   /* Latence : la session est pré-créée dès l'ouverture du chat ou d'Omnis —
      le premier message ne paie plus ce aller-retour. */
@@ -169,13 +173,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     (tool: string, args: Record<string, unknown>) => {
       switch (tool) {
         case "navigate": {
-          /* Contrôle total du site : chemin exact (pages, pôles, logiciels) */
+          /* Contrôle total du site : chemin exact (pages, pôles, logiciels,
+             secteurs, zones). Le serveur réécrit toujours args en { path }
+             (validé par isValidSitePath) — la branche « section » héritée
+             de l'ancienne architecture mono-page a été retirée (audit F-18). */
           const path = String(args.path ?? "");
-          if (path) {
-            navigateToPath(path);
-          } else {
-            navigateSmart(String(args.section ?? ""));
-          }
+          if (path) navigateToPath(path);
           break;
         }
         case "open_form": {

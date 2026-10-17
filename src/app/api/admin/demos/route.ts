@@ -93,6 +93,10 @@ export async function PATCH(req: Request) {
     });
     return NextResponse.json({ ok: true, data: { id: booking.id, status: booking.status } });
   } catch (e) {
+    /* Cohérence API (audit F-15) : id inconnu → 404, pas 500. */
+    if (typeof e === "object" && e !== null && "code" in e && (e as { code?: string }).code === "P2025") {
+      return NextResponse.json({ ok: false, error: { code: "not_found" } }, { status: 404 });
+    }
     console.error("[admin/demos PATCH]", e);
     return NextResponse.json({ ok: false, error: { code: "server" } }, { status: 500 });
   }

@@ -150,10 +150,10 @@ const GEO_INJECT: string[] = GEO_CITIES.flatMap((c) => [
 
 export const BASE_KEYWORDS: string[] = [
   /* Marque & agence */
-  "EINSOF",
-  "EINSOF Guinée",
-  "EINSOF Conakry",
-  "EINSOF agence digitale",
+  `${BRAND}`,
+  `${BRAND} Guinée`,
+  `${BRAND} Conakry`,
+  `${BRAND} agence digitale`,
   `agence digitale ${GEO.country}`,
   `agence digitale ${GEO.city}`,
   "agence digitale Guinée Conakry",
@@ -423,8 +423,8 @@ export const BASE_KEYWORDS: string[] = [
   "lead generation Guinea",
   "social media management Guinea",
   "digital training Guinea",
-  "EINSOF Guinea",
-  "EINSOF agency",
+  `${BRAND} Guinea`,
+  `${BRAND} agency`,
 ];
 
 /* ── 2. MOTS-CLÉS PAR PAGE (requêtes longue traîne) ────────────── */
@@ -438,7 +438,7 @@ export const PAGE_KEYWORDS: Record<string, string[]> = {
     "solution digitale complète Guinée",
     "meilleur développeur Guinée",
     "services numériques Conakry",
-    "EINSOF création site web",
+    `${BRAND} création site web`,
   ],
   services: [
     "services digitaux Guinée",
@@ -556,12 +556,12 @@ export const PAGE_KEYWORDS: Record<string, string[]> = {
     "informatique ONG Guinée",
   ],
   about: [
-    "à propos EINSOF",
+    `à propos ${BRAND}`,
     "équipe agence digitale Guinée",
     "entreprise informatique guinéenne",
     "histoire agence digitale Conakry",
     "agence locale Guinée",
-    "qui est EINSOF",
+    `qui est ${BRAND}`,
     "agence 100% guinéenne",
     "agence jeune Guinée",
     "valeur agence digitale Guinée",
@@ -582,7 +582,7 @@ export const PAGE_KEYWORDS: Record<string, string[]> = {
     "podcast digital Guinée",
     "podcast business Conakry",
     "podcast entrepreneuriat Guinée",
-    "podcast EINSOF",
+    `podcast ${BRAND}`,
     "podcast marketing digital Guinée",
     "podcast création site web Guinée",
     "podcast tech Afrique de l'Ouest",
@@ -611,7 +611,7 @@ export const PAGE_KEYWORDS: Record<string, string[]> = {
     "devis application mobile Guinée",
     "devis logiciel Guinée",
     "demander une démo logiciel Guinée",
-    "contacter EINSOF",
+    `contacter ${BRAND}`,
     "numéro agence digitale Guinée",
     "adresse agence digitale Conakry",
     "rendez-vous agence digitale Guinée",
@@ -1004,7 +1004,7 @@ export function organizationJsonLd(): Json {
     "@type": ["Organization", "ProfessionalService", "LocalBusiness"],
     "@id": ORG_ID,
     name: BRAND,
-    alternateName: ["EINSOF Guinée", "EINSOF Conakry", "EINSOF GN"],
+    alternateName: [`${BRAND} Guinée`, `${BRAND} Conakry`, `${BRAND} GN`],
     url: SITE_URL,
     logo: `${SITE_URL}/logo.svg`,
     image: `${SITE_URL}/images/hero-obsidienne.png`,

@@ -25,10 +25,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: { code: "validation" } }, { status: 400 });
   }
   try {
+    /* Audit F-03 (17/10/2026) : plus de téléphone factice « +224000000000 ».
+       Il fusionnait TOUS les abonnés dans un seul Lead (upsert par téléphone)
+       et chaque inscription écrasait l'e-mail du précédent. Un abonné
+       newsletter est identifié par son e-mail — pas de téléphone. */
     const { lead } = await upsertLead({
       firstName: "Abonné",
       lastName: "Newsletter",
-      phone: "+224000000000",
+      phone: "",
       email: parsed.data.email,
       source: "newsletter",
       locale: parsed.data.locale,

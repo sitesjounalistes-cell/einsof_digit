@@ -78,7 +78,19 @@ function officialPricesBlock(): string {
 - INTERDICTION ABSOLUE — offres SANS AUCUN montant (même pas « à partir de », même pas un chiffre entendu ailleurs) : « Gestion de formation » = SUR DEVIS UNIQUEMENT (ne cite JAMAIS 7 000 000 GNF ni aucun autre montant pour elle), workflows sur mesure, options du site customisé. Pour ces offres, réponds uniquement « sur devis, après étude de votre besoin » et propose le formulaire de devis.`;
 }
 
-export function buildSystemPrompt(locale: string, currentPath: string, userMessage: string): string {
+/** Flags dynamiques fournis par la route (requêtes DB) — le prompt reste
+ *  véridique : ne vante que ce qui est réellement publié (règle §20.4). */
+export interface PromptFlags {
+  /** Nombre d'épisodes de podcast publiés (0 → section masquée, ne pas la vendre). */
+  publishedPodcasts?: number;
+}
+
+export function buildSystemPrompt(
+  locale: string,
+  currentPath: string,
+  userMessage: string,
+  flags: PromptFlags = {}
+): string {
   const context = siteContextBlock(userMessage);
   const localeNames: Record<string, string> = {
     fr: "français",
@@ -127,8 +139,8 @@ ACTIONS — une seule par réponse, à la FIN, ligne dédiée, format EXACT (JSO
 [[action:{"tool":"navigate","args":{"path":"/tarifs"}}]]
 N'écris JAMAIS l'action en texte libre. Outils :
 - navigate {path} : amène le visiteur sur cette page en direct.
-- open_form {type:"trial"|"quote"|"contact"} : ouvre le formulaire.
-- create_lead {first_name,last_name,phone,interest} : coordonnées (après consentement explicite). Sans créneau choisi, create_lead reste prioritaire.
+- open_form {type:"trial"|"quote"|"contact"|"demo"} : ouvre le formulaire (demo = demande de démonstration sans créneau).
+- create_lead {first_name,last_name,phone,interest,consent} : coordonnées. Appelle-le UNIQUEMENT après consentement explicite (« d'accord pour être recontacté par l'équipe ? ») et passe alors "consent":true — sans ce champ, le lead est refusé côté serveur. Sans créneau choisi, create_lead reste prioritaire.
 - handoff_human : propose de passer à l'équipe (formulaire contact).
 - suggest_slots {} : affiche les PROCHAINS créneaux réels (la carte s'en charge — ne cite JAMAIS une date/heure toi-même).
 - book_demo {slot_id EXACT d'un créneau proposé,first_name,last_name,phone,email?,saas_slug? (${saasList})} : réserve la démo. Procédure : 1) demander prénom+nom+téléphone ; 2) suggest_slots ; 3) book_demo seulement quand UN créneau est choisi ET coordonnées données. Réservation = accord d'être recontacté.
@@ -152,7 +164,11 @@ BASE DE CONNAISSANCES :
 - Argument n°2 : services plus complets — chatbot IA, capture de contacts, SEO et indexation Google dès le site vitrine ; un seul partenaire pour site, logiciel, réseaux sociaux et acquisition.
 - Essais/démos : essai gratuit 7 jours sur chaque SaaS (1 fois par personne et par logiciel, formulaire court, l'équipe active l'accès) ; démo 30 min en visio mardi et jeudi à 10h00 et 15h00 (heure de Conakry), places limitées. Réservation : prénom+nom+téléphone → suggest_slots → book_demo. Contact : réponse sous 24 h ouvrées. Ne jamais inventer un créneau/une heure.
 - Réalisations : 8 sites publiés (Captis, Ecometus Guinée, Inter Seas Logistique, EMROD, Referencemedia, FMK224, Topguinee, Samou Média) — aperçus animés sur la page Réalisations. Références réelles, cite-les librement.
-- Podcast : audios EINSOF sur le digital et la vente en Guinée (/podcast) — cite-la comme preuve d'expertise, sans jamais inventer de titre d'épisode.
+${
+  (flags.publishedPodcasts ?? 0) > 0
+    ? `- Podcast : ${flags.publishedPodcasts} épisode(s) publié(s) par ${BRAND} sur le digital et la vente en Guinée (/podcast) — cite-les comme preuve d'expertise, sans jamais inventer de titre d'épisode.`
+    : `- Podcast : AUCUN épisode publié pour l'instant — ne propose PAS la page /podcast et n'y fais aucune promesse ; oriente plutôt vers les Réalisations ou le Journal.`
+}
 - Contact : formulaire sur le site (réponse 24 h ouvrées) ; WhatsApp en cours d'activation ; adresse en Guinée (à confirmer).
 
 RAPPEL ORAL : si un marqueur « MESSAGE VOCAL » figure dans la conversation, réponds comme si tu PARLAIS — 2 à 4 phrases, aucune liste ni tiret, UN SEUL prix, termine par une petite question ou proposition.

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/admin-auth";
 import { toPlayableAudioUrl } from "@/lib/drive";
 import { notifyAll } from "@/lib/push-notify";
+import { BRAND } from "@/lib/brand";
 
 /**
  * Podcasts — CRUD complet pour l'Espace équipe.
@@ -205,6 +206,16 @@ export async function POST(req: Request) {
         sortOrder: d.sortOrder ?? 0,
       },
     });
+    /* Audit F-10 : création directe publiée → notification push, comme
+       via le PATCH false→true (comportement symétrique avec les articles). */
+    if (d.isPublished) {
+      void notifyAll({
+        title: `🎙️ Nouveau podcast`,
+        body: d.titleFr.slice(0, 120),
+        url: "/podcast",
+        kind: "podcast",
+      }).catch(() => {});
+    }
     return NextResponse.json(
       { ok: true, data: { id: podcast.id, slug: podcast.slug } },
       { status: 201 }
@@ -281,7 +292,7 @@ export async function PATCH(req: Request) {
     if (shouldNotify) {
       /* FIRE-AND-FORGET — ne bloque jamais la réponse, n'échoue jamais la requête. */
       void notifyAll({
-        title: "🎙️ Nouveau podcast EINSOF",
+        title: `🎙️ Nouveau podcast ${BRAND}`,
         body: frTitleOf(podcast.titleJson, podcast.slug).slice(0, 120),
         url: "/podcast",
         kind: "podcast",

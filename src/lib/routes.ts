@@ -22,6 +22,8 @@ export const PAGES: PageDef[] = [
   { id: "tarifs", path: "/tarifs", fr: "Tarifs" },
   { id: "realisations", path: "/realisations", fr: "Réalisations" },
   { id: "blog", path: "/blog", fr: "Journal" },
+  { id: "podcast", path: "/podcast", fr: "Podcast" },
+  { id: "zones", path: "/zones", fr: "Zones d'intervention" },
   { id: "a-propos", path: "/a-propos", fr: "À propos" },
   { id: "faq", path: "/faq", fr: "FAQ" },
   { id: "contact", path: "/contact", fr: "Contact" },

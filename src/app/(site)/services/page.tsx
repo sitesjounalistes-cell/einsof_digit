@@ -10,6 +10,7 @@ import {
   webPageJsonLd,
 } from "@/lib/seo";
 import { SERVICE_SLUGS, getServiceNameFr } from "@/lib/pages-content/service-details";
+import { BRAND } from "@/lib/brand";
 
 /* /services — cible « agence de création de site web professionnel en
    Guinée », « création de logiciel en Guinée », etc. */
@@ -34,12 +35,12 @@ export default function ServicesRoute() {
         data={[
           itemListJsonLd({
             path: "/services",
-            name: "Services digitaux EINSOF en Guinée — 7 pôles",
+            name: `Services digitaux ${BRAND} en Guinée — 7 pôles`,
             items: serviceItems,
           }),
           webPageJsonLd({
             path: "/services",
-            name: "Services — EINSOF, agence digitale en Guinée",
+            name: `Services — ${BRAND}, agence digitale en Guinée`,
             description:
               "Création de sites web, logiciels, applications, SaaS, community management, génération de leads, formations et stratégie digitale en Guinée.",
             type: "CollectionPage",

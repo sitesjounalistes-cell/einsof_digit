@@ -93,7 +93,7 @@ self.addEventListener("push", (event) => {
     payload = { ...payload, body: event.data ? event.data.text() : "" };
   }
   event.waitUntil(
-    self.registration.showNotification(payload.title || "EINSOF", {
+    self.registration.showNotification(payload.title || "Notification", {
       body: payload.body || "",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",

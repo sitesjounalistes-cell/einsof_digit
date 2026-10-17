@@ -1,7 +1,7 @@
 import type { LocalizedSaasDetails } from "./types";
 
 /**
- * Pages des six SaaS — version française (source).
+ * Pages des sept SaaS — version française (source).
  * Montants uniquement via le catalogue officiel (src/lib/catalog.ts).
  */
 export const SAAS_DETAILS_FR: LocalizedSaasDetails = {

@@ -25,8 +25,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { BRAND } from "@/lib/brand";
 import {
-  Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
@@ -86,7 +86,7 @@ const TEMPLATES: Template[] = [
   },
   {
     title: "📲 Votre site en application mobile, demandez une démo",
-    body: "EINSOF transforme votre site web en application installable sur téléphone. Demandez une démonstration gratuite.",
+    body: `${BRAND} transforme votre site web en application installable sur téléphone. Demandez une démonstration gratuite.`,
     url: "/contact",
   },
   {
@@ -95,13 +95,13 @@ const TEMPLATES: Template[] = [
     url: "/logiciels/factura-pro",
   },
   {
-    title: "🎙️ Nouvel épisode du podcast EINSOF",
+    title: `🎙️ Nouvel épisode du podcast ${BRAND}`,
     body: "Le nouveau numéro est en ligne : stratégie digitale et business en Guinée. Écoutez-le maintenant.",
     url: "/podcast",
   },
   {
     title: "🗓️ Réservez votre démo privée",
-    body: "Choisissez votre créneau et découvrez nos logiciels de gestion en direct avec l'équipe EINSOF.",
+    body: `Choisissez votre créneau et découvrez nos logiciels de gestion en direct avec l'équipe ${BRAND}.`,
     url: "/contact",
   },
 ];
@@ -357,7 +357,7 @@ export function PublicitePanel({ onUnauthorized }: { onUnauthorized: () => void 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-mute">
-                      EINSOF · maintenant
+                      {BRAND} · maintenant
                     </p>
                     <MousePointerClick className="h-3.5 w-3.5 text-mute" aria-hidden />
                   </div>

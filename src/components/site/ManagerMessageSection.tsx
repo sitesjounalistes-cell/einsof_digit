@@ -65,7 +65,7 @@ export function ManagerMessageSection() {
               {settings.managerPhotoUrl ? (
                 <img
                   src={settings.managerPhotoUrl}
-                  alt={settings.managerPhotoAlt || "Portrait du gérant d'EINSOF"}
+                  alt={settings.managerPhotoAlt || `Portrait du gérant d'${BRAND}`}
                   className="relative h-40 w-40 rounded-full border border-gold/50 object-cover shadow-[0_0_40px_rgba(212,175,55,0.18)] md:h-52 md:w-52"
                   loading="lazy"
                 />

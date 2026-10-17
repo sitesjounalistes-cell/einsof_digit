@@ -9,6 +9,7 @@ import {
 } from "@/lib/pages-content/saas-details";
 import { findSaas } from "@/lib/catalog";
 import { breadcrumbJsonLd, buildMetadata, softwareJsonLd } from "@/lib/seo";
+import { BRAND } from "@/lib/brand";
 
 /** Pages statiques : un paramètre par logiciel SaaS. */
 export function generateStaticParams() {
@@ -94,7 +95,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const detail = SAAS_DETAILS.fr[slug as SaasSlug];
-  if (!detail) return { title: `Logiciel — EINSOF` };
+  if (!detail) return { title: `Logiciel — ${BRAND}` };
   const seo = SEO_BY_SLUG[slug as SaasSlug];
   return buildMetadata({
     path: `/logiciels/${slug}`,

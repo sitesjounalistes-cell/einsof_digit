@@ -6,6 +6,7 @@ import { parseAds, parseKeywordsCsv } from "@/lib/post-ads";
 import { ArticlePage } from "@/components/pages/ArticlePage";
 import { JsonLd } from "@/components/site/JsonLd";
 import { PAGE_KEYWORDS, articleJsonLd, buildMetadata } from "@/lib/seo";
+import { BRAND } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPost(slug);
-  if (!post) return { title: `Article — EINSOF` };
+  if (!post) return { title: `Article — ${BRAND}` };
   const title = parseLocaleJson(post.title).fr ?? post.slug;
   const excerpt = parseLocaleJson(post.excerpt).fr ?? "";
   /* SEO par article (dashboard) — repli automatique : title / excerpt. */

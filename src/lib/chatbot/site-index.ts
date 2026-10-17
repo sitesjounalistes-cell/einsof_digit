@@ -80,7 +80,7 @@ export function buildSiteDocs(): SiteDoc[] {
     push(`Pôle — ${d.name}`, body, `/services/${slug}`);
   }
 
-  /* ── Logiciels SaaS (6 pages /logiciels/[slug]) ── */
+  /* ── Logiciels SaaS (7 pages /logiciels/[slug]) ── */
   for (const slug of SAAS_DETAIL_SLUGS) {
     const d = SAAS_DETAILS.fr[slug];
     const cat = SAAS_PRODUCTS.find((p) => p.slug === slug);
@@ -195,12 +195,13 @@ export function buildSiteDocs(): SiteDoc[] {
     "/blog"
   );
 
-  /* ── Podcast (page produite par un chantier parallèle) ──
-     Un seul fait, aucune invention : pas de titre d'épisode, pas de
-     chronologie — le chatbot la cite comme PREUVE D'EXPERTISE. */
+  /* ── Podcast — véridicité §20.4 (audit F-16) : le texte n'affirme rien
+     qui dépende du nombre d'épisodes réellement publiés ; la consigne
+     dynamique (flags.publishedPodcasts dans le prompt système) dit au
+     modèle s'il peut la proposer ou non. */
   push(
-    "Podcast — audios EINSOF",
-    `${BRAND} anime un podcast : des audios sur le digital et la vente en Guinée — conseils concrets pour les entreprises locales (visibilité en ligne, outils de gestion, méthode commerciale). Les épisodes sont à écouter sur la page Podcast. C'est aussi une preuve d'expertise de l'agence sur le terrain guinéen.`,
+    `Podcast — audios ${BRAND}`,
+    `${BRAND} propose une page Podcast : des audios sur le digital et la vente en Guinée — conseils concrets pour les entreprises locales (visibilité en ligne, outils de gestion, méthode commerciale). Ne cite JAMAIS de titre d'épisode : suis la consigne PODCAST du prompt (elle précise si des épisodes sont publiés).`,
     "/podcast"
   );
 

@@ -164,7 +164,7 @@ export const SERVICE_DETAILS_ES: LocalizedServiceDetails = {
       title: "Herramientas probadas,",
       gold: "activas desde esta semana.",
       paragraphs: [
-        "No todas las empresas necesitan un software construido desde cero. Para seis oficios, ya hemos desarrollado, probado y perfeccionado herramientas de gestión completas: cubren lo esencial del día a día y se configuran a su actividad en pocos días.",
+        "No todas las empresas necesitan un software construido desde cero. Para siete oficios, ya hemos desarrollado, probado y perfeccionado herramientas de gestión completas: cubren lo esencial del día a día y se configuran a su actividad en pocos días.",
         "Cada software se alquila por suscripción: usted paga el mes, nosotros nos encargamos de todo — alojamiento, actualizaciones, copias de seguridad y soporte. Empieza con una prueba gratuita de 7 días, sin compromiso, para comprobar que la herramienta le conviene.",
       ],
       facts: [
@@ -203,7 +203,7 @@ export const SERVICE_DETAILS_ES: LocalizedServiceDetails = {
     audience: {
       label: "¿Para quién?",
       title: "Seis oficios,",
-      gold: "seis herramientas dedicadas.",
+      gold: "siete herramientas dedicadas.",
       items: [
         { k: "Comercios y prestadores", d: "Factura Pro para facturar de forma limpia y seguir los pagos sin hojas de cálculo." },
         { k: "Clínicas, escuelas, agencias", d: "Gestión hospitalaria, gestión escolar y gestión inmobiliaria pensadas para cada oficio." },

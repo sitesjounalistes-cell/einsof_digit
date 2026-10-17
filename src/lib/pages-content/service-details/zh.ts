@@ -154,10 +154,10 @@ export const SERVICE_DETAILS_ZH: LocalizedServiceDetails = {
     image: "/images/services/svc-saas.png",
     hero: {
       label: "服务 03 — 业务管理SaaS",
-      title: "六款即用软件，",
+      title: "七款即用软件，",
       gold: "已为您配置完成。",
       sub: "开票、会计、医院、学校、物业、药店：经过实战检验的工具，即刻可用，附 7 天免费试用与我们的团队陪跑。",
-      chips: ["6款业务软件", "7天免费试用", "100 000 GNF / 月起"],
+      chips: ["7款业务软件", "7天免费试用", "100 000 GNF / 月起"],
     },
     overview: {
       label: "概览",
@@ -203,7 +203,7 @@ export const SERVICE_DETAILS_ZH: LocalizedServiceDetails = {
     audience: {
       label: "适合谁？",
       title: "六个行业，",
-      gold: "六款专属工具。",
+      gold: "七款专属工具。",
       items: [
         { k: "商户与服务商", d: "用 Factura Pro 规范开票、跟进收款，告别表格软件。" },
         { k: "诊所、学校、中介", d: "医院管理、学校管理与物业管理，为每个行业量身设计。" },

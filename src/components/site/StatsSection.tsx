@@ -13,6 +13,7 @@ import {
 import { Container, Section } from "@/components/site/kit";
 import { useI18n } from "@/lib/i18n";
 import { useMotionMode } from "@/components/providers";
+import { SAAS_PRODUCTS } from "@/lib/catalog";
 
 /* Carte chiffrée : halo or au survol (card-lift) + léger zoom spring,
    désactivé tel quel en mode « animations réduites ». */
@@ -41,7 +42,9 @@ export function StatsSection() {
     { value: 7, label: t("stats.years") },
     { value: 10, label: t("stats.experts") },
     { value: 5, label: t("stats.langs") },
-    { value: 6, label: t("stats.saas") },
+    /* Audit F-24 : compteur dérivé du catalogue (7 SaaS avec
+       gestion-formation) — restait figé à 6 en dur. */
+    { value: SAAS_PRODUCTS.length, label: t("stats.saas") },
   ];
 
   return (

@@ -1,4 +1,5 @@
 /**
+import { BRAND } from "@/lib/brand";
  * Réglages du site — types & valeurs par défaut (module isomorphe).
  * Ce fichier est volontairement SANS dépendance serveur (pas de db) :
  * il est importable depuis les composants client (panneau admin, sections
@@ -28,9 +29,9 @@ export interface SiteSettingsData {
 }
 
 /** Texte officiel du mot du gérant (défaut, éditable dans le panel). */
-export const DEFAULT_MANAGER_MESSAGE = `Quand nous avons posé la première pierre d'EINSOF, nous avions une conviction simple : les entreprises guinéennes méritent des outils numériques à la hauteur de leur ambition. Sept ans plus tard, cette conviction est devenue une méthode : écouter d'abord, chiffrer juste, livrer propre et rester présent après la mise en ligne.
+export const DEFAULT_MANAGER_MESSAGE = `Quand nous avons posé la première pierre d'${BRAND}, nous avions une conviction simple : les entreprises guinéennes méritent des outils numériques à la hauteur de leur ambition. Sept ans plus tard, cette conviction est devenue une méthode : écouter d'abord, chiffrer juste, livrer propre et rester présent après la mise en ligne.
 
-Aujourd'hui, avec une équipe d'environ dix experts, nous accompagnons des clients dans toute la Guinée et au-delà — des prix annoncés d'avance, des engagements écrits noir sur blanc, et un accompagnement qui ne s'arrête pas à la livraison. Votre projet mérite cette exigence. Bienvenue chez EINSOF.`;
+Aujourd'hui, avec une équipe d'environ dix experts, nous accompagnons des clients dans toute la Guinée et au-delà — des prix annoncés d'avance, des engagements écrits noir sur blanc, et un accompagnement qui ne s'arrête pas à la livraison. Votre projet mérite cette exigence. Bienvenue chez ${BRAND}.`;
 
 /**
  * Défauts : listes VIDE pour phones/emails/socials — le front public
@@ -45,7 +46,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettingsData = {
   managerPhotoAlt: null,
   managerMessageFr: DEFAULT_MANAGER_MESSAGE,
   managerName: "Le Gérant",
-  managerRole: "Fondateur & Gérant — EINSOF",
+  managerRole: `Fondateur & Gérant — ${BRAND}`,
 };
 
 /** Clés de plateformes proposées dans le panel admin (icônes lucide). */

@@ -169,7 +169,7 @@ export const SERVICE_DETAILS_EN: LocalizedServiceDetails = {
       title: "Proven tools,",
       gold: "live as early as this week.",
       paragraphs: [
-        "Not every business needs software built from scratch. For six trades, we have already developed, tested and refined complete management tools: they cover the daily essentials and adapt to your activity within days.",
+        "Not every business needs software built from scratch. For seven trades, we have already developed, tested and refined complete management tools: they cover the daily essentials and adapt to your activity within days.",
         "Each tool is rented by subscription: you pay by the month, we take care of everything — hosting, updates, backups and support. You start with a free 7-day trial, no commitment, to make sure the tool suits you.",
       ],
       facts: [
@@ -208,7 +208,7 @@ export const SERVICE_DETAILS_EN: LocalizedServiceDetails = {
     audience: {
       label: "Who is it for?",
       title: "Six trades,",
-      gold: "six dedicated tools.",
+      gold: "seven dedicated tools.",
       items: [
         { k: "Shops and service providers", d: "Factura Pro to invoice cleanly and track payments without spreadsheets." },
         { k: "Clinics, schools, agencies", d: "Hospital management, school management and real-estate management designed for each trade." },

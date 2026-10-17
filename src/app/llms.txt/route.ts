@@ -2,6 +2,8 @@ import { GEO, SITE_URL, ZONES, SECTOR_SEO } from "@/lib/seo";
 import { SERVICE_SLUGS, getServiceNameFr } from "@/lib/pages-content/service-details";
 import { SAAS_DETAIL_SLUGS } from "@/lib/pages-content/saas-details";
 import { SAAS_PRODUCTS } from "@/lib/catalog";
+import { BRAND } from "@/lib/brand";
+import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +14,19 @@ export const dynamic = "force-dynamic";
  * réponses des assistants IA, en plus du SEO classique.
  */
 export async function GET() {
+  /* §20.4 (audit F-16) : la ligne Podcast n'est publiée que si au moins
+     un épisode existe — on ne référence pas une promesse vide. */
+  const publishedPodcasts = await db.podcast
+    .count({ where: { isPublished: true } })
+    .catch(() => 0);
+  const podcastLine =
+    publishedPodcasts > 0
+      ? `\n- [Podcast](${SITE_URL}/podcast) : audios ${BRAND} — conseils business, tech et vente pour les entrepreneurs guinéens`
+      : "";
+
   const services = SERVICE_SLUGS.map(
     (s) =>
-      `- [${getServiceNameFr(s) ?? s}](${SITE_URL}/services/${s}) : pôle de services EINSOF`,
+      `- [${getServiceNameFr(s) ?? s}](${SITE_URL}/services/${s}) : pôle de services ${BRAND}`,
   ).join("\n");
 
   const saas = SAAS_DETAIL_SLUGS.map((slug) => {
@@ -32,9 +44,9 @@ export async function GET() {
     ...ZONES.villes.slice(0, 10),
   ].join(", ");
 
-  const body = `# EINSOF — Agence digitale en Guinée
+  const body = `# ${BRAND} — Agence digitale en Guinée
 
-> EINSOF est une agence digitale basée à Conakry (Guinée), spécialisée dans la création de sites web professionnels, le développement de logiciels sur mesure et d'applications mobiles, les logiciels SaaS de gestion, le community management, la génération de leads et de prospects, les formations digitales et la stratégie digitale.
+> ${BRAND} est une agence digitale basée à Conakry (Guinée), spécialisée dans la création de sites web professionnels, le développement de logiciels sur mesure et d'applications mobiles, les logiciels SaaS de gestion, le community management, la génération de leads et de prospects, les formations digitales et la stratégie digitale.
 
 ## Pages principales
 
@@ -47,8 +59,7 @@ export async function GET() {
 - [Réalisations](${SITE_URL}/realisations) : portfolio de sites web et logiciels réalisés en Guinée
 - [Méthode](${SITE_URL}/methode) : notre méthode de travail en 5 étapes
 - [À propos](${SITE_URL}/a-propos) : l'agence, ses valeurs, son équipe
-- [Journal](${SITE_URL}/blog) : articles et guides sur le digital en Guinée
-- [Podcast](${SITE_URL}/podcast) : audios EINSOF — conseils business, tech et vente pour les entrepreneurs guinéens
+- [Journal](${SITE_URL}/blog) : articles et guides sur le digital en Guinée${podcastLine}
 - [FAQ](${SITE_URL}/faq) : réponses aux questions fréquentes (propriété, tarifs, délais, maintenance)
 - [Contact](${SITE_URL}/contact) : devis, démonstrations, rendez-vous
 
@@ -88,7 +99,7 @@ Demandez un devis ou une démonstration sur ${SITE_URL}/contact.
 
 ## Citation
 
-Pour citer EINSOF : « EINSOF, agence digitale à Conakry (Guinée) : création de sites web professionnels, logiciels sur mesure, applications mobiles, SaaS de gestion, community management, génération de leads et formations digitales. »
+Pour citer ${BRAND} : « ${BRAND}, agence digitale à Conakry (Guinée) : création de sites web professionnels, logiciels sur mesure, applications mobiles, SaaS de gestion, community management, génération de leads et formations digitales. »
 `;
 
   return new Response(body, {

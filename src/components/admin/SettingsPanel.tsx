@@ -20,6 +20,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import {
+import { BRAND } from "@/lib/brand";
   DEFAULT_MANAGER_MESSAGE,
   SOCIAL_PLATFORMS,
   type SiteSettingsData,
@@ -106,7 +107,7 @@ export function SettingsPanel({ onUnauthorized }: { onUnauthorized: () => void }
             managerMessageFr: d.managerMessageFr || DEFAULT_MANAGER_MESSAGE,
             managerName: d.managerName === "Le Gérant" ? "" : d.managerName,
             managerRole:
-              d.managerRole === "Fondateur & Gérant — EINSOF" ? "" : d.managerRole,
+              d.managerRole === `Fondateur & Gérant — ${BRAND}` ? "" : d.managerRole,
           });
         }
       })
@@ -468,7 +469,7 @@ export function SettingsPanel({ onUnauthorized }: { onUnauthorized: () => void }
                         className={inputCls}
                         value={social.label}
                         onChange={(e) => updateSocial(i, { label: e.target.value })}
-                        placeholder="Facebook EINSOF"
+                        placeholder={`Facebook ${BRAND}`}
                         maxLength={60}
                       />
                     </label>
@@ -570,7 +571,7 @@ export function SettingsPanel({ onUnauthorized }: { onUnauthorized: () => void }
                     className={inputCls}
                     value={form.managerPhotoAlt}
                     onChange={(e) => set("managerPhotoAlt", e.target.value)}
-                    placeholder="Portrait de …, fondateur d'EINSOF"
+                    placeholder={`Portrait de …, fondateur d'${BRAND}`}
                     maxLength={200}
                   />
                 </label>
@@ -595,7 +596,7 @@ export function SettingsPanel({ onUnauthorized }: { onUnauthorized: () => void }
                   className={inputCls}
                   value={form.managerRole}
                   onChange={(e) => set("managerRole", e.target.value)}
-                  placeholder="Fondateur & Gérant — EINSOF (par défaut)"
+                  placeholder={`Fondateur & Gérant — ${BRAND} (par défaut)`}
                   maxLength={120}
                 />
               </label>

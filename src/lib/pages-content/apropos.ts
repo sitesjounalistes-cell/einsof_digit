@@ -53,7 +53,7 @@ export const APROPOS: Localized<AProposContent> = {
       label: "À propos",
       title: "Sept ans d'expertise",
       gold: "au service du numérique guinéen.",
-      sub: "EINSOF est une agence digitale premium basée en Guinée. Depuis sept ans, une équipe d'environ dix experts met son savoir-faire au service des entreprises de Guinée et d'Afrique francophone : sites web, logiciels de gestion, SaaS, réseaux sociaux et acquisition client.",
+      sub: "{brand} est une agence digitale premium basée en Guinée. Depuis sept ans, une équipe d'environ dix experts met son savoir-faire au service des entreprises de Guinée et d'Afrique francophone : sites web, logiciels de gestion, SaaS, réseaux sociaux et acquisition client.",
       chips: [
         "Depuis sept ans",
         "Équipe d'experts",
@@ -61,7 +61,7 @@ export const APROPOS: Localized<AProposContent> = {
       ],
     },
     whyUs: {
-      label: "Pourquoi EINSOF",
+      label: "Pourquoi {brand}",
       title: "Ce qui change,",
       gold: "quand nous travaillons ensemble.",
       sub: "Quatre convictions concrètes, vérifiables dès le premier échange : elles structurent chacune de nos collaborations et s'écrivent noir sur blanc dans nos devis.",
@@ -123,7 +123,7 @@ export const APROPOS: Localized<AProposContent> = {
       label: "About",
       title: "Seven years of expertise",
       gold: "serving Guinea's digital growth.",
-      sub: "EINSOF is a premium digital agency based in Guinea. For seven years, a team of about ten experts has served businesses in Guinea and French-speaking Africa: websites, management software, SaaS, social media and client acquisition.",
+      sub: "{brand} is a premium digital agency based in Guinea. For seven years, a team of about ten experts has served businesses in Guinea and French-speaking Africa: websites, management software, SaaS, social media and client acquisition.",
       chips: [
         "For seven years",
         "Team of experts",
@@ -131,7 +131,7 @@ export const APROPOS: Localized<AProposContent> = {
       ],
     },
     whyUs: {
-      label: "Why EINSOF",
+      label: "Why {brand}",
       title: "What changes when",
       gold: "we work together.",
       sub: "Four concrete convictions, verifiable from the very first conversation: they shape every collaboration and are written in black and white in our quotes.",
@@ -193,7 +193,7 @@ export const APROPOS: Localized<AProposContent> = {
       label: "Acerca de",
       title: "Siete años de experiencia",
       gold: "al servicio del digital guineano.",
-      sub: "EINSOF es una agencia digital premium con base en Guinea. Desde hace siete años, un equipo de unos diez expertos pone su saber hacer al servicio de las empresas de Guinea y del África francófona: sitios web, software de gestión, SaaS, redes sociales y adquisición de clientes.",
+      sub: "{brand} es una agencia digital premium con base en Guinea. Desde hace siete años, un equipo de unos diez expertos pone su saber hacer al servicio de las empresas de Guinea y del África francófona: sitios web, software de gestión, SaaS, redes sociales y adquisición de clientes.",
       chips: [
         "Desde hace siete años",
         "Equipo de expertos",
@@ -201,7 +201,7 @@ export const APROPOS: Localized<AProposContent> = {
       ],
     },
     whyUs: {
-      label: "Por qué EINSOF",
+      label: "Por qué {brand}",
       title: "Lo que cambia cuando",
       gold: "trabajamos juntos.",
       sub: "Cuatro convicciones concretas, verificables desde el primer intercambio: estructuran cada una de nuestras colaboraciones y quedan escritas en blanco y negro en nuestros presupuestos.",
@@ -263,11 +263,11 @@ export const APROPOS: Localized<AProposContent> = {
       label: "关于我们",
       title: "七年专业积累",
       gold: "服务几内亚数字化。",
-      sub: "EINSOF 是一家总部位于几内亚的高端数字机构。七年来，一支约十位专家组成的团队为几内亚及法语非洲的企业服务：网站、管理软件、SaaS、社交媒体与客户获取。",
+      sub: "{brand} 是一家总部位于几内亚的高端数字机构。七年来，一支约十位专家组成的团队为几内亚及法语非洲的企业服务：网站、管理软件、SaaS、社交媒体与客户获取。",
       chips: ["七年经验", "专家团队", "几内亚与法语非洲"],
     },
     whyUs: {
-      label: "为什么选择 EINSOF",
+      label: "为什么选择 {brand}",
       title: "与我们合作时，",
       gold: "会有什么不同。",
       sub: "四条具体、可验证的信念，从第一次沟通就能核实：它们塑造了我们每一次合作，并白纸黑字写进每一份报价。",
@@ -329,7 +329,7 @@ export const APROPOS: Localized<AProposContent> = {
       label: "Über uns",
       title: "Sieben Jahre Expertise",
       gold: "im Dienst des guineischen Digitalfortschritts.",
-      sub: "EINSOF ist eine Premium-Digitalagentur mit Sitz in Guinea. Seit sieben Jahren stellt ein Team von rund zehn Experten sein Können in den Dienst der Unternehmen in Guinea und Französisch-Afrika: Websites, Verwaltungssoftware, SaaS, Social Media und Kundengewinnung.",
+      sub: "{brand} ist eine Premium-Digitalagentur mit Sitz in Guinea. Seit sieben Jahren stellt ein Team von rund zehn Experten sein Können in den Dienst der Unternehmen in Guinea und Französisch-Afrika: Websites, Verwaltungssoftware, SaaS, Social Media und Kundengewinnung.",
       chips: [
         "Seit sieben Jahren",
         "Expertenteam",
@@ -337,7 +337,7 @@ export const APROPOS: Localized<AProposContent> = {
       ],
     },
     whyUs: {
-      label: "Warum EINSOF",
+      label: "Warum {brand}",
       title: "Was sich ändert, wenn",
       gold: "wir zusammenarbeiten.",
       sub: "Vier konkrete Überzeugungen, schon im ersten Gespräch überprüfbar: Sie prägen jede Zusammenarbeit und stehen schwarz auf weiß in unseren Angeboten.",

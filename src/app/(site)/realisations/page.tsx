@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { RealisationsPage } from "@/components/pages/RealisationsPage";
 import { JsonLd } from "@/components/site/JsonLd";
 import { GEO, PAGE_KEYWORDS, buildMetadata, webPageJsonLd } from "@/lib/seo";
+import { BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = buildMetadata({
   path: "/realisations",
@@ -17,9 +18,9 @@ export default function RealisationsRoute() {
       <JsonLd
         data={webPageJsonLd({
           path: "/realisations",
-          name: "Réalisations — sites web et logiciels créés en Guinée par EINSOF",
+          name: `Réalisations — sites web et logiciels créés en Guinée par ${BRAND}`,
           description:
-            "Portfolio EINSOF : sites web professionnels, logiciels sur mesure et SaaS livrés aux entreprises de Guinée et d'Afrique francophone.",
+            `Portfolio ${BRAND} : sites web professionnels, logiciels sur mesure et SaaS livrés aux entreprises de Guinée et d'Afrique francophone.`,
           type: "CollectionPage",
         })}
       />

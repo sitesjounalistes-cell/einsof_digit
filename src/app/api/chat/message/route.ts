@@ -18,6 +18,7 @@ import { isValidSitePath } from "@/lib/chatbot/site-routes";
 import {
   bookDemoSchema,
   bookDemoSlot,
+  ensureUpcomingSlots,
   listUpcomingSlots,
   DEMO_CHAT_SLOTS_LIMIT,
 } from "@/lib/demo";
@@ -33,8 +34,9 @@ const historySchema = z.array(
 const schema = z.object({
   sessionId: z.string().uuid().nullable().optional(),
   message: z.string().trim().min(1).max(1000),
-  /** page actuellement vue par le visiteur (contrôle total du site) */
-  currentPath: z.string().max(160).default("/"),
+  /** page actuellement vue par le visiteur (contrôle total du site) —
+   *  300 car. : pathname + query longs acceptés (audit F-13). */
+  currentPath: z.string().max(300).default("/"),
   locale: z.string().max(5).default("fr"),
   /** Ephemeral mode: client-provided recent history, nothing persisted. */
   history: historySchema.max(12).optional(),
@@ -45,7 +47,7 @@ const schema = z.object({
 export const maxDuration = 60;
 
 interface SseEvent {
-  type: "token" | "action" | "done" | "error" | "lead";
+  type: "token" | "action" | "done" | "error";
   v?: string;
   tool?: string;
   args?: Record<string, unknown>;
@@ -111,7 +113,13 @@ export async function POST(req: Request): Promise<Response> {
       : Promise.resolve();
   void saveUserPromise;
 
-  const system = buildSystemPrompt(d.locale, d.currentPath, d.message);
+  /* Flag véridicité §20.4 : le podcast n'est vendu par le chatbot que
+     s'il existe des épisodes publiés (audit F-16). */
+  const publishedPodcasts = await db.podcast
+    .count({ where: { isPublished: true } })
+    .catch(() => 0);
+
+  const system = buildSystemPrompt(d.locale, d.currentPath, d.message, { publishedPodcasts });
   const llmMessages: ChatMessage[] = [
     { role: "system", content: system },
     ...history.slice(-12),
@@ -191,6 +199,8 @@ async function runServerActions(
       const created = await handleCreateLead(a, ip);
       if (created) a.args = { ...a.args, _created: true };
     } else if (a.tool === "suggest_slots") {
+      // Auto-entretien de la grille avant proposition (audit F-02)
+      await ensureUpcomingSlots().catch(() => {});
       const slots = await listUpcomingSlots(DEMO_CHAT_SLOTS_LIMIT).catch(() => []);
       if (slots.length > 0) a.args = { slots };
       else a.args = { _drop: true };
@@ -222,20 +232,22 @@ function streamResponse(
       const savedUserNow = () => (typeof ctx.savedUser === "function" ? ctx.savedUser() : ctx.savedUser);
 
       /* Émetteur « sûr » : ne fait JAMAIS partir vers le navigateur les
-         marqueurs d'action ([[action:…] ou dérives {"tool":…) — les deltas
-         du modèle peuvent les couper en deux (« …[[ac » + « tion:… »).
-         On retient les 12 derniers caractères tant que le flux n'est pas
-         terminé, puis on rince. Utilisé par le flux principal ET le repli. */
-      const HOLD = 12;
+         marqueurs d'action ([[action:…], {"tool":… y compris avec espaces,
+         ou l'outil nu « navigate {…} ») — les deltas du modèle peuvent les
+         couper en deux (« …[[ac » + « tion:… »). On retient les 24 derniers
+         caractères tant que le flux n'est pas terminé, puis on rince.
+         Audit F-08 : la garde tolère désormais les espaces comme le
+         parseur final (parseActions), sinon des fragments fuient à l'écran
+         puis disparaissent du message stocké. */
+      const HOLD = 24;
+      const ACTION_MARK = /\[\[action|\{\s*"tool"|\bnavigate\s*\{/i;
       const makeSafeSender = () => {
         let buf = "";
         let sentLen = 0;
         const safeCut = (final: boolean) => {
           let cut = buf.length;
-          const i1 = buf.indexOf("[[action");
-          if (i1 !== -1 && i1 < cut) cut = i1;
-          const i2 = buf.indexOf('{"tool"');
-          if (i2 !== -1 && i2 < cut) cut = i2;
+          const m = ACTION_MARK.exec(buf);
+          if (m && m.index < cut) cut = m.index;
           if (!final) cut = Math.min(cut, Math.max(0, buf.length - HOLD));
           return cut;
         };
@@ -412,7 +424,9 @@ function filterActions(actions: ModelAction[]): ModelAction[] {
       if (!path || !isValidSitePath(path)) continue;
       a.args = { path };
     }
-    if (a.tool === "open_form" && !["trial", "quote", "contact"].includes(String(a.args?.type ?? ""))) continue;
+    /* Audit F-19 : "demo" est géré par ContactSection (sujet « Démo ») —
+       le filtre l'excluait à tort alors que le type client l'autorise. */
+    if (a.tool === "open_form" && !["trial", "quote", "contact", "demo"].includes(String(a.args?.type ?? ""))) continue;
     if (a.tool === "create_lead") {
       const fn = String(a.args?.first_name ?? "").trim();
       const ln = String(a.args?.last_name ?? "").trim();

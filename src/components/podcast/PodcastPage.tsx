@@ -9,6 +9,7 @@ import { CtaBanner } from "@/components/site/PageBlocks";
 import { Container, GoldButton, Section, SectionHeading } from "@/components/site/kit";
 import { Beam, Reveal, Shimmer, Stagger, StaggerItem } from "@/components/motion";
 import { useI18n } from "@/lib/i18n";
+import { brandize } from "@/lib/brand";
 import {
   usePodcastPlayer,
   type PodcastEpisode,
@@ -182,10 +183,10 @@ export function PodcastPage() {
   return (
     <>
       <PageHero
-        label={t("podcast.label")}
-        title={t("podcast.title")}
-        gold={t("podcast.gold")}
-        sub={t("podcast.sub")}
+        label={brandize(t("podcast.label"))}
+        title={brandize(t("podcast.title"))}
+        gold={brandize(t("podcast.gold"))}
+        sub={brandize(t("podcast.sub"))}
         chips={chips}
         image="/images/headers/header-blog.png"
       />
@@ -194,9 +195,9 @@ export function PodcastPage() {
       <Section id="podcast-episodes">
         <Container>
           <SectionHeading
-            label={t("podcast.label")}
-            title={t("podcast.title")}
-            gold={t("podcast.gold")}
+            label={brandize(t("podcast.label"))}
+            title={brandize(t("podcast.title"))}
+            gold={brandize(t("podcast.gold"))}
             sub={
               episodes !== null && episodes.length > 0
                 ? `${episodes.length} ${t("podcast.episodes")}`

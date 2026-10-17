@@ -59,7 +59,10 @@ export interface PushSendResult {
 export async function sendPushToAll(
   title: string,
   body: string,
-  url?: string
+  url?: string,
+  /** id du NotificationLog — inclus dans le payload pour que le service
+   *  worker signale l'ouverture (POST /api/push/open — audit F-11). */
+  logId?: string
 ): Promise<PushSendResult> {
   const { publicKey, privateKey } = await getVapid();
   webpush.setVapidDetails(
@@ -72,7 +75,7 @@ export async function sendPushToAll(
   let sent = 0;
   let failed = 0;
   let removed = 0;
-  const payload = JSON.stringify({ title, body, url: url || "/" });
+  const payload = JSON.stringify({ title, body, url: url || "/", logId });
 
   await Promise.all(
     subs.map(async (s) => {
