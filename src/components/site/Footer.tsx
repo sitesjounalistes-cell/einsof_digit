@@ -20,6 +20,25 @@ import { BRAND } from "@/lib/brand";
 import { submitNewsletter } from "@/lib/api-client";
 import { subscribePush } from "@/lib/push-client";
 import { toggleAdmin } from "@/lib/chat-bus";
+import { SERVICE_DETAILS, SERVICE_SLUGS } from "@/lib/pages-content/service-details";
+import { SAAS_DETAILS, SAAS_DETAIL_SLUGS } from "@/lib/pages-content/saas-details";
+
+/* Liens « recherches populaires » — ancres mots-clés FR (langue
+   principale du marché ciblé) vers les pages correspondantes. */
+const SEO_LINKS: { label: string; href: string }[] = [
+  { label: "Création de site web en Guinée", href: "/services/web" },
+  { label: "Site web vitrine — prix", href: "/tarifs" },
+  { label: "Création de logiciel en Guinée", href: "/services/software" },
+  { label: "Application mobile", href: "/services/software" },
+  { label: "Logiciels SaaS de gestion", href: "/logiciels" },
+  { label: "Community management", href: "/services/community" },
+  { label: "Génération de leads et prospects", href: "/services/acquisition" },
+  { label: "Formations en entreprise", href: "/services/training" },
+  { label: "Tarifs officiels en GNF", href: "/tarifs" },
+  { label: "Nos réalisations", href: "/realisations" },
+  { label: "Secteurs d'activité", href: "/secteurs" },
+  { label: "Demander un devis", href: "/contact" },
+];
 
 /* Navigation multi-pages (toutes les pages du site) */
 const NAV_ROUTES = [
@@ -174,6 +193,52 @@ export function Footer() {
           </form>
         </StaggerItem>
       </Stagger>
+
+      {/* ── Maillage SEO interne : expertises + recherches populaires ──
+          Liens internes à ancres mots-clés (création de site web en
+          Guinée, logiciels, applications, SaaS, leads…) — toutes les
+          pages du site sont reliées depuis chaque page. */}
+      <div className="border-t border-line/60 py-10">
+        <Container>
+          <h4 className="label-caps">{t("footer.expertisesT")}</h4>
+          <Stagger
+            as="div"
+            className="mt-5 grid grid-cols-2 gap-x-8 gap-y-1.5 md:grid-cols-3 lg:grid-cols-4"
+            step={0.03}
+          >
+            {SERVICE_SLUGS.map((s) => (
+              <StaggerItem key={`svc-${s}`}>
+                <Link href={`/services/${s}`} className={footerLinkCls}>
+                  {SERVICE_DETAILS[lang]?.[s]?.name ?? SERVICE_DETAILS.fr[s].name}
+                </Link>
+              </StaggerItem>
+            ))}
+            {SAAS_DETAIL_SLUGS.map((s) => (
+              <StaggerItem key={`saas-${s}`}>
+                <Link href={`/logiciels/${s}`} className={footerLinkCls}>
+                  {SAAS_DETAILS[lang]?.[s]?.name ?? SAAS_DETAILS.fr[s].name}
+                </Link>
+              </StaggerItem>
+            ))}
+          </Stagger>
+          <h4 className="label-caps mt-8">{t("footer.seoLinksT")}</h4>
+          <ul className="mt-4 flex flex-wrap gap-x-2 gap-y-2 text-xs text-mute">
+            {SEO_LINKS.map((l) => (
+              <li key={l.href + l.label} className="flex items-center gap-2">
+                <Link
+                  href={l.href}
+                  className="transition-colors hover:text-goldtext hover:underline"
+                >
+                  {l.label}
+                </Link>
+                <span aria-hidden className="text-gold/40">
+                  •
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Container>
+      </div>
 
       {/* Barre inférieure */}
       <div className="border-t border-line py-5">

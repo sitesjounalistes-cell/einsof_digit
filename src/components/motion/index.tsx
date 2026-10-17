@@ -33,6 +33,8 @@ const MOTION_TAGS = {
   span: motion.span,
   section: motion.section,
   article: motion.article,
+  ul: motion.ul,
+  ol: motion.ol,
   li: motion.li,
   p: motion.p,
   h1: motion.h1,

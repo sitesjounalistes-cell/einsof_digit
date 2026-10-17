@@ -1,6 +1,19 @@
 "use client";
 
-import { Check, Sparkles } from "lucide-react";
+import {
+  Calculator,
+  CreditCard,
+  GraduationCap,
+  Pill,
+  Receipt,
+  RefreshCw,
+  School,
+  Building2,
+  Stethoscope,
+  Sparkles,
+  Wallet,
+  Workflow as WorkflowIcon,
+} from "lucide-react";
 import {
   Beam,
   PulseGlow,
@@ -11,6 +24,7 @@ import {
   Tilt,
 } from "@/components/motion";
 import { Container, GoldButton, PriceTag, Section, SectionHeading } from "@/components/site/kit";
+import { GoldIcon, IconFeature, LearnMore, featureIconFor } from "@/components/site/icons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ACQUISITION_OFFERS,
@@ -32,12 +46,33 @@ import { TARIFS, type TarifCard } from "@/lib/pages-content/tarifs";
 /* Forfait hôpital : bornes exactes du catalogue (1 000 000 → 5 000 000 GNF / mois) */
 const HOSPITAL_RANGE = "1 – 5\u00A0000\u00A0000\u00A0GNF";
 
+/* Figurine dédiée à chaque SaaS de gestion (repérage instantané). */
+const SAAS_ICONS: Record<string, typeof Receipt> = {
+  "factura-pro": Receipt,
+  "gestion-comptable": Calculator,
+  "gestion-hospitaliere": Stethoscope,
+  "gestion-ecole": School,
+  "gestion-immobiliere": Building2,
+  "gestion-pharmacie": Pill,
+  "gestion-formation": GraduationCap,
+};
+
 const tabsTriggerCls =
   "rounded-md px-4 py-2 text-[0.8125rem] uppercase tracking-[0.1em] text-mute dark:text-mute data-[state=active]:bg-surface dark:data-[state=active]:bg-surface data-[state=active]:text-goldtext dark:data-[state=active]:text-goldtext sm:px-5 sm:text-sm";
 
-/** Carte tarif riche : titre + description + points détaillés (localisés)
- *  + prix rendu par PriceTag depuis le catalogue officiel.
- *  Chorégraphie : Tilt léger > SpotlightCard (halo curseur) > Beam (bordure or). */
+/** Nombre de caractéristiques visibles d'office sur une carte tarif —
+ *  le reste se déplie derrière « En savoir plus ». */
+const PREVIEW_FEATURES = 4;
+
+/**
+ * Carte tarif « prix d'abord » (demande client) :
+ *  1. LE PRIX en très grand, TOUT EN HAUT de la carte ;
+ *  2. le titre en grands caractères sous le prix ;
+ *  3. un aperçu de 4 caractéristiques avec figurines or —
+ *     le reste se déplie derrière « En savoir plus » ;
+ *  4. bouton devis. Aucune avalanche de texte.
+ *  Chorégraphie : Tilt léger > SpotlightCard (halo curseur) > Beam (bordure or).
+ */
 export function PriceCard({
   offer,
   card,
@@ -48,6 +83,9 @@ export function PriceCard({
   featured?: boolean;
 }) {
   const { t } = useI18n();
+  const HeroIcon = featureIconFor(card.title);
+  const preview = card.features.slice(0, PREVIEW_FEATURES);
+  const rest = card.features.slice(PREVIEW_FEATURES);
 
   return (
     <div className={`h-full ${featured ? "lg:scale-[1.02]" : ""}`}>
@@ -70,33 +108,51 @@ export function PriceCard({
                   </PulseGlow>
                 </span>
               )}
-              <h3 className="label-caps">{card.title}</h3>
-              <p className="mt-2.5 text-sm leading-relaxed text-mute">{card.desc}</p>
+
+              {/* ── 1. LE PRIX — en haut, en très grand ─────────── */}
+              <PriceTag
+                offer={offer}
+                size="xl"
+                fromLabel={t("pricing.fromLabel")}
+                perMonth={t("pricing.perMonth")}
+                perYear={t("pricing.perYear")}
+                quoteLabel={t("pricing.quoteLabel")}
+              />
+
+              {/* ── 2. TITRE en grands caractères + figurine ────── */}
+              <div aria-hidden className="gold-rule my-5 h-px w-full opacity-60" />
+              <div className="flex items-center gap-4">
+                <GoldIcon icon={HeroIcon} size="md" pulse={featured} />
+                <h3 className="font-serif text-2xl font-semibold leading-tight text-ink">
+                  {card.title}
+                </h3>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-mute">{card.desc}</p>
+
+              {/* ── 3. Caractéristiques : 4 visibles + dépliage ──── */}
               {card.features.length > 0 && (
-                <ul className="mt-4 space-y-2.5">
-                  {card.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm leading-relaxed text-mute">
-                      <Check
-                        className="mt-0.5 h-4 w-4 shrink-0 text-gold"
-                        strokeWidth={1.25}
-                        aria-hidden
-                      />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-5">
+                  <LearnMore
+                    moreLabel={t("common.seeMore")}
+                    lessLabel={t("common.showLess")}
+                    collapsible={rest.length > 0}
+                    preview={
+                      <ul className="space-y-3">
+                        {preview.map((f) => (
+                          <IconFeature key={f} text={f} compact />
+                        ))}
+                      </ul>
+                    }
+                  >
+                    <ul className="space-y-3">
+                      {rest.map((f) => (
+                        <IconFeature key={f} text={f} compact />
+                      ))}
+                    </ul>
+                  </LearnMore>
+                </div>
               )}
-              <Reveal variant="scale" delay={0.2} y={12} duration={0.7} className="mt-5">
-                <PriceTag
-                  offer={offer}
-                  fromLabel={t("pricing.fromLabel")}
-                  perMonth={t("pricing.perMonth")}
-                  perYear={t("pricing.perYear")}
-                  quoteLabel={t("pricing.quoteLabel")}
-                />
-              </Reveal>
-              {/* note : la note de bas d'offre (footnote) est rendue une seule
-                  fois par PriceTag — aucun doublon ici */}
+
               <div aria-hidden className="flex-1" />
               <GoldButton
                 variant={featured ? "primary" : "outline"}
@@ -117,8 +173,8 @@ export function PriceCard({
   );
 }
 
-/** Bande « renouvellements annuels » + option paiement — titres localisés,
- *  montants rendus par PriceTag depuis le catalogue.
+/** Bande « renouvellements annuels » + option paiement — figurines or,
+ *  montants rendus par PriceTag (grand format) depuis le catalogue.
  *  Réutilisée par la page de détail du pôle web. */
 export function RenewalsAddonBand() {
   const { t } = useI18n();
@@ -129,6 +185,7 @@ export function RenewalsAddonBand() {
     perMonth: t("pricing.perMonth"),
     perYear: t("pricing.perYear"),
     quoteLabel: t("pricing.quoteLabel"),
+    size: "lg" as const,
   };
   const addonOffer = WEB_PAYMENT_ADDON;
 
@@ -143,13 +200,14 @@ export function RenewalsAddonBand() {
             return (
               <StaggerItem key={r.id} className="h-full">
                 <div className="flex h-full flex-col justify-between gap-4 rounded-xl border border-gold/30 bg-surface2 p-6 sm:flex-row sm:items-center">
-                  <div>
-                    <p className="font-serif text-lg text-ink">{r.title}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-mute">{r.desc}</p>
+                  <div className="flex min-w-0 flex-1 items-start gap-4">
+                    <GoldIcon icon={RefreshCw} size="sm" />
+                    <div className="min-w-0">
+                      <p className="font-serif text-lg text-ink">{r.title}</p>
+                      <p className="mt-1 text-sm leading-relaxed text-mute">{r.desc}</p>
+                    </div>
                   </div>
-                  <Reveal variant="scale" delay={0.2} y={12} duration={0.7} className="shrink-0">
-                    <PriceTag offer={offer} {...priceProps} className="sm:text-right" />
-                  </Reveal>
+                  <PriceTag offer={offer} {...priceProps} className="w-full sm:max-w-[300px] sm:text-right" />
                 </div>
               </StaggerItem>
             );
@@ -159,13 +217,14 @@ export function RenewalsAddonBand() {
 
       <Reveal delay={0.18} y={20} className="mt-4">
         <div className="flex flex-col items-start justify-between gap-4 rounded-xl border border-line bg-surface p-6 md:flex-row md:items-center">
-          <div>
-            <h4 className="font-serif text-lg text-ink">{web.addon.title}</h4>
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-mute">{web.addon.desc}</p>
+          <div className="flex min-w-0 flex-1 items-start gap-4">
+            <GoldIcon icon={CreditCard} size="sm" />
+            <div className="min-w-0">
+              <h4 className="font-serif text-lg text-ink">{web.addon.title}</h4>
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-mute">{web.addon.desc}</p>
+            </div>
           </div>
-          <Reveal variant="scale" delay={0.2} y={12} duration={0.7} className="shrink-0">
-            <PriceTag offer={addonOffer} {...priceProps} className="md:text-right" />
-          </Reveal>
+          <PriceTag offer={addonOffer} {...priceProps} className="w-full sm:max-w-[340px] md:text-right" />
         </div>
       </Reveal>
     </>
@@ -182,6 +241,7 @@ export function PricingSection({ heading = true }: { heading?: boolean }) {
     perMonth: t("pricing.perMonth"),
     perYear: t("pricing.perYear"),
     quoteLabel: t("pricing.quoteLabel"),
+    size: "lg" as const,
   };
 
   const cardById = (cards: TarifCard[], id: string) => cards.find((x) => x.id === id);
@@ -241,21 +301,12 @@ export function PricingSection({ heading = true }: { heading?: boolean }) {
               <Reveal delay={0.2} y={20} className="mt-4">
                 <div className="rounded-xl border border-line bg-surface p-6 md:p-8">
                   <h4 className="display-3">{groups.web.optionsTitle}</h4>
-                  <Stagger className="mt-4" step={0.05}>
-                    <ul className="space-y-3">
-                      {groups.web.options.map((item) => (
-                        <li key={item}>
-                          <StaggerItem className="flex items-start gap-2.5 text-sm leading-relaxed text-mute">
-                            <Check
-                              className="mt-0.5 h-4 w-4 shrink-0 text-gold"
-                              strokeWidth={1.25}
-                              aria-hidden
-                            />
-                            {item}
-                          </StaggerItem>
-                        </li>
-                      ))}
-                    </ul>
+                  <Stagger as="ul" className="mt-5 grid gap-x-8 gap-y-3.5 sm:grid-cols-2" step={0.05}>
+                    {groups.web.options.map((item) => (
+                      <StaggerItem key={item} as="li" className="h-full list-none">
+                        <IconFeature text={item} as="div" />
+                      </StaggerItem>
+                    ))}
                   </Stagger>
                 </div>
               </Reveal>
@@ -263,42 +314,39 @@ export function PricingSection({ heading = true }: { heading?: boolean }) {
               <Reveal delay={0.22} y={20} className="mt-4">
                 <div className="rounded-xl border border-line bg-surface2 p-6 md:p-8">
                   <h4 className="display-3">{groups.web.includedTitle}</h4>
-                  <Stagger className="mt-4" step={0.05}>
-                    <ul className="grid gap-3 sm:grid-cols-2">
-                      {groups.web.included.map((item) => (
-                        <li key={item}>
-                          <StaggerItem className="flex items-start gap-2.5 text-sm leading-relaxed text-mute">
-                            <Check
-                              className="mt-0.5 h-4 w-4 shrink-0 text-gold"
-                              strokeWidth={1.25}
-                              aria-hidden
-                            />
-                            {item}
-                          </StaggerItem>
-                        </li>
-                      ))}
-                    </ul>
+                  <Stagger as="ul" className="mt-5 grid gap-x-8 gap-y-3.5 sm:grid-cols-2" step={0.05}>
+                    {groups.web.included.map((item) => (
+                      <StaggerItem key={item} as="li" className="h-full list-none">
+                        <IconFeature text={item} as="div" />
+                      </StaggerItem>
+                    ))}
                   </Stagger>
                 </div>
               </Reveal>
 
+              {/* Conditions : aperçu de 2 clauses, le reste derrière
+                  « En savoir plus » (moins de texte visible d'office). */}
               <Reveal delay={0.24} y={20} className="mt-4">
                 <div className="rounded-xl border-l-2 border-gold bg-surface p-6 md:p-8">
                   <h4 className="label-caps">{groups.web.notesTitle}</h4>
-                  <Stagger className="mt-4" step={0.05}>
+                  <LearnMore
+                    className="mt-4"
+                    moreLabel={t("common.seeMore")}
+                    lessLabel={t("common.showLess")}
+                    preview={
+                      <ul className="space-y-3">
+                        {groups.web.notes.slice(0, 2).map((item) => (
+                          <IconFeature key={item} text={item} />
+                        ))}
+                      </ul>
+                    }
+                  >
                     <ul className="space-y-3">
-                      {groups.web.notes.map((item) => (
-                        <li key={item}>
-                          <StaggerItem className="flex gap-3 text-sm leading-relaxed text-mute">
-                            <span className="mt-0.5 shrink-0 text-gold" aria-hidden>
-                              *
-                            </span>
-                            {item}
-                          </StaggerItem>
-                        </li>
+                      {groups.web.notes.slice(2).map((item) => (
+                        <IconFeature key={item} text={item} />
                       ))}
                     </ul>
-                  </Stagger>
+                  </LearnMore>
                 </div>
               </Reveal>
             </TabsContent>
@@ -333,11 +381,15 @@ export function PricingSection({ heading = true }: { heading?: boolean }) {
                 {SAAS_PRODUCTS.map((p) => {
                   const isHospital = p.slug === "gestion-hospitaliere";
                   const o = p.offers[0];
+                  const PIcon = SAAS_ICONS[p.slug] ?? Wallet;
                   return (
                     <StaggerItem key={p.slug}>
-                      <div className="card-lift flex h-full items-center justify-between gap-4 rounded-xl border border-line bg-surface p-5">
-                        <h4 className="font-serif text-lg">{p.name}</h4>
-                        <div className="flex shrink-0 flex-col items-end gap-2">
+                      <div className="card-lift flex h-full items-center gap-4 rounded-xl border border-line bg-surface p-5 transition-colors hover:border-gold/40">
+                        <GoldIcon icon={PIcon} size="sm" />
+                        <h4 className="min-w-0 flex-1 font-serif text-lg leading-snug">
+                          {p.name}
+                        </h4>
+                        <div className="flex shrink-0 flex-col items-end gap-1.5">
                           {isHospital ? (
                             <Reveal variant="scale" delay={0.2} y={12} duration={0.7}>
                               <p className="font-serif text-xl text-goldtext">
@@ -349,9 +401,7 @@ export function PricingSection({ heading = true }: { heading?: boolean }) {
                               </p>
                             </Reveal>
                           ) : (
-                            <Reveal variant="scale" delay={0.2} y={12} duration={0.7}>
-                              <PriceTag offer={o} {...priceProps} />
-                            </Reveal>
+                            <PriceTag offer={o} {...priceProps} size="lg" className="text-right" />
                           )}
                           <GoldButton
                             variant="ghost"
@@ -376,7 +426,7 @@ export function PricingSection({ heading = true }: { heading?: boolean }) {
 
               <Reveal delay={0.2} y={16} className="mt-6">
                 <div className="flex flex-col items-start gap-4 rounded-xl border border-gold/30 bg-surface2 p-6 md:flex-row md:items-center">
-                  <Sparkles size={20} strokeWidth={1.25} aria-hidden className="shrink-0 text-gold" />
+                  <GoldIcon icon={WorkflowIcon} size="sm" />
                   <div>
                     <h4 className="font-serif text-lg text-ink">{groups.saas.workflowsTitle}</h4>
                     <p className="mt-1 max-w-3xl text-sm leading-relaxed text-mute">
@@ -448,21 +498,12 @@ export function PricingSection({ heading = true }: { heading?: boolean }) {
               <Reveal delay={0.12} y={16}>
                 <div className="rounded-xl border border-line bg-surface2 p-6 md:p-8">
                   <h4 className="display-3">{groups.training.subjectsTitle}</h4>
-                  <Stagger className="mt-4" step={0.05}>
-                    <ul className="grid gap-3 sm:grid-cols-2">
-                      {groups.training.subjects.map((s) => (
-                        <li key={s}>
-                          <StaggerItem className="flex items-start gap-2.5 text-sm leading-relaxed text-mute">
-                            <Check
-                              className="mt-0.5 h-4 w-4 shrink-0 text-gold"
-                              strokeWidth={1.25}
-                              aria-hidden
-                            />
-                            {s}
-                          </StaggerItem>
-                        </li>
-                      ))}
-                    </ul>
+                  <Stagger as="ul" className="mt-5 grid gap-x-8 gap-y-3.5 sm:grid-cols-2" step={0.05}>
+                    {groups.training.subjects.map((s) => (
+                      <StaggerItem key={s} as="li" className="h-full list-none">
+                        <IconFeature text={s} as="div" />
+                      </StaggerItem>
+                    ))}
                   </Stagger>
                 </div>
               </Reveal>

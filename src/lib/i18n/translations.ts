@@ -433,6 +433,8 @@ const fr = {
     tagline:
       "Agence digitale premium en Guinée. Sites web, logiciels sur mesure, SaaS de gestion, réseaux sociaux et acquisition client — depuis sept ans.",
     navT: "Navigation",
+    expertisesT: "Nos expertises en Guinée",
+    seoLinksT: "Recherches populaires",
     legalT: "Légal",
     contactT: "Contact",
     newsT: "Restez informé(e)",
@@ -583,6 +585,7 @@ const fr = {
     loading: "Chargement…",
     close: "Fermer",
     seeMore: "En savoir plus",
+    showLess: "Réduire",
     gnfNote: "Tous les prix sont en francs guinéens (GNF).",
   },
 };
@@ -998,6 +1001,8 @@ const en: Dict = {
     tagline:
       "Premium digital agency in Guinea. Websites, bespoke software, management SaaS, social media and client acquisition — for seven years.",
     navT: "Navigation",
+    expertisesT: "Our expertise in Guinea",
+    seoLinksT: "Popular searches",
     legalT: "Legal",
     contactT: "Contact",
     newsT: "Stay informed",
@@ -1141,6 +1146,7 @@ const en: Dict = {
     loading: "Loading…",
     close: "Close",
     seeMore: "Learn more",
+    showLess: "Show less",
     gnfNote: "All prices are in Guinean francs (GNF).",
   },
 };
@@ -1554,6 +1560,8 @@ const es: Dict = {
   footer: {
     tagline: "Agencia digital premium en Guinea. Sitios web, software a medida, SaaS de gestión, redes sociales y captación de clientes — desde hace siete años.",
     navT: "Navegación",
+    expertisesT: "Nuestra experiencia en Guinea",
+    seoLinksT: "Búsquedas populares",
     legalT: "Legal",
     contactT: "Contacto",
     newsT: "Mantente al día",
@@ -1694,6 +1702,7 @@ const es: Dict = {
     loading: "Cargando…",
     close: "Cerrar",
     seeMore: "Saber más",
+    showLess: "Mostrar menos",
     gnfNote: "Todos los precios están en francos guineanos (GNF).",
   },
 };
@@ -2107,6 +2116,8 @@ const zh: Dict = {
   footer: {
     tagline: "几内亚的高端数字机构。网站、定制软件、管理SaaS、社交媒体与客户获取——七年经验。",
     navT: "导航",
+    expertisesT: "我们在几内亚的专业服务",
+    seoLinksT: "热门搜索",
     legalT: "法律",
     contactT: "联系",
     newsT: "保持关注",
@@ -2245,6 +2256,7 @@ const zh: Dict = {
     loading: "加载中…",
     close: "关闭",
     seeMore: "了解更多",
+    showLess: "收起",
     gnfNote: "所有价格均以几内亚法郎（GNF）计。",
   },
 };
@@ -2658,6 +2670,8 @@ const de: Dict = {
   footer: {
     tagline: "Premium-Digitalagentur in Guinea. Websites, maßgeschneiderte Software, Management-SaaS, Social Media und Kundengewinnung — seit sieben Jahren.",
     navT: "Navigation",
+    expertisesT: "Unsere Expertise in Guinea",
+    seoLinksT: "Beliebte Suchanfragen",
     legalT: "Rechtliches",
     contactT: "Kontakt",
     newsT: "Bleiben Sie informiert",
@@ -2798,6 +2812,7 @@ const de: Dict = {
     loading: "Wird geladen…",
     close: "Schließen",
     seeMore: "Mehr erfahren",
+    showLess: "Weniger anzeigen",
     gnfNote: "Alle Preise in guineischen Francs (GNF).",
   },
 };

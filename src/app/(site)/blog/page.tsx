@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { BlogPage } from "@/components/pages/BlogPage";
+import { GEO, PAGE_KEYWORDS, buildMetadata } from "@/lib/seo";
 
-const BRAND = process.env.NEXT_PUBLIC_BRAND_NAME || "EINSOF";
-
-export const metadata: Metadata = {
-  title: `Journal — ${BRAND}`,
+export const metadata: Metadata = buildMetadata({
+  path: "/blog",
+  title: `Journal digital — Conseils sites web, logiciels & marketing en Guinée`,
   description:
-    "Actualités et conseils d'experts de l'agence : SaaS et gestion, sites web, stratégie digitale. Des articles de fond pour réussir votre transformation digitale en Guinée.",
-};
+    `Conseils d'experts pour réussir votre digital en ${GEO.country} : combien coûte un site web, site vitrine ou avec tableau de bord, choisir un SaaS de gestion, multilingue, stratégie et acquisition client.`,
+  keywords: PAGE_KEYWORDS.blog,
+});
 
 export default function BlogRoute() {
   return <BlogPage />;

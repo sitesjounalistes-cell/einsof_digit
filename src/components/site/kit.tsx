@@ -192,6 +192,19 @@ export function GoldRuleDraw({ className = "" }: { className?: string }) {
 }
 
 /* ── PriceTag : affichage de prix GNF normalisé ─────────────── */
+/* `size` : "md" (blocs secondaires) · "lg" (cartes) · "xl" (héros
+   des cartes tarif — le prix est l'ÉLÉMENT le plus visible, en haut
+   de chaque carte, comme demandé par le client). */
+
+const PRICE_SIZES = {
+  md: { amount: "text-2xl md:text-[1.75rem]", period: "text-xs", from: "text-[0.6875rem]" },
+  lg: { amount: "text-3xl md:text-4xl", period: "text-sm", from: "text-xs" },
+  xl: {
+    amount: "text-[2rem] leading-none md:text-[2.75rem]",
+    period: "text-sm",
+    from: "text-xs",
+  },
+} as const;
 
 export function PriceTag({
   offer,
@@ -200,6 +213,7 @@ export function PriceTag({
   perYear,
   quoteLabel,
   billableNote,
+  size = "md",
   className = "",
 }: {
   offer: PriceOffer;
@@ -208,12 +222,14 @@ export function PriceTag({
   perYear: string;
   quoteLabel: string;
   billableNote?: string;
+  size?: keyof typeof PRICE_SIZES;
   className?: string;
 }) {
+  const s = PRICE_SIZES[size];
   if (offer.isQuoteOnly || offer.amount === null) {
     return (
       <div className={className}>
-        <span className="font-serif text-2xl text-goldtext">{quoteLabel}</span>
+        <span className={`font-serif font-semibold text-goldtext ${s.amount}`}>{quoteLabel}</span>
         {offer.footnote && <p className="mt-1 text-xs text-mute">{offer.footnote}</p>}
       </div>
     );
@@ -221,12 +237,16 @@ export function PriceTag({
   const period = offer.period === "month" ? perMonth : offer.period === "year" ? perYear : "";
   return (
     <div className={className}>
-      <p className="text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-mute">
+      <p className={`${s.from} font-medium uppercase tracking-[0.14em] text-mute`}>
         {offer.isFrom ? fromLabel : "\u00A0"}
       </p>
-      <p className="font-serif text-2xl md:text-[1.75rem] font-semibold text-goldtext leading-tight">
+      <p
+        className={`font-serif font-semibold text-goldtext leading-tight ${s.amount} drop-shadow-[0_0_18px_rgba(212,175,55,0.25)]`}
+      >
         {formatGNF(offer.amount)}
-        <span className="font-sans text-xs font-normal text-mute"> {period}</span>
+        {period && (
+          <span className={`font-sans font-normal text-mute ${s.period}`}> {period}</span>
+        )}
       </p>
       {billableNote && offer.billableMonths ? (
         <p className="mt-0.5 text-xs text-mute">{billableNote}</p>

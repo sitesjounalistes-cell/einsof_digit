@@ -3,6 +3,15 @@ import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
+import { JsonLd } from "@/components/site/JsonLd";
+import { BRAND } from "@/lib/brand";
+import {
+  BASE_KEYWORDS,
+  GEO,
+  SITE_URL,
+  organizationJsonLd,
+  websiteJsonLd,
+} from "@/lib/seo";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -19,36 +28,59 @@ const inter = Inter({
   display: "swap",
 });
 
-const BRAND = process.env.NEXT_PUBLIC_BRAND_NAME || "EINSOF";
+/* Mots-clés globaux : toute requête liée à la thématique doit mener
+   au site — sites web, logiciels, applications, SaaS, formations,
+   génération de leads (SEO profond demandé par le client). */
+const GLOBAL_KEYWORDS = [...BASE_KEYWORDS];
 
 export const metadata: Metadata = {
-  title: `${BRAND} — Agence digitale premium en Guinée`,
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${BRAND} — Création de sites web, logiciels & applications en ${GEO.country}`,
+    template: `%s — ${BRAND}`,
+  },
   description:
-    "Sites web, logiciels sur mesure, SaaS de gestion, community management et acquisition client. Sept ans d'expérience au service des entreprises de Guinée et d'Afrique francophone.",
-  keywords: [
-    "agence digitale Guinée",
-    "création site web Conakry",
-    "logiciel sur mesure",
-    "SaaS gestion",
-    "Factura Pro",
-    "community management",
-  ],
+    `Agence de création de sites web professionnels en ${GEO.country} : site vitrine dès 1 500 000 GNF, logiciels sur mesure et applications mobiles dès 20 000 000 GNF, SaaS de gestion avec essai gratuit, community management, génération de leads et formations digitales. ${GEO.city} et toute l'Afrique francophone.`,
+  keywords: GLOBAL_KEYWORDS,
   applicationName: BRAND,
   authors: [{ name: BRAND }],
+  creator: BRAND,
+  publisher: BRAND,
+  category: "technology",
+  alternates: { canonical: SITE_URL },
   openGraph: {
-    title: `${BRAND} — Votre présence digitale, notre métier`,
+    title: `${BRAND} — Création de sites web & logiciels en ${GEO.country}`,
     description:
-      "Agence digitale guinéenne : sites web, logiciels, SaaS de gestion, réseaux sociaux et acquisition client.",
+      `Sites web dès 1 500 000 GNF, logiciels sur mesure dès 20 000 000 GNF, 7 SaaS de gestion, community management et acquisition client. Agence digitale à ${GEO.city}, ${GEO.country}.`,
     siteName: BRAND,
     type: "website",
     locale: "fr_GN",
+    url: SITE_URL,
+    images: [
+      {
+        url: "/images/hero-obsidienne.png",
+        width: 1200,
+        height: 630,
+        alt: `${BRAND} — agence digitale en ${GEO.country}`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${BRAND} — Agence digitale premium`,
-    description: "Sites web, logiciels sur mesure et SaaS de gestion pour l'Afrique francophone.",
+    title: `${BRAND} — Création de sites web & logiciels en ${GEO.country}`,
+    description:
+      "Sites web, logiciels sur mesure, applications mobiles, SaaS de gestion et marketing digital pour les entreprises de Guinée et d'Afrique francophone.",
+    images: ["/images/hero-obsidienne.png"],
   },
-  robots: { index: true, follow: true },
+  robots: {
+    index: true,
+    follow: true,
+    "max-image-preview": "large",
+    "max-snippet": -1,
+    "max-video-preview": -1,
+    googleBot: { index: true, follow: true },
+  },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
@@ -72,6 +104,9 @@ export default function RootLayout({
       className={`dark ${cormorant.variable} ${inter.variable}`}
     >
       <body className="antialiased">
+        {/* Données structurées globales : Organization + LocalBusiness
+            (avec catalogue de prix officiels GNF) et WebSite. */}
+        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
         <Providers>{children}</Providers>
         <Toaster position="bottom-left" />
       </body>

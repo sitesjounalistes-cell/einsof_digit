@@ -39,6 +39,7 @@ import { trackCta } from "@/lib/analytics";
 import { findSaas } from "@/lib/catalog";
 import { SAAS_DETAILS, SAAS_DETAIL_SLUGS, type SaasSlug } from "@/lib/pages-content/saas-details";
 import { LOGICIELS } from "@/lib/pages-content/logiciels";
+import { GoldIcon, IconFeature, featureIconFor } from "@/components/site/icons";
 
 /**
  * Page de détail d'un logiciel /logiciels/[slug] :
@@ -186,17 +187,13 @@ export function SaasDetailPage({ slug }: { slug: SaasSlug }) {
             gold={d.features.gold}
             sub={d.features.sub}
           />
-          <Stagger className="grid gap-x-8 gap-y-4 sm:grid-cols-2" step={0.05}>
+          <Stagger as="ul" className="grid gap-x-6 gap-y-4 sm:grid-cols-2" step={0.05}>
             {d.features.items.map((item, i) => (
-              <StaggerItem key={item} y={18}>
-                <div className="flex items-start gap-3 rounded-lg border border-line/60 bg-surface px-4 py-3.5">
-                  <span
-                    aria-hidden
-                    className="font-serif text-xs text-goldtext [font-variant-numeric:tabular-nums]"
-                  >
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span className="text-sm leading-relaxed text-ink">{item}</span>
+              <StaggerItem key={item} as="li" y={18} className="h-full list-none">
+                <div className="h-full rounded-lg border border-line/60 bg-surface px-4 py-3.5">
+                  <PopIn delay={i * 0.04}>
+                    <IconFeature text={item} as="div" />
+                  </PopIn>
                 </div>
               </StaggerItem>
             ))}
@@ -221,20 +218,24 @@ export function SaasDetailPage({ slug }: { slug: SaasSlug }) {
             </div>
           </Reveal>
           <Stagger className="mt-8 grid gap-6 md:grid-cols-3" step={0.09}>
-            {d.audience.cases.map((a) => (
-              <StaggerItem key={a.k} className="h-full">
-                <SpotlightCard className="h-full rounded-xl">
-                  <Beam className="h-full rounded-xl">
-                    <article className="card-lift h-full rounded-xl border border-line bg-bg p-6">
-                      <h3 className="font-serif text-lg font-semibold leading-snug text-ink">
-                        {a.k}
-                      </h3>
-                      <p className="mt-3 text-sm leading-relaxed text-mute">{a.d}</p>
-                    </article>
-                  </Beam>
-                </SpotlightCard>
-              </StaggerItem>
-            ))}
+            {d.audience.cases.map((a) => {
+              const CIcon = featureIconFor(`${a.k} ${a.d}`);
+              return (
+                <StaggerItem key={a.k} className="h-full">
+                  <SpotlightCard className="h-full rounded-xl">
+                    <Beam className="h-full rounded-xl">
+                      <article className="card-lift h-full rounded-xl border border-line bg-bg p-6">
+                        <GoldIcon icon={CIcon} size="md" />
+                        <h3 className="mt-4 font-serif text-lg font-semibold leading-snug text-ink">
+                          {a.k}
+                        </h3>
+                        <p className="mt-2.5 text-sm leading-relaxed text-mute">{a.d}</p>
+                      </article>
+                    </Beam>
+                  </SpotlightCard>
+                </StaggerItem>
+              );
+            })}
           </Stagger>
         </Container>
       </Section>
@@ -264,6 +265,7 @@ export function SaasDetailPage({ slug }: { slug: SaasSlug }) {
                       <div className="mt-4">
                         <PriceTag
                           offer={offer}
+                          size="xl"
                           {...priceProps}
                           billableNote={
                             slug === "gestion-ecole" ? t("pricing.billableNote") : undefined

@@ -35,6 +35,7 @@ import {
 import { SERVICE_DETAILS, SERVICE_SLUGS, type ServiceSlug } from "@/lib/pages-content/service-details";
 import { TARIFS, type TarifCard } from "@/lib/pages-content/tarifs";
 import { PriceCard, RenewalsAddonBand } from "@/components/site/PricingSection";
+import { GoldIcon, IconFeature, featureIconFor } from "@/components/site/icons";
 import { useLocalized } from "@/lib/page-content";
 
 /**
@@ -249,19 +250,13 @@ export function ServiceDetailPage({ slug }: { slug: ServiceSlug }) {
             title={d.included.title}
             gold={d.included.gold}
           />
-          <Stagger className="grid gap-x-8 gap-y-4 sm:grid-cols-2" step={0.05}>
+          <Stagger as="ul" className="grid gap-x-6 gap-y-4 sm:grid-cols-2" step={0.05}>
             {d.included.items.map((item, i) => (
-              <StaggerItem key={item} y={18}>
-                <div className="flex items-start gap-3 rounded-lg border border-line/60 bg-bg px-4 py-3.5">
+              <StaggerItem key={item} as="li" y={18} className="h-full list-none">
+                <div className="h-full rounded-lg border border-line/60 bg-bg px-4 py-3.5">
                   <PopIn delay={i * 0.04}>
-                    <Check
-                      size={16}
-                      strokeWidth={1.75}
-                      aria-hidden
-                      className="mt-[0.2rem] shrink-0 text-gold"
-                    />
+                    <IconFeature text={item} as="div" />
                   </PopIn>
-                  <span className="text-sm leading-relaxed text-ink">{item}</span>
                 </div>
               </StaggerItem>
             ))}
@@ -302,20 +297,24 @@ export function ServiceDetailPage({ slug }: { slug: ServiceSlug }) {
             gold={d.audience.gold}
           />
           <Stagger className="grid gap-6 md:grid-cols-3" step={0.09}>
-            {d.audience.items.map((a) => (
-              <StaggerItem key={a.k} className="h-full">
-                <SpotlightCard className="h-full rounded-xl">
-                  <Beam className="h-full rounded-xl">
-                    <article className="card-lift h-full rounded-xl border border-line bg-bg p-6">
-                      <h3 className="font-serif text-lg font-semibold leading-snug text-ink">
-                        {a.k}
-                      </h3>
-                      <p className="mt-3 text-sm leading-relaxed text-mute">{a.d}</p>
-                    </article>
-                  </Beam>
-                </SpotlightCard>
-              </StaggerItem>
-            ))}
+            {d.audience.items.map((a) => {
+              const AIcon = featureIconFor(`${a.k} ${a.d}`);
+              return (
+                <StaggerItem key={a.k} className="h-full">
+                  <SpotlightCard className="h-full rounded-xl">
+                    <Beam className="h-full rounded-xl">
+                      <article className="card-lift h-full rounded-xl border border-line bg-bg p-6">
+                        <GoldIcon icon={AIcon} size="md" />
+                        <h3 className="mt-4 font-serif text-lg font-semibold leading-snug text-ink">
+                          {a.k}
+                        </h3>
+                        <p className="mt-2.5 text-sm leading-relaxed text-mute">{a.d}</p>
+                      </article>
+                    </Beam>
+                  </SpotlightCard>
+                </StaggerItem>
+              );
+            })}
           </Stagger>
         </Container>
       </Section>

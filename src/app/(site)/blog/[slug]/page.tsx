@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { parseLocaleJson } from "@/lib/locale-json";
 import { ArticlePage } from "@/components/pages/ArticlePage";
-
-const BRAND = process.env.NEXT_PUBLIC_BRAND_NAME || "EINSOF";
+import { JsonLd } from "@/components/site/JsonLd";
+import { articleJsonLd, buildMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -25,13 +25,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPost(slug);
-  if (!post) return { title: `Article — ${BRAND}` };
+  if (!post) return { title: `Article — EINSOF` };
   const title = parseLocaleJson(post.title).fr ?? post.slug;
   const excerpt = parseLocaleJson(post.excerpt).fr ?? "";
-  return {
-    title: `${title} — ${BRAND}`,
+  return buildMetadata({
+    path: `/blog/${slug}`,
+    title,
     description: excerpt,
-  };
+    type: "article",
+  });
 }
 
 export default async function ArticleRoute({
@@ -42,5 +44,19 @@ export default async function ArticleRoute({
   const { slug } = await params;
   const post = await getPost(slug);
   if (!post) notFound();
-  return <ArticlePage slug={slug} />;
+  const title = parseLocaleJson(post.title).fr ?? post.slug;
+  const excerpt = parseLocaleJson(post.excerpt).fr ?? "";
+  return (
+    <>
+      <JsonLd
+        data={articleJsonLd({
+          title,
+          excerpt,
+          slug,
+          publishedAt: post.publishedAt,
+        })}
+      />
+      <ArticlePage slug={slug} />
+    </>
+  );
 }
