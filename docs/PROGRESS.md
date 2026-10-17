@@ -132,3 +132,9 @@
 - **Contenu** : stats « 7 SaaS » dynamiques ; traductions « six » → « sept » (en/es/de/zh) ; ~80 littéraux EINSOF convertis en marque dynamique (jeton `{brand}` + brandize) ; §20.4 étendue au podcast (sitemap/llms.txt/prompt conditionnels) ; `/zones` et les 14 pages secteurs navigables par le chatbot.
 - **Nettoyage** : 20 dépendances jamais importées retirées ; 9 composants shadcn morts, `sections-registry`, `FaqSection`, `tailwind.config.ts`, Caddyfile, `.zscripts/`, `examples/`, `tool-results/`, `upload/`, `download/`, `mini-services/`, `agent-ctx/` supprimés ; scripts npm portables ; `README.md` créé.
 - **Vérifications** : historique git 0 clé `sk-or-v1-` (script) ; suivi git 326 fichiers (477 avant) ; base 0 PII, contenus intacts.
+
+## 🚀 Déploiement du 17/10/2026 — PostgreSQL/Neon + GitHub
+
+- **Base migrée vers PostgreSQL (Neon)** : schéma recréé (23 tables, conventions Prisma : TEXT / TIMESTAMP(3) / BOOLEAN / SERIAL), contenu éditorial transféré (12 articles, 8 réalisations, réglages site, clés VAPID), créneaux régénérés (mardi/jeudi 10h/15h, 20/10 → 05/11). Scripts : scripts/migrate-neon-ddl.ts et scripts/migrate-neon-data.ts (Bun.sql intégré, zéro dépendance).
+- **Depot GitHub** : github.com/sitesjounalistes-cell/einsof_digit (main). DATABASE_URL uniquement dans .env local / variables Vercel — jamais commitée.
+- **Spéc §24 enfin honorée** côté SGBD (voir DECISIONS.md, entrée du 17/10).

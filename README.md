@@ -8,7 +8,7 @@ de démos, notifications push (PWA), i18n fr/en/es/zh/de.
 ## Stack
 
 - **Next.js 16** (App Router) · React 19 · TypeScript · Tailwind 4 · shadcn/ui
-- **Prisma 6 + SQLite** (`db/custom.db`) — production visée : PostgreSQL/Neon (voir `docs/DECISIONS.md`)
+- **Prisma 6 + PostgreSQL (Neon)** — migration depuis SQLite effectuée le 17/10/2026
 - **Bun** (scripts) ou npm/node — `z-ai-web-dev-sdk` (repli LLM, TTS/ASR)
 - Déploiement : Vercel (cron quotidien dans `vercel.json`)
 
@@ -16,20 +16,33 @@ de démos, notifications push (PWA), i18n fr/en/es/zh/de.
 
 ```bash
 bun install            # ou npm install
-cp .env.example .env   # puis renseigner AU MINIMUM ADMIN_PASSWORD (≥ 8 car.)
-bunx prisma db push    # crée/synchronise db/custom.db
+cp .env.example .env   # puis renseigner AU MINIMUM DATABASE_URL et ADMIN_PASSWORD (≥ 8 car.)
+bunx prisma db push    # crée/synchronise les tables PostgreSQL
 bun run dev            # http://localhost:3000
 ```
 
 Sans `OPENROUTER_API_KEY`, le chatbot utilise le repli z-ai.
 Sans `RESEND_API_KEY`, les e-mails sont simulés et journalisés (onglet E-mails).
 
+### Déploiement Vercel
+
+1. Importer le dépôt GitHub dans Vercel (framework détecté : Next.js).
+2. **Environment Variables** à définir (voir `.env.example`) :
+   `DATABASE_URL` (Neon, avec `?sslmode=require`), `ADMIN_PASSWORD`, `CRON_SECRET`,
+   `OPENROUTER_API_KEY`, et optionnelles : `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_BRAND_NAME`,
+   `NEXT_PUBLIC_WHATSAPP_NUMBER`, `RESEND_API_KEY`, `EMAIL_FROM`, `VAPID_*`,
+   `GOOGLE_SITE_VERIFICATION`, `BING_SITE_VERIFICATION`.
+3. Le cron quotidien (`/api/cron/maintenance`, 03:00) est déjà déclaré dans `vercel.json`
+   — il exige `CRON_SECRET` (fail-closed).
+4. Après le premier déploiement : `bunx prisma db push` si la base est vierge,
+   puis seed éventuel (`bun run seed`).
+
 ### Variables d'environnement
 
 Voir `.env.example` — 14 variables documentées (marque, URL canonique,
 WhatsApp, push VAPID, Resend, cron, SEO). **`ADMIN_PASSWORD` et `CRON_SECRET`
 sont obligatoires** : le site refuse les connexions admin et les appels cron
-sans elles (fail-closed).
+sans elles (fail-closed). **`DATABASE_URL` n'est jamais commitée** (gitignore).
 
 ## Commandes utiles
 

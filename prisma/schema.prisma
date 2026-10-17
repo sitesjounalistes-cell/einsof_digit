@@ -1,12 +1,15 @@
-// Schéma adapté de la section 24 du cahier des charges.
-// SQLite en sandbox (production visée : PostgreSQL + pgvector — voir docs/DECISIONS.md).
+// Schéma de la section 24 du cahier des charges.
+// PostgreSQL (Neon) depuis le 17/10/2026 — migration depuis SQLite effectuée
+// (voir docs/DECISIONS.md et docs/AUDIT-2026-10-17.md). pgvector/Drizzle :
+// voir DECISIONS pour la suite prévue (vectorisation de la base de
+// connaissances du chatbot).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
