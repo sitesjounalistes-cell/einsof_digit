@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import { ServicesPage } from "@/components/pages/ServicesPage";
-import { GEO, PAGE_KEYWORDS, buildMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/site/JsonLd";
+import {
+  GEO,
+  PAGE_KEYWORDS,
+  SITE_URL,
+  buildMetadata,
+  itemListJsonLd,
+  webPageJsonLd,
+} from "@/lib/seo";
+import { SERVICE_SLUGS, getServiceNameFr } from "@/lib/pages-content/service-details";
 
 /* /services — cible « agence de création de site web professionnel en
    Guinée », « création de logiciel en Guinée », etc. */
@@ -13,5 +22,31 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default function ServicesRoute() {
-  return <ServicesPage />;
+  /* ItemList : les 7 pôles — maillage sémantique pour les moteurs. */
+  const serviceItems = SERVICE_SLUGS.map((slug) => ({
+    name: getServiceNameFr(slug) ?? slug,
+    url: `${SITE_URL}/services/${slug}`,
+  }));
+
+  return (
+    <>
+      <JsonLd
+        data={[
+          itemListJsonLd({
+            path: "/services",
+            name: "Services digitaux EINSOF en Guinée — 7 pôles",
+            items: serviceItems,
+          }),
+          webPageJsonLd({
+            path: "/services",
+            name: "Services — EINSOF, agence digitale en Guinée",
+            description:
+              "Création de sites web, logiciels, applications, SaaS, community management, génération de leads, formations et stratégie digitale en Guinée.",
+            type: "CollectionPage",
+          }),
+        ]}
+      />
+      <ServicesPage />
+    </>
+  );
 }

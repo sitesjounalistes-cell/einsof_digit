@@ -8,6 +8,7 @@ import { BRAND } from "@/lib/brand";
 import {
   BASE_KEYWORDS,
   GEO,
+  GEO_CITIES,
   SITE_URL,
   organizationJsonLd,
   websiteJsonLd,
@@ -31,7 +32,10 @@ const inter = Inter({
 /* Mots-clés globaux : toute requête liée à la thématique doit mener
    au site — sites web, logiciels, applications, SaaS, formations,
    génération de leads (SEO profond demandé par le client). */
-const GLOBAL_KEYWORDS = [...BASE_KEYWORDS];
+const GLOBAL_KEYWORDS = [
+  ...BASE_KEYWORDS,
+  ...GEO_CITIES.map((c) => `agence digitale ${c}`),
+];
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -78,9 +82,21 @@ export const metadata: Metadata = {
     "max-image-preview": "large",
     "max-snippet": -1,
     "max-video-preview": -1,
-    googleBot: { index: true, follow: true },
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+    nocache: false,
   },
   formatDetection: { telephone: false },
+  other: {
+    /* Signal de marque pour les moteurs & assistants IA. */
+    "og:region": "GN-K",
+    "geo.region": "GN",
+    "geo.placename": `${GEO.city}, ${GEO.country}`,
+  },
 };
 
 export const viewport: Viewport = {

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { SITE_URL } from "@/lib/seo";
+import { SITE_URL, SECTOR_SEO } from "@/lib/seo";
 import { SERVICE_SLUGS } from "@/lib/pages-content/service-details";
 import { SAAS_DETAIL_SLUGS } from "@/lib/pages-content/saas-details";
 import { db } from "@/lib/db";
@@ -7,10 +7,9 @@ import { db } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 /**
- * Sitemap complet du site — toutes les pages statiques + les pages
- * dynamiques (pôles de services, logiciels SaaS, articles du Journal).
- * Les URLs du blog sont lues depuis la base ; en cas d'indisponibilité
- * de la base, le sitemap reste valide sans elles.
+ * Sitemap complet du site — toutes les pages statiques, les 14 pages
+ * secteurs (longue traîne par métier), la page zones (SEO local), les
+ * pages dynamiques (pôles de services, logiciels SaaS, articles).
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -21,11 +20,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/logiciels", priority: 0.95, freq: "weekly" as const },
     { path: "/tarifs", priority: 0.9, freq: "weekly" as const },
     { path: "/realisations", priority: 0.8, freq: "monthly" as const },
-    { path: "/secteurs", priority: 0.8, freq: "monthly" as const },
+    { path: "/secteurs", priority: 0.85, freq: "monthly" as const },
+    { path: "/zones", priority: 0.85, freq: "monthly" as const },
     { path: "/methode", priority: 0.7, freq: "monthly" as const },
     { path: "/a-propos", priority: 0.7, freq: "monthly" as const },
     { path: "/blog", priority: 0.8, freq: "weekly" as const },
-    { path: "/faq", priority: 0.7, freq: "monthly" as const },
+    { path: "/faq", priority: 0.75, freq: "monthly" as const },
     { path: "/contact", priority: 0.85, freq: "yearly" as const },
   ].map((r) => ({
     url: `${SITE_URL}${r.path}`,
@@ -48,6 +48,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.9,
   }));
 
+  /* 14 pages secteurs — longue traîne par métier. */
+  const sectorRoutes: MetadataRoute.Sitemap = SECTOR_SEO.map((s) => ({
+    url: `${SITE_URL}/secteurs/${s.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+  }));
+
   let blogRoutes: MetadataRoute.Sitemap = [];
   try {
     const posts = await db.blogPost.findMany({
@@ -64,5 +72,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     /* base indisponible → sitemap statique uniquement */
   }
 
-  return [...staticRoutes, ...serviceRoutes, ...saasRoutes, ...blogRoutes];
+  return [
+    ...staticRoutes,
+    ...serviceRoutes,
+    ...saasRoutes,
+    ...sectorRoutes,
+    ...blogRoutes,
+  ];
 }

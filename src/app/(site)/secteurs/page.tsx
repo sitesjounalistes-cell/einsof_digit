@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import { SecteursPage } from "@/components/pages/SecteursPage";
-import { GEO, PAGE_KEYWORDS, buildMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/site/JsonLd";
+import {
+  GEO,
+  PAGE_KEYWORDS,
+  SITE_URL,
+  buildMetadata,
+  itemListJsonLd,
+  webPageJsonLd,
+} from "@/lib/seo";
+import { SECTOR_SEO } from "@/lib/seo";
 
 /* /secteurs — longue traîne « site web pour hôtel/école/clinique en
    Guinée » : capture les recherches par métier. */
@@ -13,5 +22,31 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default function SecteursRoute() {
-  return <SecteursPage />;
+  /* ItemList : les 14 pages secteurs — toutes les longue traîne métier. */
+  const sectorItems = SECTOR_SEO.map((s) => ({
+    name: `Sites web et logiciels pour ${s.name.toLowerCase()} en Guinée`,
+    url: `${SITE_URL}/secteurs/${s.slug}`,
+  }));
+
+  return (
+    <>
+      <JsonLd
+        data={[
+          itemListJsonLd({
+            path: "/secteurs",
+            name: "Solutions digitales par secteur d'activité en Guinée — 14 secteurs",
+            items: sectorItems,
+          }),
+          webPageJsonLd({
+            path: "/secteurs",
+            name: "Secteurs — solutions digitales par métier en Guinée",
+            description:
+              "Sites web et logiciels pour la santé, l'éducation, l'immobilier, le commerce, l'hôtellerie, la banque, les mines, les ONG et plus encore, en Guinée.",
+            type: "CollectionPage",
+          }),
+        ]}
+      />
+      <SecteursPage />
+    </>
+  );
 }

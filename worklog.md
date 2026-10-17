@@ -888,3 +888,87 @@ Stage Summary:
 - La plainte centrale du client est traitée à la racine : le site passe de longues listes de texte à des énumérations avec figurines or thématiques (réplique exacte des visuels fournis), prix EN HAUT en très grand sur TOUTES les cartes tarif (sites web, logiciels, SaaS, community, acquisition, formations, bandes de détail), et détails dépliables « En savoir plus » — visible d'office : prix + titre + 4 points, le reste au clic.
 - SEO : le site couvre désormais TOUTES les requêtes citées par le client (sites web, logiciels, applications, SaaS, formations, leads/prospects, community management) — titres/descriptions/keywords par page, données structurées riches avec prix GNF officiels (éligibles extraits enrichis), sitemap dynamique, robots, maillage interne à ancres mots-clés dans le pied de page de chaque page.
 - TODO-HUMAN (client) : renseigner NEXT_PUBLIC_SITE_URL avec le domaine final — canoniques, sitemap et JSON-LD se mettront à jour automatiquement.
+
+---
+Task ID: 3-b
+Agent: Z.ai Code (agent 3-b)
+Task: Page /zones — SEO local Guinée
+
+Work Log:
+- Lecture du worklog (tâches 1, 2, 3-a…) et des patterns existants : src/lib/seo.ts (ZONES, ZONES_META, PAGE_KEYWORDS.zones, buildMetadata, webPageJsonLd, breadcrumbJsonLd, faqJsonLd, GEO), SecteursPage/AProposPage (PageHero, Section, Container, SectionHeading, GoldButton, Reveal, Stagger, SpotlightCard, Beam, CtaBanner, PageCrossLinks), kit.tsx, PageHero.tsx, PageBlocks.tsx, route /faq (metadata + JsonLd), Footer.tsx (NAV_ROUTES + SEO_LINKS), signatures openForm/trackCta.
+- Créé src/lib/pages-content/zones.ts : type ZonesContent (hero, intro, capitale, regions, diaspora, faq, cta, crossLinks) + export ZONES_PAGE en FR uniquement (cast Localized — fallback fr prévu par useLocalized pour les autres langues). Contenu SEO : 2 paragraphes intro (création de site web partout en Guinée, agence digitale Conakry et régions, suivi à distance, visioconférence, WhatsApp), 8 cartes régions avec villes réelles issues de ZONES (Boké→Boké/Kamsar/Fria ; Conakry→Conakry/Kaloum/Dixinn/Ratoma/Matam ; Faranah→Faranah ; Kankan→Kankan/Siguiri/Kouroussa ; Kindia→Kindia/Coyah/Dubréka ; Labé→Labé/Pita/Dalaba/Télimélé ; Mamou→Mamou/Dabola ; Nzérékoré→Nzérékoré/Guéckédou/Macenta/Kissidougou/Beyla) + « comment nous travaillons » par région, bloc diaspora (diaspora guinéenne, Afrique francophone : Sénégal, Côte d'Ivoire, Mali, Sierra Leone, Liberia), FAQ 4 questions longue traîne locales, CTA, crossLinks vers /services, /secteurs, /tarifs, /faq.
+- Créé src/components/pages/ZonesPage.tsx (client) : PageHero (image header-services.png, chips hero), intro avec badges des 4 régions naturelles (ZONES.naturelles), section Conakry (chips des quartiers via SEO ZONES.quartiers + GoldButton outline openForm("quote")/trackCta), grille des 8 régions (cartes SpotlightCard/Beam, icône MapPin, carte Conakry bordure or, liste des villes + bloc « comment nous travaillons »), bloc diaspora (icône Globe, chips SEO ZONES.diaspora, GoldButton openForm("quote")/trackCta), FAQ en accordéon shadcn (border-line, trigger text-ink→goldtext, chevron or), CtaBanner + PageCrossLinks. Animations Reveal/Stagger, style Obsidienne & Or (border-gold/30, bg-surface, text-goldtext, label-caps).
+- Créé src/app/(site)/zones/page.tsx (serveur) : buildMetadata(path /zones, ZONES_META.title/description, PAGE_KEYWORDS.zones) + JsonLd [webPageJsonLd(/zones), breadcrumbJsonLd(Accueil→Zones), faqJsonLd(ZONES_PAGE.fr.faq.items)] + <ZonesPage/>.
+- Lien interne : Footer.tsx NAV_ROUTES — ajouté { id: "zones", path: "/zones" } juste après Secteurs ; translations.ts — clé nav.zones ajoutée ×5 langues (fr « Zones », en « Zones », es « Zonas », zh « 服务地区 », de « Regionen ») car le footer rend t(`nav.${id}`).
+- FIX préexistant : src/app/llms.txt/route.ts référençait ZONES.city (inexistant → erreur tsc bloquante) — corrigé en GEO.city + import GEO (réparation 1 ligne, aucun fichier écrasé).
+- QA : bun run lint 0 erreur ; tsc --noEmit 0 erreur dans src (restent des erreurs préexistantes hors src dans examples/ et skills/ — non touchées) ; curl /zones → 200, title « Agence digitale partout en Guinée — Conakry, Kankan, Nzérékoré, Boké… — EINSOF », 3 scripts JSON-LD (WebPage/BreadcrumbList/FAQPage), contenu régions/villes/diaspora présent, lien footer href="/zones" présent ; dev.log « GET /zones 200 ».
+
+Stage Summary:
+- Page /zones livrée : couvre toute requête géographique (8 régions, ~20 villes réelles, 10 quartiers de Conakry, 4 régions naturelles, diaspora) avec metadata + JSON-LD WebPage/BreadcrumbList/FAQPage dédiés.
+- Contenu FR centralisé dans src/lib/pages-content/zones.ts (type ZonesContent strict, zéro any) ; fallback fr automatique pour en/es/zh/de via useLocalized — à traduire plus tard si souhaité.
+- Deux CTA devis pré-remplis (« Projet web — Conakry », « Projet diaspora — suivi à distance ») passent par openForm("quote") + trackCta("zones", …).
+- Lien « Zones » ajouté dans la navigation du footer (après Secteurs), clé i18n nav.zones ajoutée ×5 langues sans toucher au reste.
+- Bonus : erreur de type préexistante dans /app/llms.txt/route.ts corrigée (ZONES.city → GEO.city) — tsc repasse proprement sur src.
+
+---
+Task ID: 3-c
+Agent: Z.ai Code (agent 3-c, seed blog SEO)
+Task: 6 articles blog SEO longue traîne (seed)
+
+Work Log:
+- Lecture des contrats : worklog.md (tâches 21-22, règle « un seul jeu de prix »), scripts/seed-blog.ts (format exact : interface SeedPost, JSON 5 langues, repli fr, paragraphes séparés par \n\n, log created/updated), src/lib/catalog.ts (itération 20 — toutes les montants autorisés), prisma/schema.prisma (BlogPost : slug unique, title/excerpt/body en String JSON, category clé libre, readingMin, isPublished, publishedAt).
+- Inventaire base : 6 articles publiés existants (site-web-multilingue-pourquoi, combien-coute-un-site-web-en-guinee, nos-deux-engagements-envers-chaque-client, factura-pro-la-facturation-simplifiee, site-vitrine-ou-tableau-de-bord, logiciel-de-gestion-bien-choisir) — aucun des 6 slugs cibles n'existait ; le slug « site-vitrine-ou-tableau-de-bord » (2026) est DIFFÉRENT de « site-vitrine-ou-ecommerce-guinee » (nouveau).
+- Créé scripts/seed-blog-seo.ts : même mécanique que seed-blog.ts (J() JSON.stringify, interface SeedPost, vérification existing → update ou create) + helpers P() (paragraphes → \n\n) ; en fin de run, comptage du total d'articles publiés + liste chronologique des slugs (exigence de vérification). Aucun fichier de src/ modifié ; TypeScript strict, 0 any.
+- Rédaction des 6 articles × 5 langues (fr version longue 8-9 paragraphes, en/es/zh/de traductions fidèles), mots-clés cibles dans titre + 2 premiers paragraphes, chiffres STRICTEMENT issus du catalogue (mobile dès 20 M ; interne dès 20 M ; SaaS vendu dès 50 M ; Factura Pro 100 k ; comptable dès 1 M ; hospitalière 1/3/5 M ; école 500 k/9 mois ; immobilière 500 k ; pharmacie 7 M/an ; essai 7 jours ; community 1,5/3/5 M avec pub incluse 10/50/100 $ ; leads dès 2 M/mois ; appels délégués dès 4,5 M/mois ; landing dès 1 M ; campagne dès 1 M/mois budget média client ; formation dès 20 M sur devis ; vitrine 1,5 M + renouv. 500 k ; tableau de bord 3,5 M + renouv. 700 k ; customisé sur devis ; paiement intégré +1 M — exemple 1,5 M + 1 M = 2,5 M explicité). CTA finales vers /contact + /tarifs ou /logiciels (chemins littéraux entre parenthèses, rendus tels quels par ArticlePage).
+- publishedAt étalées nov.-déc. 2025 (05/11, 12/11, 19/11, 26/11, 03/12, 10/12, 09:00 UTC) — conformément à la consigne, ANTIÉRIEURES aux articles existants datés 2026 (observation consignée : si un tri chronologique desc est appliqué sur /blog, les nouveaux apparaissent en fin de liste).
+- Exécution 1 : 6 created. Exécution 2 (idempotence) : 0 created, 6 updated — aucun doublon. Vérification intégrité (script temporaire supprimé après usage) : 5 langues × 6 articles, FR 8-9 paragraphes (382-456 mots), categories exactes [logiciels ×2, marketing ×2, formations, web], isPublished true.
+- QA : bun run lint 0 erreur ; /blog + 6 nouvelles pages /blog/[slug] toutes 200 ; dev.log sans erreur.
+
+Stage Summary:
+- 6 slugs créés (créés puis mis à jour sans doublon au 2e passage) : creer-application-mobile-guinee, pourquoi-logiciel-gestion-guinee, community-management-guinee-guide, trouver-clients-b2b-guinee, former-equipes-digital-guinee, site-vitrine-ou-ecommerce-guinee.
+- Journal : 12 articles publiés au total (6 anciens + 6 nouveaux), tous en 5 langues, tous adossés aux prix officiels du catalogue.
+- Décisions : upsert par slug (relançable) ; categories libres nouvelles (logiciels/marketing/formations) — les badges publics afficheront la clé brute tant que journal.categories.* n'est pas étendue dans translations.ts (interdit ici : src/ verrouillé) ; article « e-commerce » construit sur vitrine/tableau de bord + option paiement intégré +1 000 000 GNF, sans jamais reprendre l'ancienne grille périmée (2,5 M/3,5 M boutique) corrigée en tâche 21 ; dates nov.-déc. 2025 conformes à la consigne mais antérieures aux articles 2026 (à retenir pour l'ordre d'affichage /blog).
+
+---
+Task ID: 3-a
+Agent: Z.ai Code (agent 3-a, landing pages secteurs)
+Task: Pages /secteurs/[slug] — 14 landing pages SEO longue traîne
+
+Work Log:
+- Étude des patterns : seo.ts (SECTOR_SEO 14 secteurs, buildMetadata, serviceJsonLd, breadcrumbJsonLd, faqJsonLd, PAGE_KEYWORDS.secteurs), pages-content/secteurs.ts (défis/réponses recyclés), ServiceDetailPage.tsx + services/[slug]/page.tsx (routes metadata + JSON-LD), kit.tsx / PageHero / PageBlocks / motion / accordion (TarifsPage), chat-bus (openForm), analytics (trackCta), catalog.ts (prix officiels).
+- Créé src/lib/pages-content/secteur-details.ts : type SecteurDetail (slug, heroTitle, heroGold, heroSub, intro ×2 paragraphes SEO « en Guinée / à Conakry », offers ×4 {icon Lucide string, title, desc} — site web / logiciel-SaaS / community management / leads, terrain ×3-4 réalités, faq ×3 questions longue traîne, crossLinks ×3), export SECTEUR_DETAILS avec les 14 slugs exacts de SECTOR_SEO + export SECTOR_INDEX (slug, name, icon, tagline) pour le maillage. Contenu rédactionnel FR professionnel recyclant les défis de secteurs.ts.
+- Règle tarifs respectée : seuls les montants autorisés apparaissent (vitrine dès 1 500 000 GNF, tableau de bord 3 500 000 GNF, Factura Pro 100 000 GNF/mois, sur mesure dès 20 000 000 GNF, app mobile dès 20 000 000 GNF, community management dès 1 500 000 GNF/mois, essai gratuit 7 jours) — audit grep des mentions GNF effectué, tout le reste = « sur devis ».
+- Créé src/components/pages/SecteurDetailPage.tsx (client) : PageHero (image header-secteurs.png, parent /secteurs), Section intro riche + GoldButton openForm("quote", {subject}) + trackCta, Section 4 offres (grille 2/4 cols, map string→LucideIcon avec fallback Sparkles), Section « réalités du terrain » (tone deep, liste numérotée or), Section FAQ (accordion shadcn), CtaBanner + PageCrossLinks, Reveal/Stagger/SpotlightCard/GoldIcon partout, style Obsidienne & Or.
+- Créé src/app/(site)/secteurs/[slug]/page.tsx : generateStaticParams (14 slugs), generateMetadata (notFound si slug inconnu, buildMetadata avec metaTitle/metaDescription/keywords du secteur + PAGE_KEYWORDS.secteurs), route serveur avec JsonLd [serviceJsonLd, breadcrumbJsonLd, faqJsonLd] + <SecteurDetailPage slug>.
+- Modifié src/components/pages/SecteursPage.tsx : nouvelle Section « Toutes les pages par métier » AVANT le CtaBanner — grille responsive 2/3/4 colonnes de 14 liens internes vers /secteurs/[slug], chaque carte = icône Lucide + nom du secteur (anchor text) + micro-descriptif, Reveal/Stagger/Beam, style existant conservé.
+- QA : bun run lint 0 erreur ; tsc --noEmit propre sur src/ (erreurs préexistantes uniquement dans examples/ et skills/) ; les 14 routes + /secteurs testées en HTTP (toutes 200, slug inconnu → 404) ; metadata fr vérifiée (canonical, OG, keywords fusionnés) ; JSON-LD FAQPage (3 Q/R), BreadcrumbList (3 niveaux), Service présents ; maillage : 14 href /secteurs/[slug] détectés sur /secteurs ; dev.log sans erreur.
+
+Stage Summary:
+- 3 fichiers créés : src/lib/pages-content/secteur-details.ts (14 secteurs + SECTOR_INDEX), src/components/pages/SecteurDetailPage.tsx, src/app/(site)/secteurs/[slug]/page.tsx ; 1 fichier modifié : src/components/pages/SecteursPage.tsx (section maillage ajoutée, rien d'autre touché).
+- 14 landing pages longue traîne générées statiquement, metadata ciblée par métier + JSON-LD Service/Breadcrumb/FAQ, contenu FR 100 % recyclé des défis sectoriels, tarifs strictement limités au catalogue officiel.
+- Décisions : icônes des offres référencées par chaîne dans le contenu puis résolues via map Record<string, LucideIcon> (fallback Sparkles) ; SECTOR_INDEX exporté depuis secteur-details.ts pour alimenter le maillage de /secteurs sans dupliquer les libellés ; sitemap.ts déjà branché sur SECTOR_SEO (aucune modif requise) ; crossLinks limitées aux 5 chemins autorisés (/services/web, /logiciels, /tarifs, /secteurs, /contact).
+---
+Task ID: SEO-ULTRA
+Agent: orchestrator (Z.ai Code)
+Task: SEO monstrueux — couverture exhaustive courte + longue traîne (tous domaines d'activité EINSOF)
+
+Work Log:
+- Réécriture de src/lib/seo.ts : ~330 mots-clés (marque, sites web, logiciels, apps, SaaS ×7, community management, leads, formations, stratégie, villes guinéennes ×22, 4 régions naturelles, diaspora, anglais) ; PAGE_KEYWORDS enrichis par page ; nouveau SECTOR_SEO (14 métiers avec metaTitle/metaDescription/keywords) ; ZONES + ZONES_META ; GEO_COORDS Conakry
+- Nouveaux builders JSON-LD : organizationJsonLd enrichi (GeoCoordinates, ContactPoint, paymentAccepted, knowsAbout ×24, areaServed 8 régions, alternateName, renouvellements+option paiement), itemListJsonLd, courseJsonLd, howToJsonLd, webPageJsonLd (AboutPage/ContactPage/CollectionPage), articleJsonLd +dateModified, ORG_ID partagé
+- buildMetadata : alternates.languages (fr/en/x-default), verification via GOOGLE_SITE_VERIFICATION/BING_SITE_VERIFICATION (env), og geo tags
+- layout.tsx : keywords globaux + villes, robots googleBot enrichi, geo.placename/og:region
+- robots.ts : disallow /api/ + /admin, AI crawlers explicitement bienvenus (GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-Web, anthropic-ai, PerplexityBot, Google-Extended, Applebot-Extended)
+- sitemap.ts : +14 /secteurs/*, + /zones → 52 URLs
+- Nouvelle route /llms.txt (SEO IA : description complète du site, pages, tarifs officiels, citation prête pour assistants IA)
+- [3-a, sous-agent] 14 pages /secteurs/[slug] : contenu fr riche (intro SEO, 4 offres iconées, réalités terrain, FAQ longue traîne), JSON-LD Service+FAQPage+Breadcrumb, grille de 14 liens sur /secteurs
+- [3-b, sous-agent] page /zones : Conakry (10 quartiers), 8 régions avec villes réelles, diaspora, FAQ locale, JSON-LD WebPage+FAQ+Breadcrumb, lien footer « Zones » + traductions nav ×5
+- [3-c, sous-agent] scripts/seed-blog-seo.ts : 6 articles longue traîne en 5 langues (application mobile, logiciel de gestion, community management, leads B2B, formations, vitrine vs e-commerce) — upsert idempotent, 12 articles au total
+- Injection JSON-LD sur /methode (HowTo 5 étapes), /services + /logiciels + /secteurs (ItemList + CollectionPage), /a-propos (AboutPage), /contact (ContactPage), /realisations (CollectionPage)
+- Fix titles dupliqués (« — EINSOF — EINSOF ») sur / et /realisations
+
+Stage Summary:
+- 52 URLs indexables (12 statiques + 7 services + 7 SaaS + 14 secteurs + 12 blog), toutes avec metadata unique, canonique, OG, Twitter, keywords ciblés
+- JSON-LD couvre : Organization+LocalBusiness (géolocalisé, prix officiels ×20 offres), WebSite, Service ×7, SoftwareApplication ×7, Service ×14 secteurs, FAQPage ×3 sources, HowTo, ItemList ×3, Course prêt, Article ×12
+- SEO IA intégré : llms.txt + robots AI-crawlers + savoir-faire knowsAbout
+- Vérifié navigateur : home, secteur hôtel (FAQ accordéon OK, prix officiels), /zones, hub secteurs (14 liens internes), article blog — zéro erreur console
+- Lint : 0 erreur. TODO-HUMAN restant : NEXT_PUBLIC_SITE_URL + GOOGLE_SITE_VERIFICATION à l'achat du domaine

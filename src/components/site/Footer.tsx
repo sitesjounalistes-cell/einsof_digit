@@ -45,6 +45,7 @@ const NAV_ROUTES = [
   { id: "services", path: "/services" },
   { id: "logiciels", path: "/logiciels" },
   { id: "secteurs", path: "/secteurs" },
+  { id: "zones", path: "/zones" },
   { id: "methode", path: "/methode" },
   { id: "tarifs", path: "/tarifs" },
   { id: "realisations", path: "/realisations" },

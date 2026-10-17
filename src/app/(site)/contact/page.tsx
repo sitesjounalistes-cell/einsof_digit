@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ContactPage } from "@/components/pages/ContactPage";
-import { GEO, PAGE_KEYWORDS, buildMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/site/JsonLd";
+import { GEO, PAGE_KEYWORDS, buildMetadata, webPageJsonLd } from "@/lib/seo";
 
 /* /contact — cible « devis création site web Guinée », « agence
    digitale Conakry contact »… */
@@ -13,5 +14,18 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default function ContactRoute() {
-  return <ContactPage />;
+  return (
+    <>
+      <JsonLd
+        data={webPageJsonLd({
+          path: "/contact",
+          name: "Contact — devis site web, logiciel et application en Guinée",
+          description:
+            "Contactez EINSOF pour un devis gratuit : création de site web, logiciel sur mesure, application mobile, SaaS, community management et formation en Guinée.",
+          type: "ContactPage",
+        })}
+      />
+      <ContactPage />
+    </>
+  );
 }

@@ -1,19 +1,31 @@
 "use client";
 
+import Link from "next/link";
 import React from "react";
 import {
+  ArrowUpRight,
+  BedDouble,
   Building2,
   GraduationCap,
+  HandHeart,
+  HardHat,
   HeartPulse,
   Landmark,
+  Newspaper,
   Pickaxe,
   ShoppingCart,
+  Signal,
+  Tractor,
+  Truck,
+  Users,
+  type LucideIcon,
 } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
 import { SectorsSection } from "@/components/site/SectorsSection";
 import { CtaBanner, PageCrossLinks } from "@/components/site/PageBlocks";
 import { Container, GoldBadge, Section, SectionHeading } from "@/components/site/kit";
 import {
+  Beam,
   DrawRule,
   Reveal,
   SpotlightCard,
@@ -22,6 +34,7 @@ import {
 } from "@/components/motion";
 import { useLocalized } from "@/lib/page-content";
 import { SECTEURS, type SectorIcon } from "@/lib/pages-content/secteurs";
+import { SECTOR_INDEX } from "@/lib/pages-content/secteur-details";
 
 /* Icônes des six secteurs phares (ordre des cartes du contenu) */
 const SECTOR_ICONS: Record<SectorIcon, typeof HeartPulse> = {
@@ -31,6 +44,25 @@ const SECTOR_ICONS: Record<SectorIcon, typeof HeartPulse> = {
   commerce: ShoppingCart,
   banking: Landmark,
   mining: Pickaxe,
+};
+
+/* Icônes des 14 pages /secteurs/[slug] (maillage interne) — indexées
+   par le nom de composant Lucide défini dans SECTOR_INDEX. */
+const SECTOR_PAGE_ICONS: Record<string, LucideIcon> = {
+  HeartPulse,
+  GraduationCap,
+  Building2,
+  ShoppingCart,
+  BedDouble,
+  Landmark,
+  HardHat,
+  HandHeart,
+  Truck,
+  Tractor,
+  Pickaxe,
+  Newspaper,
+  Signal,
+  Users,
 };
 
 /**
@@ -130,6 +162,56 @@ export function SecteursPage() {
           </Stagger>
 
           <DrawRule className="mx-auto mt-12 h-px w-40" delay={0.1} />
+        </Container>
+      </Section>
+
+      {/* Toutes les pages par métier — maillage interne vers les
+          14 landing pages /secteurs/[slug] (SEO longue traîne) */}
+      <Section id="sectors-pages" tone="surface">
+        <Container>
+          <SectionHeading
+            label="Solutions par métier"
+            title="Toutes les pages"
+            gold="par métier."
+            sub="Chaque métier a sa page dédiée : sites web, logiciels, prix et réponses aux questions spécifiques au secteur, en Guinée."
+          />
+          <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" step={0.05}>
+            {SECTOR_INDEX.map((entry) => {
+              const Icon = SECTOR_PAGE_ICONS[entry.icon] ?? HeartPulse;
+              return (
+                <StaggerItem key={entry.slug} y={20} className="h-full">
+                  <Beam className="h-full rounded-xl">
+                    <Link
+                      href={`/secteurs/${entry.slug}`}
+                      className="card-lift group flex h-full flex-col rounded-xl border border-line bg-bg p-5 transition-colors hover:border-gold/50 focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
+                    >
+                      <span className="flex items-center justify-between gap-3">
+                        <span
+                          aria-hidden
+                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold/40 text-gold"
+                        >
+                          <Icon size={16} strokeWidth={1.25} />
+                        </span>
+                        <ArrowUpRight
+                          size={16}
+                          strokeWidth={1.25}
+                          aria-hidden
+                          className="shrink-0 text-gold opacity-0 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-100"
+                        />
+                      </span>
+                      {/* anchor text = nom du métier */}
+                      <span className="mt-4 font-serif text-lg leading-snug text-ink transition-colors duration-300 group-hover:text-goldlight">
+                        {entry.name}
+                      </span>
+                      <span className="mt-1.5 text-[0.8125rem] leading-relaxed text-mute">
+                        {entry.tagline}
+                      </span>
+                    </Link>
+                  </Beam>
+                </StaggerItem>
+              );
+            })}
+          </Stagger>
         </Container>
       </Section>
 
