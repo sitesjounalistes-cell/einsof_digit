@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { Section, Container, SectionHeading, GoldBadge } from "@/components/site/kit";
 import { Beam, SpotlightCard, Stagger, StaggerItem, Tilt } from "@/components/motion";
 import { useI18n } from "@/lib/i18n";
@@ -19,6 +20,7 @@ interface ProjectRow {
   summary: LocaleMap;
   description: LocaleMap;
   linkUrl: string | null;
+  imageUrl: string | null;
 }
 
 /**
@@ -70,11 +72,23 @@ export function ProjectsSection() {
                   <SpotlightCard size={380} className="h-full rounded-xl">
                     <Beam className="h-full rounded-xl">
                       <article className="card-lift group flex h-full flex-col rounded-xl border border-line bg-bg p-6">
-                        {/* Bandeau visuel — filigrane de l'année réelle + dégradé or montant */}
+                        {/* Bandeau visuel — capture réelle si disponible, sinon filigrane
+                            de l'année + dégradé or montant au survol */}
                         <div className="relative mb-5 h-24 overflow-hidden rounded-lg border border-line bg-surface2">
-                          <span className="absolute -top-5 right-2 select-none font-serif text-[5rem] leading-none text-transparent [-webkit-text-stroke:1px_rgba(212,175,55,0.4)] transition-transform duration-700 ease-out group-hover:scale-105">
-                            {String(p.year)}
-                          </span>
+                          {p.imageUrl ? (
+                            <Image
+                              src={p.imageUrl}
+                              alt={`${title} — capture d'écran`}
+                              width={640}
+                              height={360}
+                              className="absolute inset-0 h-full w-full object-cover object-top"
+                              unoptimized
+                            />
+                          ) : (
+                            <span className="absolute -top-5 right-2 select-none font-serif text-[5rem] leading-none text-transparent [-webkit-text-stroke:1px_rgba(212,175,55,0.4)] transition-transform duration-700 ease-out group-hover:scale-105">
+                              {String(p.year)}
+                            </span>
+                          )}
                           <span
                             aria-hidden
                             className="absolute inset-0 bg-gradient-to-t from-gold/15 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"

@@ -134,6 +134,9 @@ const fr = {
     discover: "Découvrir le logiciel",
     carouselHint: "Défilement automatique toutes les 8 secondes — glissez, utilisez les flèches ; un clic sur la carte centrale ouvre la page détaillée du logiciel.",
     videoSoonBadge: "Vidéo bientôt disponible",
+    openSoftware: "Ouvrir le logiciel",
+    badgeVideo: "Vidéo",
+    badgeDemo: "Démo",
     hospitalNote: "Trois forfaits selon la taille de votre établissement.",
     items: {
       factura: {
@@ -429,6 +432,12 @@ const fr = {
     address: "Guinée — adresse détaillée à venir",
     whatsappT: "WhatsApp",
     whatsappSoon: "Numéro en cours d'activation",
+    followT: "Réseaux sociaux",
+  },
+  manager: {
+    label: "Le mot du gérant",
+    title: "Une conviction simple,",
+    gold: "tenue depuis sept ans",
   },
   footer: {
     tagline:
@@ -710,6 +719,9 @@ const en: Dict = {
     discover: "Explore the software",
     carouselHint: "Auto-advancing every 8 seconds — drag, use the arrows; clicking the centre card opens the software's detail page.",
     videoSoonBadge: "Video coming soon",
+    openSoftware: "Open the software",
+    badgeVideo: "Video",
+    badgeDemo: "Demo",
     hospitalNote: "Three plans depending on the size of your facility.",
     items: {
       factura: {
@@ -998,6 +1010,12 @@ const en: Dict = {
     address: "Guinea — detailed address coming soon",
     whatsappT: "WhatsApp",
     whatsappSoon: "Number being activated",
+    followT: "Social networks",
+  },
+  manager: {
+    label: "From the manager",
+    title: "A simple conviction,",
+    gold: "kept for seven years",
   },
   footer: {
     tagline:
@@ -1271,6 +1289,9 @@ const es: Dict = {
     discover: "Descubrir el software",
     carouselHint: "Avance automático cada 8 segundos — desliza o usa las flechas; un clic en la tarjeta central abre la página detallada del software.",
     videoSoonBadge: "Video próximamente",
+    openSoftware: "Abrir el software",
+    badgeVideo: "Vídeo",
+    badgeDemo: "Demo",
     hospitalNote: "Tres planes según el tamaño de tu establecimiento.",
     items: {
       factura: {
@@ -1559,6 +1580,12 @@ const es: Dict = {
     address: "Guinea — dirección detallada próximamente",
     whatsappT: "WhatsApp",
     whatsappSoon: "Número en proceso de activación",
+    followT: "Redes sociales",
+  },
+  manager: {
+    label: "La palabra del gerente",
+    title: "Una convicción simple,",
+    gold: "mantenida desde hace siete años",
   },
   footer: {
     tagline: "Agencia digital premium en Guinea. Sitios web, software a medida, SaaS de gestión, redes sociales y captación de clientes — desde hace siete años.",
@@ -1828,6 +1855,9 @@ const zh: Dict = {
     discover: "了解该软件",
     carouselHint: "每 8 秒自动切换——可拖动或使用箭头；点击中间卡片即可打开该软件的详情页。",
     videoSoonBadge: "视频即将上线",
+    openSoftware: "打开软件",
+    badgeVideo: "视频",
+    badgeDemo: "演示",
     hospitalNote: "根据机构规模提供三档套餐。",
     items: {
       factura: {
@@ -2116,6 +2146,12 @@ const zh: Dict = {
     address: "几内亚——详细地址即将公布",
     whatsappT: "WhatsApp",
     whatsappSoon: "号码正在开通中",
+    followT: "社交媒体",
+  },
+  manager: {
+    label: "总经理寄语",
+    title: "一个朴素的信念，",
+    gold: "七年来始终坚守",
   },
   footer: {
     tagline: "几内亚的高端数字机构。网站、定制软件、管理SaaS、社交媒体与客户获取——七年经验。",
@@ -2383,6 +2419,9 @@ const de: Dict = {
     discover: "Software entdecken",
     carouselHint: "Alle 8 Sekunden automatische Weitergabe — ziehen oder Pfeile nutzen; ein Klick auf die mittlere Karte öffnet die Detailseite der Software.",
     videoSoonBadge: "Video folgt in Kürze",
+    openSoftware: "Software öffnen",
+    badgeVideo: "Video",
+    badgeDemo: "Demo",
     hospitalNote: "Drei Tarife je nach Größe Ihrer Einrichtung.",
     items: {
       factura: {
@@ -2671,6 +2710,12 @@ const de: Dict = {
     address: "Guinea — genaue Adresse folgt in Kürze",
     whatsappT: "WhatsApp",
     whatsappSoon: "Nummer wird gerade aktiviert",
+    followT: "Soziale Netzwerke",
+  },
+  manager: {
+    label: "Wort des Geschäftsführers",
+    title: "Eine einfache Überzeugung,",
+    gold: "seit sieben Jahren gelebt",
   },
   footer: {
     tagline: "Premium-Digitalagentur in Guinea. Websites, maßgeschneiderte Software, Management-SaaS, Social Media und Kundengewinnung — seit sieben Jahren.",

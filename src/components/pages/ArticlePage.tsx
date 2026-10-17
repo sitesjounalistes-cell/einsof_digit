@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { CtaBanner } from "@/components/site/PageBlocks";
@@ -9,6 +10,7 @@ import { Beam, DrawRule, Reveal, Shimmer, Stagger, StaggerItem, WordMask } from 
 import { useI18n } from "@/lib/i18n";
 import { pickLocale, type LocaleMap } from "@/lib/locale-json";
 import { useLocalized } from "@/lib/page-content";
+import type { PostAd } from "@/lib/post-ads";
 import { ARTICLE } from "@/lib/pages-content/article";
 
 interface PostRow {
@@ -33,13 +35,61 @@ function fmtDate(iso: string | null, lang: string): string {
   }
 }
 
+/** Bloc publicitaire « partenaire » — bordure or, badge label, image 16/9
+ * optionnelle, texte et CTA externe (https, rel sponsored). Sans lien :
+ * bloc purement informatif, non cliquable. */
+function AdBlock({ ad }: { ad: PostAd }) {
+  const label = ad.title?.trim() || "Espace partenaire";
+  const link = ad.linkUrl?.trim();
+  const hasLink = typeof link === "string" && /^https:\/\//.test(link);
+  const cta = ad.ctaLabel?.trim() || "Découvrir";
+  return (
+    <Reveal y={14} duration={0.6}>
+      <aside
+        aria-label="Contenu partenaire"
+        className="my-10 overflow-hidden rounded-xl border border-gold/40 bg-surface"
+      >
+        {ad.imageUrl ? (
+          <div className="relative aspect-video max-h-72 w-full overflow-hidden border-b border-gold/20">
+            <Image
+              src={ad.imageUrl}
+              alt={label}
+              fill
+              sizes="(max-width: 768px) 100vw, 768px"
+              className="object-cover"
+              unoptimized
+            />
+          </div>
+        ) : null}
+        <div className="p-6">
+          <GoldBadge>{label}</GoldBadge>
+          {ad.text ? (
+            <p className="mt-4 text-[0.9375rem] leading-relaxed text-ink">{ad.text}</p>
+          ) : null}
+          {hasLink ? (
+            <a
+              href={link}
+              target="_blank"
+              rel="sponsored noopener"
+              className="mt-5 inline-flex min-h-[44px] items-center justify-center gap-2 rounded border border-gold/60 px-6 py-3 text-[0.8125rem] font-semibold uppercase tracking-[0.12em] text-goldtext transition-all duration-300 hover:border-gold hover:text-ongold active:scale-[0.98]"
+            >
+              {cta}
+              <ArrowUpRight className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+            </a>
+          ) : null}
+        </div>
+      </aside>
+    </Reveal>
+  );
+}
+
 /**
  * Page article /blog/[slug] — le slug est résolu côté serveur (base
  * réelle, 404 si introuvable) ; côté client, l'article est chargé
  * depuis /api/posts puis rendu en paragraphes. Le texte se révèle
  * progressivement (Reveal once) mais finit toujours 100 % visible.
  */
-export function ArticlePage({ slug }: { slug: string }) {
+export function ArticlePage({ slug, ads = [] }: { slug: string; ads?: PostAd[] }) {
   const { lang, tr } = useI18n();
   const c = useLocalized(ARTICLE);
   const [posts, setPosts] = useState<PostRow[] | null>(null);
@@ -130,6 +180,18 @@ export function ArticlePage({ slug }: { slug: string }) {
     .map((par) => par.trim())
     .filter(Boolean);
 
+  /* Espaces publicitaires actifs : position N = insérés après le N-ième
+   * paragraphe ; 0 (ou au-delà du dernier) = tout à la fin. */
+  const adsAfter = new Map<number, PostAd[]>();
+  for (const ad of ads) {
+    if (!ad.isActive) continue;
+    const at =
+      ad.position <= 0
+        ? paragraphs.length
+        : Math.min(ad.position, paragraphs.length);
+    adsAfter.set(at, [...(adsAfter.get(at) ?? []), ad]);
+  }
+
   return (
     <>
       {/* Bandeau d'ouverture de l'article */}
@@ -185,9 +247,14 @@ export function ArticlePage({ slug }: { slug: string }) {
         <Container>
           <div className="mx-auto max-w-3xl">
             {paragraphs.map((par, i) => (
-              <Reveal key={i} y={18} duration={0.7} delay={Math.min(i * 0.05, 0.25)}>
-                <p className="text-[0.9375rem] leading-relaxed text-ink md:text-base">{par}</p>
-              </Reveal>
+              <React.Fragment key={i}>
+                <Reveal y={18} duration={0.7} delay={Math.min(i * 0.05, 0.25)}>
+                  <p className="text-[0.9375rem] leading-relaxed text-ink md:text-base">{par}</p>
+                </Reveal>
+                {(adsAfter.get(i + 1) ?? []).map((ad) => (
+                  <AdBlock key={ad.id} ad={ad} />
+                ))}
+              </React.Fragment>
             ))}
 
             <DrawRule className="mx-auto mt-14 h-px w-40" delay={0.1} />

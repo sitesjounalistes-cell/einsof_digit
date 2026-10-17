@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Megaphone, Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { GoldButton } from "@/components/site/kit";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parseAds, type PostAd } from "@/lib/post-ads";
 
 /* ── Journal — rédaction complète (création, édition, publication, suppression).
  * Panneau autonome de l'Espace équipe ; câblage : <PostsPanel onUnauthorized={() => …} />
@@ -36,6 +38,10 @@ interface PostDetail {
   isPublished: boolean;
   publishedAt: string | null;
   createdAt: string;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  keywords: string | null;
+  ads: PostAd[];
 }
 
 const LANGS: { id: Lang; label: string; optional: boolean }[] = [
@@ -62,6 +68,14 @@ const deleteBtn =
   "inline-flex h-10 w-10 items-center justify-center rounded-lg border border-line text-mute transition-colors hover:border-destructive/60 hover:text-destructive";
 const tabsTriggerCls =
   "rounded-md px-4 py-1.5 text-xs uppercase tracking-[0.1em] text-mute data-[state=active]:bg-surface data-[state=active]:text-goldtext dark:data-[state=active]:bg-surface dark:data-[state=active]:text-goldtext";
+
+/** Couleur du compteur de caractères : discret jusqu'à l'idéal, or au-delà,
+ * rouge passé la zone raisonnable (alerte visuelle, blocage uniquement à maxLength). */
+const counterCls = (len: number, ideal: number): string => {
+  if (len <= ideal) return "text-mute";
+  if (len <= ideal + 20) return "text-goldtext";
+  return "text-destructive";
+};
 
 const DATE_FMT = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" });
 const fmtDate = (iso: string): string => {
@@ -94,7 +108,46 @@ interface FormState {
   title: Record<Lang, string>;
   excerpt: Record<Lang, string>;
   body: Record<Lang, string>;
+  metaTitle: string;
+  metaDescription: string;
+  keywords: string;
+  ads: AdForm[];
 }
+
+/** Espace publicitaire en cours d'édition — position gardée en chaîne pour
+ * la saisie (0 = tout à la fin d'article), convertie à l'enregistrement. */
+interface AdForm {
+  id: string;
+  title: string;
+  text: string;
+  imageUrl: string;
+  linkUrl: string;
+  ctaLabel: string;
+  position: string;
+  isActive: boolean;
+}
+
+const newAdId = (): string => {
+  try {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  } catch {
+    /* repli ci-dessous */
+  }
+  return `ad-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+const emptyAd = (): AdForm => ({
+  id: newAdId(),
+  title: "",
+  text: "",
+  imageUrl: "",
+  linkUrl: "",
+  ctaLabel: "",
+  position: "1",
+  isActive: true,
+});
+
+const MAX_ADS = 10;
 
 const emptyForm = (): FormState => ({
   slug: "",
@@ -104,6 +157,10 @@ const emptyForm = (): FormState => ({
   title: emptyTexts(),
   excerpt: emptyTexts(),
   body: emptyTexts(),
+  metaTitle: "",
+  metaDescription: "",
+  keywords: "",
+  ads: [],
 });
 
 /** Corps : un paragraphe par ligne -> tableau de paragraphes (normalisé \n\n par l'API). */
@@ -277,6 +334,19 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
           zh: toLines(p.body.zh ?? ""),
           de: toLines(p.body.de ?? ""),
         }),
+        metaTitle: p.metaTitle ?? "",
+        metaDescription: p.metaDescription ?? "",
+        keywords: p.keywords ?? "",
+        ads: parseAds(JSON.stringify(p.ads ?? [])).map((a) => ({
+          id: a.id,
+          title: a.title ?? "",
+          text: a.text ?? "",
+          imageUrl: a.imageUrl ?? "",
+          linkUrl: a.linkUrl ?? "",
+          ctaLabel: a.ctaLabel ?? "",
+          position: String(a.position),
+          isActive: a.isActive,
+        })),
       });
       slugTouched.current = true; /* le slug existant n'est pas écrasé par le titre */
       setEditor({ id: p.id, publishedAt: p.publishedAt });
@@ -287,6 +357,15 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
       setLoadingDetail(false);
     }
   };
+
+  /* ── Espaces publicitaires : édition locale ────────────────── */
+  const updateAd = (index: number, patch: Partial<AdForm>) =>
+    setForm((f) => ({
+      ...f,
+      ads: f.ads.map((a, k) => (k === index ? { ...a, ...patch } : a)),
+    }));
+  const removeAd = (index: number) =>
+    setForm((f) => ({ ...f, ads: f.ads.filter((_, k) => k !== index) }));
 
   /* ── Enregistrement (POST création / PUT mise à jour) ──────── */
   const submit = async (e: FormEvent<HTMLFormElement>) => {
@@ -333,6 +412,35 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
       return;
     }
 
+    /* Espaces publicitaires : validations miroir de l'API (retours immédiats). */
+    if (form.ads.length > MAX_ADS) {
+      setFormError(`Maximum ${MAX_ADS} espaces publicitaires par article.`);
+      return;
+    }
+    for (let i = 0; i < form.ads.length; i++) {
+      const ad = form.ads[i];
+      const n = i + 1;
+      const link = ad.linkUrl.trim();
+      if (link && !/^https:\/\//.test(link)) {
+        setFormError(
+          `Espace ${n} : le lien de clic doit commencer par https:// (ou rester vide pour un bloc non cliquable).`
+        );
+        return;
+      }
+      const img = ad.imageUrl.trim();
+      if (img && !img.startsWith("/") && !/^https:\/\//.test(img)) {
+        setFormError(
+          `Espace ${n} : l'image doit être une URL https:// ou un chemin interne commençant par /.`
+        );
+        return;
+      }
+      const pos = ad.position.trim();
+      if (pos && (!/^\d+$/.test(pos) || Number(pos) > 999)) {
+        setFormError(`Espace ${n} : la position doit être un nombre entier entre 0 et 999.`);
+        return;
+      }
+    }
+
     const payload: Record<string, unknown> = {
       slug,
       category,
@@ -340,6 +448,20 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
       excerpt: textPayload(form.excerpt),
       body: bodyPayload(form.body),
       isPublished: form.isPublished,
+      /* Chaîne vide = retour au repli automatique côté site (null en base). */
+      metaTitle: form.metaTitle.trim(),
+      metaDescription: form.metaDescription.trim(),
+      keywords: form.keywords.trim(),
+      ads: form.ads.map((a) => ({
+        id: a.id,
+        title: a.title.trim() || undefined,
+        text: a.text.trim() || undefined,
+        imageUrl: a.imageUrl.trim() || undefined,
+        linkUrl: a.linkUrl.trim() || undefined,
+        ctaLabel: a.ctaLabel.trim() || undefined,
+        position: Math.max(0, Math.floor(Number(a.position.trim() || "0")) || 0),
+        isActive: a.isActive,
+      })),
     };
     if (readingMin) payload.readingMin = Number(readingMin);
     if (editor.id !== null) {
@@ -359,6 +481,7 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
         return;
       }
       if (res.ok) {
+        toast.success(editor.id !== null ? "Article enregistré — SEO et espaces mis à jour." : "Article créé.");
         setNotice(editor.id !== null ? "Article enregistré." : "Article créé.");
         setEditor(null);
         setReload((k) => k + 1);
@@ -370,7 +493,7 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
       }
       if (res.status === 400) {
         setFormError(
-          "Valeurs refusées. Vérifiez : titre 3 à 200 caractères, extrait 20 à 400 et texte 100 à 20 000 en français ; traductions 3 caractères minimum ; catégorie 2 à 40."
+          "Valeurs refusées. Vérifiez : titre 3 à 200 caractères, extrait 20 à 400 et texte 100 à 20 000 en français ; traductions 3 caractères minimum ; catégorie 2 à 40 ; espaces publicitaires — maximum 10, lien https et position entière ≥ 0."
         );
         return;
       }
@@ -554,6 +677,197 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
                   </TabsContent>
                 ))}
               </Tabs>
+
+              {/* Référencement (SEO) — vide = repli automatique sur le titre / l'extrait */}
+              <section
+                aria-labelledby="admin-posts-seo-t"
+                className="mt-6 rounded-lg border border-line bg-bg p-4 md:p-5"
+              >
+                <h3 id="admin-posts-seo-t" className="text-xs uppercase tracking-[0.14em] text-goldtext">
+                  Référencement (SEO)
+                </h3>
+                <p className="mt-1 text-xs text-mute">
+                  Champs vides : le site réutilise automatiquement le titre et l&apos;extrait de
+                  l&apos;article — le compteur indique la longueur idéale pour Google.
+                </p>
+                <div className="mt-3 grid gap-3">
+                  <label className="grid gap-1.5">
+                    <span className="flex items-baseline justify-between gap-3">
+                      <span className={labelCls}>Titre SEO — affiché dans les résultats Google</span>
+                      <span
+                        className={`shrink-0 text-xs tabular-nums ${counterCls(form.metaTitle.length, 60)}`}
+                      >
+                        {form.metaTitle.length}/60
+                      </span>
+                    </span>
+                    <input
+                      className={inputCls}
+                      value={form.metaTitle}
+                      maxLength={200}
+                      placeholder="Vide = titre de l'article"
+                      onChange={(e) => setForm((f) => ({ ...f, metaTitle: e.target.value }))}
+                    />
+                  </label>
+                  <label className="grid gap-1.5">
+                    <span className="flex items-baseline justify-between gap-3">
+                      <span className={labelCls}>Meta description — résumé sous le lien Google</span>
+                      <span
+                        className={`shrink-0 text-xs tabular-nums ${counterCls(form.metaDescription.length, 160)}`}
+                      >
+                        {form.metaDescription.length}/160
+                      </span>
+                    </span>
+                    <textarea
+                      className={`${textareaCls} min-h-[72px]`}
+                      value={form.metaDescription}
+                      maxLength={400}
+                      placeholder="Vide = extrait de l'article"
+                      onChange={(e) => setForm((f) => ({ ...f, metaDescription: e.target.value }))}
+                    />
+                  </label>
+                  <label className="grid gap-1.5">
+                    <span className={labelCls}>Mots-clés (séparés par des virgules, optionnel)</span>
+                    <input
+                      className={inputCls}
+                      value={form.keywords}
+                      maxLength={600}
+                      placeholder="creation site web guinée, logiciel de gestion…"
+                      onChange={(e) => setForm((f) => ({ ...f, keywords: e.target.value }))}
+                    />
+                  </label>
+                </div>
+              </section>
+
+              {/* Espaces publicitaires — blocs « partenaire » insérés dans le texte */}
+              <section
+                aria-labelledby="admin-posts-ads-t"
+                className="mt-4 rounded-lg border border-line bg-bg p-4 md:p-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 id="admin-posts-ads-t" className="text-xs uppercase tracking-[0.14em] text-goldtext">
+                      Espaces publicitaires
+                    </h3>
+                    <p className="mt-1 text-xs text-mute">
+                      Blocs « partenaire » insérés dans le texte après le paragraphe choisi
+                      (0 = tout à la fin). Maximum {MAX_ADS} par article.
+                    </p>
+                  </div>
+                  <GoldButton
+                    variant="outline"
+                    onClick={() => setForm((f) => ({ ...f, ads: [...f.ads, emptyAd()] }))}
+                    disabled={form.ads.length >= MAX_ADS}
+                    className="min-h-9! px-3! text-xs!"
+                  >
+                    <Plus className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                    Ajouter un espace
+                  </GoldButton>
+                </div>
+
+                {form.ads.length === 0 ? (
+                  <p className="mt-3 text-xs text-mute">
+                    Aucun espace publicitaire sur cet article.
+                  </p>
+                ) : (
+                  <div className="mt-3 flex max-h-96 flex-col gap-3 overflow-y-auto pr-1">
+                    {form.ads.map((ad, i) => (
+                      <div key={ad.id} className="rounded-lg border border-line bg-surface p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <p className="flex items-center gap-2 text-xs uppercase tracking-[0.14em] text-mute">
+                            <Megaphone className="h-3.5 w-3.5 text-goldtext" strokeWidth={1.25} aria-hidden />
+                            Espace {i + 1} — {ad.isActive ? "actif" : "masqué"}
+                          </p>
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 text-xs text-mute">
+                              <Switch
+                                checked={ad.isActive}
+                                onCheckedChange={(v) => updateAd(i, { isActive: v })}
+                                aria-label={`Espace ${i + 1} actif`}
+                              />
+                              Actif
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => removeAd(i)}
+                              aria-label={`Supprimer l'espace ${i + 1}`}
+                              className={deleteBtn}
+                            >
+                              <Trash2 className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                          <label className="grid gap-1.5">
+                            <span className={labelCls}>Étiquette du bloc (badge)</span>
+                            <input
+                              className={inputCls}
+                              value={ad.title}
+                              maxLength={120}
+                              placeholder="Espace partenaire"
+                              onChange={(e) => updateAd(i, { title: e.target.value })}
+                            />
+                          </label>
+                          <label className="grid gap-1.5">
+                            <span className={labelCls}>Libellé du bouton</span>
+                            <input
+                              className={inputCls}
+                              value={ad.ctaLabel}
+                              maxLength={60}
+                              placeholder="Découvrir"
+                              onChange={(e) => updateAd(i, { ctaLabel: e.target.value })}
+                            />
+                          </label>
+                          <label className="grid gap-1.5 md:col-span-2">
+                            <span className={labelCls}>Texte de la publicité (1-2 phrases)</span>
+                            <textarea
+                              className={`${textareaCls} min-h-[56px]`}
+                              value={ad.text}
+                              maxLength={600}
+                              placeholder="Ex. EINSOF conçoit des logiciels de gestion sur mesure pour les entreprises guinéennes."
+                              onChange={(e) => updateAd(i, { text: e.target.value })}
+                            />
+                          </label>
+                          <label className="grid gap-1.5">
+                            <span className={labelCls}>Image (URL https ou /images/…, optionnelle)</span>
+                            <input
+                              className={inputCls}
+                              value={ad.imageUrl}
+                              maxLength={600}
+                              placeholder="https://… ou /images/banniere.png"
+                              onChange={(e) => updateAd(i, { imageUrl: e.target.value })}
+                            />
+                          </label>
+                          <label className="grid gap-1.5">
+                            <span className={labelCls}>Lien du clic (https://…, vide = non cliquable)</span>
+                            <input
+                              className={inputCls}
+                              value={ad.linkUrl}
+                              maxLength={600}
+                              placeholder="https://www.einsof.gn/logiciels"
+                              onChange={(e) => updateAd(i, { linkUrl: e.target.value })}
+                            />
+                          </label>
+                          <label className="grid gap-1.5">
+                            <span className={labelCls}>
+                              Insérer après le paragraphe n° (0 = fin d&apos;article)
+                            </span>
+                            <input
+                              className={inputCls}
+                              value={ad.position}
+                              inputMode="numeric"
+                              maxLength={3}
+                              placeholder="1"
+                              onChange={(e) =>
+                                updateAd(i, { position: e.target.value.replace(/\D/g, "").slice(0, 3) })
+                              }
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
 
               {formError && (
                 <p role="alert" className="mt-3 text-sm text-destructive">

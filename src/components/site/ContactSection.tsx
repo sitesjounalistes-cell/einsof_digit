@@ -1,8 +1,25 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { Check, Clock, Loader2, MapPin, MessageCircle } from "lucide-react";
+import {
+  Check,
+  Clock,
+  Facebook,
+  Globe,
+  Instagram,
+  Linkedin,
+  Loader2,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Music2,
+  Phone,
+  Twitter,
+  Youtube,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "sonner";
+import type { SiteSettingsData } from "@/lib/site-settings-defaults";
 import {
   DrawRule,
   PopIn,
@@ -35,6 +52,22 @@ const labelCls = "mb-1.5 block text-xs uppercase tracking-wide text-mute";
 
 const SUBJECT_OPTIONS = ["web", "software", "saas", "marketing", "training", "quote", "other"] as const;
 
+/* Icône lucide par plateforme configurée (réglages Site & Contact) —
+   repli : Globe pour toute plateforme inconnue / « autre ». */
+const SOCIAL_ICONS: Record<string, LucideIcon> = {
+  facebook: Facebook,
+  instagram: Instagram,
+  linkedin: Linkedin,
+  twitter: Twitter,
+  x: Twitter,
+  tiktok: Music2,
+  youtube: Youtube,
+  whatsapp: MessageCircle,
+  autre: Globe,
+  other: Globe,
+};
+const socialIcon = (platform: string): LucideIcon => SOCIAL_ICONS[platform] ?? Globe;
+
 interface Fields {
   firstName: string;
   lastName: string;
@@ -65,6 +98,27 @@ export function ContactSection({ heading = true }: { heading?: boolean }) {
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<Errors>({});
+  /* Réglages Site & Contact (API publique) — null tant que non chargé :
+     le repli i18n actuel s'affiche (aucune info inventée). */
+  const [settings, setSettings] = useState<SiteSettingsData | null>(null);
+
+  /* Chargement des coordonnées réelles (téléphones, e-mails, réseaux).
+     Échec silencieux : le panneau garde ses valeurs par défaut. */
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/site-settings", { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const json = (await res.json()) as { ok: boolean; data?: SiteSettingsData };
+        if (!cancelled && json.ok && json.data) setSettings(json.data);
+      })
+      .catch(() => {
+        /* réseau indisponible — fallback i18n conservé */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const setField = (key: keyof Fields, value: string) => {
     setFields((f) => ({ ...f, [key]: value }));
@@ -154,11 +208,31 @@ export function ContactSection({ heading = true }: { heading?: boolean }) {
     }
   }
 
-  const sideRows = [
-    { Icon: MessageCircle, text: t("contact.responseT") },
-    { Icon: Clock, text: t("contact.hoursT") },
-    { Icon: MapPin, text: t("contact.address") },
-  ];
+  /* Coordonnées réelles dès qu'elles sont configurées (réglages admin) :
+     elles REMPLACENT la ligne générique « réponse sous 24 h » par les
+     téléphones + e-mails cliquables. Sinon : affichage actuel (repli). */
+  const phones = (settings?.phones ?? []).filter((p) => p.trim());
+  const emails = (settings?.emails ?? []).filter((e) => e.trim());
+  const socials = (settings?.socials ?? []).filter((s) => s.url.trim());
+  const hasDirectContact = phones.length > 0 || emails.length > 0;
+  const waSocial = socials.find((s) => s.platform === "whatsapp");
+
+  const sideRows: { Icon: LucideIcon; text: string; href?: string }[] = hasDirectContact
+    ? [
+        ...phones.map((p) => ({
+          Icon: Phone,
+          text: p,
+          href: `tel:${p.replace(/[^+\d]/g, "")}`,
+        })),
+        ...emails.map((e) => ({ Icon: Mail, text: e, href: `mailto:${e}` })),
+        { Icon: Clock, text: t("contact.hoursT") },
+        { Icon: MapPin, text: t("contact.address") },
+      ]
+    : [
+        { Icon: MessageCircle, text: t("contact.responseT") },
+        { Icon: Clock, text: t("contact.hoursT") },
+        { Icon: MapPin, text: t("contact.address") },
+      ];
 
   return (
     <Section id="contact" tone="surface">
@@ -381,13 +455,22 @@ export function ContactSection({ heading = true }: { heading?: boolean }) {
             <Tilt max={3}>
               <SpotlightCard className="rounded-xl border border-line bg-surface p-5">
                 <Stagger className="space-y-5" step={0.08}>
-                  {sideRows.map(({ Icon, text }) => (
-                    <StaggerItem key={text}>
+                  {sideRows.map(({ Icon, text, href }, i) => (
+                    <StaggerItem key={`${text}-${i}`}>
                       <div className="group flex items-start gap-3 transition-transform duration-300 ease-out hover:translate-x-1">
                         <span className="mt-0.5 inline-flex transition-transform duration-300 group-hover:scale-110">
                           <Icon className="h-4 w-4 shrink-0 text-gold" strokeWidth={1.25} aria-hidden />
                         </span>
-                        <p className="text-sm text-mute">{text}</p>
+                        {href ? (
+                          <a
+                            href={href}
+                            className="text-sm text-mute transition-colors hover:text-goldtext link-gold"
+                          >
+                            {text}
+                          </a>
+                        ) : (
+                          <p className="text-sm text-mute">{text}</p>
+                        )}
                       </div>
                     </StaggerItem>
                   ))}
@@ -395,10 +478,51 @@ export function ContactSection({ heading = true }: { heading?: boolean }) {
               </SpotlightCard>
             </Tilt>
 
+            {/* Réseaux sociaux configurés — rangée d'icônes cliquables.
+                Masquée tant qu'aucun réseau n'est renseigné (réglages). */}
+            {socials.length > 0 && (
+              <Reveal delay={0.05} y={14}>
+                <div>
+                  <h3 className="label-caps mb-3">{t("contact.followT")}</h3>
+                  <div className="flex flex-wrap gap-2.5">
+                    {socials.map((s, i) => {
+                      const Icon = socialIcon(s.platform);
+                      return (
+                        <a
+                          key={`${s.platform}-${i}`}
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={s.label || s.platform}
+                          title={s.label || s.platform}
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-line text-mute transition-all duration-300 hover:-translate-y-0.5 hover:border-gold hover:text-goldtext"
+                        >
+                          <Icon className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              </Reveal>
+            )}
+
+            {/* WhatsApp : lien réel dès qu'un réseau « whatsapp » est
+                configuré, sinon mention « activation en cours » (repli). */}
             <Reveal delay={0.1} y={18}>
               <div>
                 <p className="text-sm font-medium text-ink">{t("contact.whatsappT")}</p>
-                <p className="text-sm text-mute">{t("contact.whatsappSoon")}</p>
+                {waSocial ? (
+                  <a
+                    href={waSocial.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="link-gold mt-0.5 inline-flex min-h-[44px] items-center text-sm text-mute hover:text-goldtext"
+                  >
+                    {waSocial.label || t("contact.whatsappT")}
+                  </a>
+                ) : (
+                  <p className="text-sm text-mute">{t("contact.whatsappSoon")}</p>
+                )}
               </div>
             </Reveal>
 

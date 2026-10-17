@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowRight, Images } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, ExternalLink, Images, PlayCircle } from "lucide-react";
 import {
   Beam,
   DrawRule,
@@ -10,7 +11,7 @@ import {
 } from "@/components/motion";
 import { Container, GoldButton, PriceTag, Section, SectionHeading } from "@/components/site/kit";
 import { CoverflowCarousel } from "@/components/site/CoverflowCarousel";
-import { SAAS_PRODUCTS, type SaasProduct } from "@/lib/catalog";
+import { SAAS_PRODUCTS, type SaasProduct, type SoftwareLinksRecord } from "@/lib/catalog";
 import { scrollToSection } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
 import { useI18n } from "@/lib/i18n";
@@ -42,6 +43,25 @@ const HOSPITAL_RANGE = "1 – 5\u00A0000\u00A0000\u00A0GNF";
 
 export function SaasSection({ heading = true }: { heading?: boolean }) {
   const { t } = useI18n();
+
+  /* Liens édités dans l'Espace équipe (démo en ligne + vidéo YouTube) —
+   * un seul chargement ; badges « Vidéo » / « Démo » sur les cartes concernées,
+   * en absolu sur le visuel (aucun impact sur la géométrie du carrousel). */
+  const [links, setLinks] = useState<SoftwareLinksRecord | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/software-links", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((json: { ok?: boolean; data?: SoftwareLinksRecord }) => {
+        if (!cancelled && json?.ok && json.data) setLinks(json.data);
+      })
+      .catch(() => {
+        /* silencieux — cartes sans badges */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <Section id="saas" tone="surface">
@@ -99,6 +119,22 @@ export function SaasSection({ heading = true }: { heading?: boolean }) {
                         aria-hidden
                         className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent"
                       />
+                      {links?.[p.slug]?.videoUrl || links?.[p.slug]?.demoUrl ? (
+                        <div className="absolute left-4 top-4 z-10 flex gap-1.5">
+                          {links?.[p.slug]?.videoUrl && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-deep/70 px-2.5 py-1 text-[0.625rem] font-medium uppercase tracking-[0.14em] text-goldtext backdrop-blur-sm">
+                              <PlayCircle size={11} strokeWidth={1.5} aria-hidden />
+                              {t("saas.badgeVideo")}
+                            </span>
+                          )}
+                          {links?.[p.slug]?.demoUrl && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-deep/70 px-2.5 py-1 text-[0.625rem] font-medium uppercase tracking-[0.14em] text-goldtext backdrop-blur-sm">
+                              <ExternalLink size={11} strokeWidth={1.5} aria-hidden />
+                              {t("saas.badgeDemo")}
+                            </span>
+                          )}
+                        </div>
+                      ) : null}
                     </div>
 
                     <div className="flex flex-1 flex-col p-6">

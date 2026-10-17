@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { PostsPanel } from "@/components/admin/PostsPanel";
+import { ProjectsPanel } from "@/components/admin/ProjectsPanel";
+import { SettingsPanel } from "@/components/admin/SettingsPanel";
+import { SoftwareLinksPanel } from "@/components/admin/SoftwareLinksPanel";
 import { DemosPanel } from "@/components/admin/DemosPanel";
 import { PartnersPanel } from "@/components/admin/PartnersPanel";
 import { TestimonialsPanel } from "@/components/admin/TestimonialsPanel";
@@ -70,6 +73,8 @@ interface OverviewData {
 type AdminView = "closed" | "login" | "panel";
 type AdminTab =
   | "flux"
+  | "site"
+  | "logiciels"
   | "journal"
   | "realisations"
   | "demos"
@@ -81,6 +86,8 @@ type AdminTab =
 
 const TABS: { id: AdminTab; label: string }[] = [
   { id: "flux", label: "Flux" },
+  { id: "site", label: "Site & Contact" },
+  { id: "logiciels", label: "Logiciels" },
   { id: "journal", label: "Journal" },
   { id: "realisations", label: "Réalisations" },
   { id: "demos", label: "Démos" },
@@ -102,19 +109,6 @@ const EMAIL_DOT: Record<string, string> = {
   mock: "bg-gold",
   error: "bg-destructive",
 };
-
-interface ProjectAdminRow {
-  id: string;
-  slug: string;
-  title: string;
-  client: string | null;
-  sector: string | null;
-  year: number;
-  summary: string;
-  linkUrl: string | null;
-  isPublished: boolean;
-  sortOrder: number;
-}
 
 interface EmailAdminRow {
   id: string;
@@ -316,236 +310,6 @@ function TabBar({ tab, setTab }: { tab: AdminTab; setTab: (t: AdminTab) => void 
   );
 }
 
-/* ── Onglet Réalisations — CRUD complet (H-08) ──────────────── */
-
-const projectInputCls =
-  "h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm focus:border-gold focus:outline-none";
-
-function ProjectsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
-  const [rows, setRows] = useState<ProjectAdminRow[] | null>(null);
-  const [reload, setReload] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [client, setClient] = useState("");
-  const [sector, setSector] = useState("");
-  const [year, setYear] = useState(String(new Date().getFullYear()));
-  const [summary, setSummary] = useState("");
-  const [publishNow, setPublishNow] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/admin/projects")
-      .then(async (res) => {
-        if (res.status === 401) {
-          onUnauthorized();
-          return;
-        }
-        const json = (await res.json()) as { ok: boolean; data?: ProjectAdminRow[] };
-        if (!cancelled) setRows(json.ok && json.data ? json.data : []);
-      })
-      .catch(() => {
-        if (!cancelled) setRows([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [onUnauthorized, reload]);
-
-  const create = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (busy) return;
-    setFormError(null);
-    if (title.trim().length < 2 || summary.trim().length < 4) {
-      setFormError("Titre (2+ caractères) et résumé (4+ caractères) requis.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const res = await fetch("/api/admin/projects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          client: client.trim() || undefined,
-          sector: sector.trim() || undefined,
-          year: Number(year) || new Date().getFullYear(),
-          summary: summary.trim(),
-          isPublished: publishNow,
-        }),
-      });
-      if (res.status === 401) {
-        onUnauthorized();
-        return;
-      }
-      if (res.status === 201) {
-        setTitle("");
-        setClient("");
-        setSector("");
-        setSummary("");
-        setPublishNow(false);
-        setReload((k) => k + 1);
-      } else {
-        setFormError("Création impossible — vérifiez les champs (année valide requise).");
-      }
-    } catch {
-      setFormError("Erreur réseau. Réessayez.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const patch = async (id: string, body: Record<string, unknown>) => {
-    try {
-      const res = await fetch("/api/admin/projects", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, ...body }),
-      });
-      if (res.status === 401) {
-        onUnauthorized();
-        return;
-      }
-      if (res.ok) setReload((k) => k + 1);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const remove = async (row: ProjectAdminRow) => {
-    if (!window.confirm(`Supprimer définitivement « ${row.title} » ?`)) return;
-    try {
-      const res = await fetch(`/api/admin/projects?id=${encodeURIComponent(row.id)}`, {
-        method: "DELETE",
-      });
-      if (res.status === 401) {
-        onUnauthorized();
-        return;
-      }
-      if (res.ok) setReload((k) => k + 1);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  return (
-    <section aria-labelledby="admin-projects-t">
-      <h2 id="admin-projects-t" className="font-serif text-xl">
-        Réalisations
-      </h2>
-      <p className="mt-1 text-sm text-mute">
-        Les réalisations publiées alimentent la section publique éponyme. Tant qu'aucune n'est
-        publiée, la section reste masquée sur le site (aucun contenu fictif).
-      </p>
-
-      {/* Formulaire de création */}
-      <form
-        onSubmit={create}
-        className="mt-4 grid gap-3 rounded-lg border border-line bg-surface p-4 md:grid-cols-2"
-      >
-        <p className="text-xs uppercase tracking-[0.14em] text-mute md:col-span-2">
-          Nouvelle réalisation
-        </p>
-        <input
-          className={projectInputCls}
-          placeholder="Titre du projet *"
-          aria-label="Titre du projet"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={120}
-        />
-        <input
-          className={projectInputCls}
-          placeholder="Client (optionnel)"
-          aria-label="Client"
-          value={client}
-          onChange={(e) => setClient(e.target.value)}
-          maxLength={120}
-        />
-        <input
-          className={projectInputCls}
-          placeholder="Secteur (optionnel)"
-          aria-label="Secteur"
-          value={sector}
-          onChange={(e) => setSector(e.target.value)}
-          maxLength={60}
-        />
-        <input
-          className={projectInputCls}
-          placeholder="Année"
-          aria-label="Année"
-          inputMode="numeric"
-          value={year}
-          onChange={(e) => setYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
-        />
-        <textarea
-          className="min-h-[72px] w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-gold focus:outline-none md:col-span-2"
-          placeholder="Résumé affiché sur la carte *"
-          aria-label="Résumé"
-          value={summary}
-          onChange={(e) => setSummary(e.target.value)}
-          maxLength={400}
-        />
-        <label className="flex items-center gap-3 text-sm text-mute md:col-span-2">
-          <Switch checked={publishNow} onCheckedChange={setPublishNow} aria-label="Publier immédiatement" />
-          Publier immédiatement
-        </label>
-        {formError && (
-          <p role="alert" className="text-sm text-destructive md:col-span-2">
-            {formError}
-          </p>
-        )}
-        <div className="md:col-span-2">
-          <GoldButton type="submit" disabled={busy} className="min-h-10! px-4! text-xs!">
-            <Plus className="h-4 w-4" strokeWidth={1.25} aria-hidden />
-            Ajouter
-          </GoldButton>
-        </div>
-      </form>
-
-      {/* Liste */}
-      <div className="mt-4 flex flex-col gap-3">
-        {rows === null ? (
-          <Skeleton className="h-24 rounded-lg" />
-        ) : rows.length === 0 ? (
-          <EmptyRow />
-        ) : (
-          rows.map((p) => (
-            <article
-              key={p.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4"
-            >
-              <div className="min-w-0">
-                <p className="font-medium">
-                  {p.title} <span className="text-mute">· {p.year}</span>
-                </p>
-                <p className="mt-0.5 truncate text-xs text-mute">
-                  {[p.client, p.sector, p.slug].filter(Boolean).join(" · ")}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-mute">{p.isPublished ? "Publiée" : "Masquée"}</span>
-                <Switch
-                  checked={p.isPublished}
-                  onCheckedChange={(v) => void patch(p.id, { isPublished: v })}
-                  aria-label={`Publication — ${p.title}`}
-                />
-                <button
-                  type="button"
-                  onClick={() => void remove(p)}
-                  aria-label={`Supprimer — ${p.title}`}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-line text-mute transition-colors hover:border-destructive/60 hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" strokeWidth={1.25} aria-hidden />
-                </button>
-              </div>
-            </article>
-          ))
-        )}
-      </div>
-    </section>
-  );
-}
 
 /* ── Onglet E-mails — journal de l'adaptateur ───────────────── */
 
@@ -1194,6 +958,8 @@ export function AdminOverlay() {
           </>
             )}
             {tab === "journal" && <PostsPanel onUnauthorized={() => goto("login")} />}
+            {tab === "site" && <SettingsPanel onUnauthorized={() => goto("login")} />}
+            {tab === "logiciels" && <SoftwareLinksPanel onUnauthorized={() => goto("login")} />}
             {tab === "realisations" && <ProjectsPanel onUnauthorized={() => goto("login")} />}
             {tab === "demos" && <DemosPanel onUnauthorized={() => goto("login")} />}
             {tab === "partners" && <PartnersPanel onUnauthorized={() => goto("login")} />}

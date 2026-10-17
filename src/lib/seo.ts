@@ -1335,6 +1335,7 @@ export function articleJsonLd(post: {
   slug: string;
   publishedAt: string | null;
   updatedAt?: string | null;
+  keywords?: string[];
 }): Json {
   return {
     "@context": "https://schema.org",
@@ -1344,6 +1345,9 @@ export function articleJsonLd(post: {
     url: `${SITE_URL}/blog/${post.slug}`,
     ...(post.publishedAt ? { datePublished: post.publishedAt } : {}),
     ...(post.updatedAt ? { dateModified: post.updatedAt } : {}),
+    ...(post.keywords && post.keywords.length > 0
+      ? { keywords: post.keywords.join(", ") }
+      : {}),
     inLanguage: "fr",
     author: { "@id": ORG_ID },
     publisher: { "@id": ORG_ID },

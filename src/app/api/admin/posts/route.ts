@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/admin-auth";
 import { parseLocaleJson } from "@/lib/locale-json";
+import { parseAds, stringifyAds, type PostAdInput } from "@/lib/post-ads";
 
 /* Journal (blog) — rédaction complète pour l'Espace équipe (cahier des charges §26).
  * Format de stockage identique à scripts/seed-content.ts :
@@ -58,6 +59,56 @@ const slugField = z.string().trim().regex(SLUG_RE, "bad_slug").min(3).max(80);
 const readingMinField = z.coerce.number().int().min(1).max(60);
 const categoryField = z.string().trim().min(2).max(40);
 
+/* ── SEO par article (DASH-3) — chaîne vide = retour au repli automatique ── */
+const metaTitleField = z
+  .string()
+  .trim()
+  .max(200, "meta_title_too_long")
+  .transform((v) => (v.length > 0 ? v : null));
+const metaDescriptionField = z
+  .string()
+  .trim()
+  .max(400, "meta_description_too_long")
+  .transform((v) => (v.length > 0 ? v : null));
+const keywordsField = z
+  .string()
+  .trim()
+  .max(600, "keywords_too_long")
+  .transform((v) => (v.length > 0 ? v : null));
+
+/* ── Espaces publicitaires (DASH-3) — max 10, linkUrl https si présente ── */
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .transform((v) => (v.length > 0 ? v : undefined));
+
+const adSchema = z.object({
+  id: optionalText(64),
+  title: optionalText(120),
+  text: optionalText(600),
+  /** Interne (/uploads/…) ou https — jamais http:// en clair. */
+  imageUrl: optionalText(600).refine(
+    (v) => v === undefined || v.startsWith("/") || /^https:\/\//.test(v),
+    "bad_image_url"
+  ),
+  /** Destination au clic : https uniquement (sécurité, contenu mixte). */
+  linkUrl: optionalText(600).refine(
+    (v) => v === undefined || /^https:\/\//.test(v),
+    "bad_link_url"
+  ),
+  ctaLabel: optionalText(60),
+  position: z.coerce
+    .number()
+    .int("bad_position")
+    .min(0, "bad_position")
+    .max(999, "bad_position")
+    .default(0),
+  isActive: z.boolean().default(true),
+});
+const adsField = z.array(adSchema).max(10, "too_many_ads");
+
 const createSchema = z.object({
   slug: slugField,
   title: titleMap,
@@ -67,6 +118,10 @@ const createSchema = z.object({
   readingMin: readingMinField.optional(),
   isPublished: z.boolean().default(false),
   publishedAt: isoDate.optional(),
+  metaTitle: metaTitleField.optional(),
+  metaDescription: metaDescriptionField.optional(),
+  keywords: keywordsField.optional(),
+  ads: adsField.optional(),
 });
 
 const updateSchema = z.object({
@@ -79,6 +134,10 @@ const updateSchema = z.object({
   readingMin: readingMinField.optional(),
   isPublished: z.boolean().optional(),
   publishedAt: isoDate.optional(),
+  metaTitle: metaTitleField.optional(),
+  metaDescription: metaDescriptionField.optional(),
+  keywords: keywordsField.optional(),
+  ads: adsField.optional(),
 });
 
 /* PATCH (publication) — contrat historique conservé à l'identique. */
@@ -102,6 +161,22 @@ function toStoreJson(map: Record<string, string | undefined>): string {
 function estimateReadingMin(frBody: string): number {
   const words = frBody.trim().split(/\s+/).filter(Boolean).length;
   return Math.min(60, Math.max(1, Math.ceil(words / 200)));
+}
+
+/** Colonnes SEO + adsJson pour create/update (DASH-3). Les champs non fournis
+ * ne touchent pas à la base ; une chaîne vide remet le repli automatique (null). */
+function seoColumns(d: {
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  keywords?: string | null;
+  ads?: PostAdInput[];
+}): Record<string, unknown> {
+  const data: Record<string, unknown> = {};
+  if (d.metaTitle !== undefined) data.metaTitle = d.metaTitle;
+  if (d.metaDescription !== undefined) data.metaDescription = d.metaDescription;
+  if (d.keywords !== undefined) data.keywords = d.keywords;
+  if (d.ads !== undefined) data.adsJson = stringifyAds(d.ads);
+  return data;
 }
 
 function unauthorized() {
@@ -146,6 +221,10 @@ export async function GET(req: Request) {
           isPublished: p.isPublished,
           publishedAt: p.publishedAt?.toISOString() ?? null,
           createdAt: p.createdAt.toISOString(),
+          metaTitle: p.metaTitle,
+          metaDescription: p.metaDescription,
+          keywords: p.keywords,
+          ads: parseAds(p.adsJson),
         },
       });
     }
@@ -161,6 +240,10 @@ export async function GET(req: Request) {
         isPublished: p.isPublished,
         publishedAt: p.publishedAt?.toISOString() ?? null,
         createdAt: p.createdAt.toISOString(),
+        metaTitle: p.metaTitle,
+        metaDescription: p.metaDescription,
+        keywords: p.keywords,
+        ads: parseAds(p.adsJson),
       })),
     });
   } catch (e) {
@@ -202,6 +285,7 @@ export async function POST(req: Request) {
         readingMin: d.readingMin ?? estimateReadingMin(d.body.fr),
         isPublished: d.isPublished,
         publishedAt: d.publishedAt ? new Date(d.publishedAt) : d.isPublished ? new Date() : null,
+        ...seoColumns(d),
       },
     });
     return NextResponse.json({ ok: true, data: { id: post.id } }, { status: 201 });
@@ -261,6 +345,7 @@ export async function PUT(req: Request) {
       }
     }
     if (d.publishedAt !== undefined) data.publishedAt = new Date(d.publishedAt);
+    Object.assign(data, seoColumns(d));
     const post = await db.blogPost.update({ where: { id: d.id }, data });
     return NextResponse.json({ ok: true, data: { id: post.id } });
   } catch (e) {

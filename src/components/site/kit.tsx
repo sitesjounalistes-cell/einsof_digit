@@ -108,6 +108,8 @@ export function GoldButton({
   magnetic = false,
   disabled = false,
   ariaLabel,
+  /** href externe : <a> natif dans un nouvel onglet (au lieu de next/link) */
+  external = false,
 }: {
   children: ReactNode;
   variant?: ButtonVariant;
@@ -118,6 +120,7 @@ export function GoldButton({
   magnetic?: boolean;
   disabled?: boolean;
   ariaLabel?: string;
+  external?: boolean;
 }) {
   const base =
     "relative inline-flex items-center justify-center gap-2 rounded font-semibold uppercase tracking-[0.12em] text-[0.8125rem] leading-none min-h-[44px] px-6 py-3.5 transition-all duration-300 disabled:opacity-50 disabled:pointer-events-none cursor-pointer select-none";
@@ -147,10 +150,24 @@ export function GoldButton({
   const cls = `${base} ${styles[variant]} ${className}`;
 
   const comp = href ? (
-    /* next/link : navigation client (SPA) au lieu d'un <a> natif qui rechargerait la page */
-    <Link href={href} onClick={onClick} className={cls} aria-label={ariaLabel}>
-      {inner}
-    </Link>
+    external ? (
+      /* Lien externe (démo logicielle, document…) : <a> natif, nouvel onglet. */
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onClick}
+        className={cls}
+        aria-label={ariaLabel}
+      >
+        {inner}
+      </a>
+    ) : (
+      /* next/link : navigation client (SPA) au lieu d'un <a> natif qui rechargerait la page */
+      <Link href={href} onClick={onClick} className={cls} aria-label={ariaLabel}>
+        {inner}
+      </Link>
+    )
   ) : (
     <button type={type} onClick={onClick} disabled={disabled} className={cls} aria-label={ariaLabel}>
       {inner}

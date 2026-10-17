@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -28,6 +28,7 @@ export function PageHero({
   chips,
   image,
   parent,
+  action,
 }: {
   label: string;
   title: string;
@@ -39,6 +40,8 @@ export function PageHero({
   image?: string;
   /** page parente pour le fil d'Ariane (ex. Services → page de détail) */
   parent?: { label: string; href: string };
+  /** action optionnelle sous le texte (ex. bouton « Ouvrir le logiciel ») */
+  action?: ReactNode;
 }) {
   const { t } = useI18n();
   const { lightMode } = useMotionMode();
@@ -154,6 +157,12 @@ export function PageHero({
                 </li>
               ))}
             </ul>
+          </Reveal>
+        )}
+
+        {action && (
+          <Reveal delay={0.55} y={14} duration={0.7}>
+            <div className="mt-8 flex flex-wrap items-center gap-4">{action}</div>
           </Reveal>
         )}
       </Container>

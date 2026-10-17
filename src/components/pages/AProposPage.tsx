@@ -12,6 +12,7 @@ import { CtaBanner, PageCrossLinks } from "@/components/site/PageBlocks";
 import { Container, Section, SectionHeading } from "@/components/site/kit";
 import { AboutSection } from "@/components/site/AboutSection";
 import { DocumentsSection } from "@/components/site/DocumentsSection";
+import { ManagerMessageSection } from "@/components/site/ManagerMessageSection";
 import { StatsSection } from "@/components/site/StatsSection";
 import { Beam, SpotlightCard, Stagger, StaggerItem } from "@/components/motion";
 import { useLocalized } from "@/lib/page-content";
@@ -27,7 +28,8 @@ const WHY_ICONS: Record<WhyIcon, LucideIcon> = {
 /**
  * Page /a-propos (architecture multi-pages) :
  * hero « À propos », chiffres clés animés, récit & valeurs existants,
- * bloc « pourquoi EINSOF », documents téléchargeables, CTA final.
+ * bloc « pourquoi EINSOF », mot du gérant (réglages éditables),
+ * documents téléchargeables, CTA final.
  */
 export function AProposPage() {
   const c = useLocalized(APROPOS);
@@ -86,6 +88,10 @@ export function AProposPage() {
           </Stagger>
         </Container>
       </Section>
+
+      {/* Mot du gérant — réglages Site & Contact (toujours affiché :
+          l'API renvoie le texte officiel par défaut sinon) */}
+      <ManagerMessageSection />
 
       {/* Documents de présentation téléchargeables (API — se masque si vide) */}
       <DocumentsSection />

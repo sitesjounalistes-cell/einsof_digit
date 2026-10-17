@@ -4,48 +4,59 @@ import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/admin-auth";
 import { parseLocaleJson } from "@/lib/locale-json";
 
-/** Réalisations : CRUD complet pour l'équipe (H-08 — données réelles du client). */
+/**
+ * Réalisations — CRUD complet pour l'Espace équipe (H-08 — données réelles du client).
+ *
+ * Colonnes localisées (title, summary, description) : JSON {"fr":…,"en":…} en base
+ * (repli fr — spec §20.8). L'API accepte du texte brut et met à jour la langue fr
+ * SANS écraser les autres langues existantes (merge). Le slug est auto-dérivé du
+ * titre (slugify + unicité garantie en base).
+ */
 
-const localeField = z
+/* ── Schémas zod ─────────────────────────────────────────────── */
+
+const titleField = z.string().trim().min(2).max(200);
+const summaryField = z.string().trim().min(4).max(4000);
+const descriptionField = z.string().trim().max(8000);
+/** URL interne (/uploads/…, /images/…) ou absolue (https://…). */
+const imageUrlField = z
   .string()
   .trim()
-  .min(2)
-  .max(4000)
-  .transform((v) => JSON.stringify({ fr: v }));
+  .max(500)
+  .refine((v) => v === "" || v.startsWith("/") || /^https?:\/\//i.test(v), "bad_image_url");
+
+const slugField = z.string().trim().max(80);
 
 const createSchema = z.object({
-  title: localeField,
+  title: titleField,
   client: z.string().trim().max(120).optional(),
   sector: z.string().trim().max(60).optional(),
   year: z.coerce.number().int().min(2015).max(2100),
-  summary: localeField,
-  description: z
-    .string()
-    .trim()
-    .max(8000)
-    .optional()
-    .transform((v) => (v ? JSON.stringify({ fr: v }) : undefined)),
+  summary: summaryField,
+  description: descriptionField.optional(),
   linkUrl: z.string().url().max(300).optional().or(z.literal("")),
+  imageUrl: imageUrlField.optional(),
+  slug: slugField.optional(),
   isPublished: z.boolean().default(false),
+  sortOrder: z.coerce.number().int().min(0).max(999).optional(),
 });
 
 const patchSchema = z.object({
-  id: z.string().uuid(),
-  title: localeField.optional(),
+  id: z.string().min(10),
+  title: titleField.optional(),
   client: z.string().trim().max(120).nullable().optional(),
   sector: z.string().trim().max(60).nullable().optional(),
   year: z.coerce.number().int().min(2015).max(2100).optional(),
-  summary: localeField.optional(),
-  description: z
-    .string()
-    .trim()
-    .max(8000)
-    .optional()
-    .transform((v) => (v ? JSON.stringify({ fr: v }) : undefined)),
+  summary: summaryField.optional(),
+  description: descriptionField.nullable().optional(),
   linkUrl: z.string().url().max(300).nullable().optional().or(z.literal("")),
+  imageUrl: imageUrlField.nullable().optional(),
+  slug: slugField.nullable().optional(),
   isPublished: z.boolean().optional(),
   sortOrder: z.coerce.number().int().min(0).max(999).optional(),
 });
+
+/* ── Helpers ─────────────────────────────────────────────────── */
 
 function slugify(s: string): string {
   return (
@@ -59,10 +70,34 @@ function slugify(s: string): string {
   );
 }
 
+/** Slug unique en base : base, base-2, base-3… (id exclu du contrôle). */
+async function uniqueSlug(base: string, excludeId?: string): Promise<string> {
+  const root = slugify(base);
+  let candidate = root;
+  let n = 2;
+  for (;;) {
+    const clash = await db.project.findUnique({ where: { slug: candidate } });
+    if (!clash || clash.id === excludeId) return candidate;
+    candidate = `${root}-${n}`;
+    n += 1;
+  }
+}
+
 function clean(v?: string | null): string | null {
   const s = (v ?? "").trim();
   return s.length ? s : null;
 }
+
+/** Fusionne la valeur fr dans le JSON multi-langues existant (ne perd rien). */
+function mergeFr(existingRaw: string | null | undefined, frValue: string): string {
+  const map = parseLocaleJson(existingRaw);
+  map.fr = frValue;
+  return JSON.stringify(map);
+}
+
+/** Premier lancement de slug unique refusé en création : -2, -3… automatique. */
+
+/* ── GET : liste complète (publiés + brouillons) ─────────────── */
 
 export async function GET() {
   if (!(await isAdmin())) {
@@ -70,7 +105,7 @@ export async function GET() {
   }
   try {
     const rows = await db.project.findMany({
-      orderBy: [{ sortOrder: "asc" }, { year: "desc" }],
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     });
     return NextResponse.json({
       ok: true,
@@ -82,16 +117,20 @@ export async function GET() {
         sector: p.sector,
         year: p.year,
         summary: parseLocaleJson(p.summary).fr ?? "",
+        description: parseLocaleJson(p.description).fr ?? null,
         linkUrl: p.linkUrl,
+        imageUrl: p.imageUrl,
         isPublished: p.isPublished,
         sortOrder: p.sortOrder,
       })),
     });
   } catch (e) {
-    console.error("[admin/projects]", e);
+    console.error("[admin/projects GET]", e);
     return NextResponse.json({ ok: false, error: { code: "server" } }, { status: 500 });
   }
 }
+
+/* ── POST : création ─────────────────────────────────────────── */
 
 export async function POST(req: Request) {
   if (!(await isAdmin())) {
@@ -112,26 +151,33 @@ export async function POST(req: Request) {
   }
   try {
     const d = parsed.data;
-    const titleFr = JSON.parse(d.title).fr as string;
+    const slug = await uniqueSlug(d.slug ? d.slug : d.title);
     const project = await db.project.create({
       data: {
-        slug: `${slugify(titleFr)}-${d.year}`,
-        title: d.title,
+        slug,
+        title: JSON.stringify({ fr: d.title }),
         client: clean(d.client),
         sector: clean(d.sector),
         year: d.year,
-        summary: d.summary,
-        description: d.description ?? null,
-        linkUrl: clean(d.linkUrl),
+        summary: JSON.stringify({ fr: d.summary }),
+        description: d.description ? JSON.stringify({ fr: d.description }) : null,
+        linkUrl: clean(d.linkUrl ?? null),
+        imageUrl: clean(d.imageUrl ?? null),
         isPublished: d.isPublished,
+        sortOrder: d.sortOrder ?? 0,
       },
     });
-    return NextResponse.json({ ok: true, data: { id: project.id } }, { status: 201 });
+    return NextResponse.json(
+      { ok: true, data: { id: project.id, slug: project.slug } },
+      { status: 201 }
+    );
   } catch (e) {
     console.error("[admin/projects POST]", e);
     return NextResponse.json({ ok: false, error: { code: "server" } }, { status: 500 });
   }
 }
+
+/* ── PATCH : édition de tous les champs par id ───────────────── */
 
 export async function PATCH(req: Request) {
   if (!(await isAdmin())) {
@@ -145,35 +191,65 @@ export async function PATCH(req: Request) {
   }
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: { code: "validation" } }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: { code: "validation", fields: parsed.error.flatten().fieldErrors } },
+      { status: 400 }
+    );
   }
+  const { id, title, summary, description, client, sector, linkUrl, imageUrl, slug, ...rest } =
+    parsed.data;
   try {
-    const { id, linkUrl, ...rest } = parsed.data;
-    const data: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(rest)) {
-      if (v !== undefined) data[k] = k === "client" || k === "sector" ? clean(v as string) : v;
+    const existing = await db.project.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ ok: false, error: { code: "not_found" } }, { status: 404 });
     }
+
+    const data: Record<string, unknown> = {};
+    // Champs localisés : merge de la langue fr, les autres langues sont conservées.
+    if (title !== undefined) data.title = mergeFr(existing.title, title);
+    if (summary !== undefined) data.summary = mergeFr(existing.summary, summary);
+    if (description !== undefined) {
+      data.description =
+        description === null || description === "" ? null : mergeFr(existing.description, description);
+    }
+    if (client !== undefined) data.client = clean(client);
+    if (sector !== undefined) data.sector = clean(sector);
     if (linkUrl !== undefined) data.linkUrl = clean(linkUrl);
+    if (imageUrl !== undefined) data.imageUrl = clean(imageUrl);
+    if (slug !== undefined && slug !== null && slug.trim() !== "") {
+      const next = slugify(slug);
+      if (next !== existing.slug) data.slug = await uniqueSlug(next, id);
+    }
+    for (const [k, v] of Object.entries(rest)) {
+      if (v !== undefined) data[k] = v;
+    }
+
     const project = await db.project.update({ where: { id }, data });
-    return NextResponse.json({ ok: true, data: { id: project.id } });
+    return NextResponse.json({ ok: true, data: { id: project.id, slug: project.slug } });
   } catch (e) {
     console.error("[admin/projects PATCH]", e);
     return NextResponse.json({ ok: false, error: { code: "server" } }, { status: 500 });
   }
 }
 
+/* ── DELETE : suppression par id (?id=…) ─────────────────────── */
+
 export async function DELETE(req: Request) {
   if (!(await isAdmin())) {
     return NextResponse.json({ ok: false, error: { code: "unauthorized" } }, { status: 401 });
   }
   const id = new URL(req.url).searchParams.get("id");
-  if (!id) {
+  if (!id || id.length < 10) {
     return NextResponse.json({ ok: false, error: { code: "validation" } }, { status: 400 });
   }
   try {
     await db.project.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (e) {
+    const code = (e as { code?: string }).code;
+    if (code === "P2025") {
+      return NextResponse.json({ ok: false, error: { code: "not_found" } }, { status: 404 });
+    }
     console.error("[admin/projects DELETE]", e);
     return NextResponse.json({ ok: false, error: { code: "server" } }, { status: 500 });
   }

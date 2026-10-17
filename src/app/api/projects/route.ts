@@ -7,13 +7,15 @@ export const dynamic = "force-dynamic";
 /**
  * Réalisations publiées (spécification §23 : /realisations).
  * Règle §20.4 : la section reste masquée tant que rien n'est publié.
+ * JSON simplifié : title/summary/description en LocaleMap (repli fr),
+ * imageUrl pour l'aperçu visuel, linkUrl pour ouvrir le site livré.
  */
 export async function GET() {
   try {
     const rows = await db.project.findMany({
       where: { isPublished: true },
       orderBy: [{ sortOrder: "asc" }, { year: "desc" }],
-      take: 12,
+      take: 24,
     });
     return NextResponse.json({
       ok: true,
@@ -25,8 +27,9 @@ export async function GET() {
         sector: p.sector,
         year: p.year,
         summary: parseLocaleJson(p.summary),
-        description: parseLocaleJson(p.description ?? null),
+        description: parseLocaleJson(p.description),
         linkUrl: p.linkUrl,
+        imageUrl: p.imageUrl,
       })),
     });
   } catch (e) {

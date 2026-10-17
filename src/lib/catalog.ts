@@ -336,3 +336,9 @@ export const findSaas = (slug: string) =>
   SAAS_PRODUCTS.find((s) => s.slug === slug);
 
 export const SAAS_SLUGS = SAAS_PRODUCTS.map((s) => s.slug);
+
+/** Liens éditables par logiciel (table SoftwareLink) — démo en ligne + vidéo YouTube. */
+export type SoftwareLinksRecord = Record<
+  string,
+  { demoUrl: string | null; videoUrl: string | null }
+>;

@@ -132,6 +132,16 @@ model BlogPost {
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  /* ── SEO par article (dashboard) ── */
+  /// Title SEO dédié (repli : title)
+  metaTitle        String?
+  /// Meta description dédiée (repli : excerpt)
+  metaDescription  String?
+  /// Mots-clés séparés par des virgules
+  keywords         String?
+  /* ── Espaces publicitaires insérés dans le contenu ── */
+  /// [{"id":"…","title":"…","text":"…","imageUrl":"…","linkUrl":"…","ctaLabel":"…","position":2,"isActive":true}]
+  adsJson     String    @default("[]")
 }
 
 /* ── Réalisations — infrastructure prête, section masquée tant que vide ── */
@@ -147,10 +157,43 @@ model Project {
   summary     String
   description String?
   linkUrl     String?
+  /// URL de la capture d'écran (/uploads/… ou /images/works/…)
+  imageUrl    String?
   isPublished Boolean  @default(false)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+/* ── Réglages éditables du site — page contact, mot du gérant (singleton) ── */
+
+model SiteSettings {
+  id         String   @id @default("singleton")
+  /// ["+224 6…", "…"] — JSON array
+  phonesJson  String  @default("[]")
+  /// ["contact@…", "…"] — JSON array
+  emailsJson  String  @default("[]")
+  /// [{"platform":"facebook","label":"Facebook","url":"https://…"}] — JSON array
+  socialsJson String  @default("[]")
+  /// Photo du gérant (URL /uploads/… ou /images/…)
+  managerPhotoUrl  String?
+  managerPhotoAlt  String?
+  /// {"fr":"…","en":"…"} — mot du gérant (2 paragraphes \n\n)
+  managerMessageJson String?
+  managerName   String?
+  managerRole   String?
+  updatedAt  DateTime @updatedAt
+}
+
+/* ── Liens par logiciel SaaS — démo en ligne + vidéo de présentation (YouTube) ── */
+
+model SoftwareLink {
+  slug      String   @id
+  /// URL de la démo / instance du logiciel (bouton « Ouvrir le logiciel »)
+  demoUrl   String?
+  /// Lien YouTube de la vidéo de présentation (watch, youtu.be, shorts)
+  videoUrl  String?
+  updatedAt DateTime @updatedAt
 }
 
 /* ── Confiance — partenaires, témoignages, documents (spec §23/§24) ──

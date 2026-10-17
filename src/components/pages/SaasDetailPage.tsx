@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowUpRight,
   Calendar,
   ChevronDown,
   CirclePlay,
   Clock3,
+  ExternalLink,
   Sparkles,
 } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
@@ -36,18 +37,22 @@ import { useI18n } from "@/lib/i18n";
 import { useLocalized } from "@/lib/page-content";
 import { openForm } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
-import { findSaas } from "@/lib/catalog";
+import { findSaas, type SoftwareLinksRecord } from "@/lib/catalog";
+import { parseYouTubeId, youTubeEmbedUrl } from "@/lib/youtube";
 import { SAAS_DETAILS, SAAS_DETAIL_SLUGS, type SaasSlug } from "@/lib/pages-content/saas-details";
 import { LOGICIELS } from "@/lib/pages-content/logiciels";
 import { GoldIcon, IconFeature, featureIconFor } from "@/components/site/icons";
 
 /**
  * Page de détail d'un logiciel /logiciels/[slug] :
- * bandeau (visuel produit) > vidéo de présentation (~3/4 de largeur) >
+ * bandeau (visuel produit, + bouton « Ouvrir le logiciel » si une démo
+ * en ligne est configurée) > vidéo de présentation (~3/4 de largeur,
+ * intégrée depuis l'Espace équipe sinon affiche « bientôt ») >
  * présentation > caractéristiques > pour qui > tarif (catalogue §19) >
- * CTA démo + essai > mini-FAQ > liens vers les autres logiciels.
- * La vidéo (videoUrl) sera remplie dans le contenu quand elle sera
- * prête : iframe YouTube/Vimeo ou fichier MP4, même emplacement.
+ * CTA démo + essai (+ ouverture de la démo) > mini-FAQ > liens vers les
+ * autres logiciels.
+ * Vidéo et démo proviennent de /api/software-links (table SoftwareLink,
+ * édition dans l'Espace équipe) — sans lien configuré, rendu inchangé.
  */
 export function SaasDetailPage({ slug }: { slug: SaasSlug }) {
   const { t, lang } = useI18n();
@@ -56,6 +61,27 @@ export function SaasDetailPage({ slug }: { slug: SaasSlug }) {
   const nameFor = (other: SaasSlug) => (SAAS_DETAILS[lang] ?? SAAS_DETAILS.fr)[other].name;
   const saas = findSaas(slug);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  /* Liens édités dans l'Espace équipe (démo en ligne + vidéo YouTube) —
+   * chargés une seule fois ; en cas d'échec, rendu inchangé (repli statique). */
+  const [links, setLinks] = useState<SoftwareLinksRecord | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/software-links", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((json: { ok?: boolean; data?: SoftwareLinksRecord }) => {
+        if (!cancelled && json?.ok && json.data) setLinks(json.data);
+      })
+      .catch(() => {
+        /* silencieux — la page reste identique sans liens configurés */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const link = links?.[slug] ?? null;
+  const demoUrl = link?.demoUrl ?? null;
+  const dbVideoId = link?.videoUrl ? parseYouTubeId(link.videoUrl) : null;
 
   const priceProps = {
     fromLabel: t("pricing.fromLabel"),
@@ -86,6 +112,20 @@ export function SaasDetailPage({ slug }: { slug: SaasSlug }) {
         chips={d.hero.chips}
         image={d.image}
         parent={{ label: t("nav.logiciels"), href: "/logiciels" }}
+        action={
+          demoUrl ? (
+            <GoldButton
+              href={demoUrl}
+              external
+              magnetic
+              onClick={() => trackCta("saas-detail", `${slug}-open-software`)}
+              ariaLabel={`${t("saas.openSoftware")} — ${d.name}`}
+            >
+              <ExternalLink size={15} strokeWidth={1.25} aria-hidden />
+              {t("saas.openSoftware")}
+            </GoldButton>
+          ) : undefined
+        }
       />
 
       {/* ── Vidéo de présentation (≈ 3/4 de la largeur) ─────────── */}
@@ -99,8 +139,22 @@ export function SaasDetailPage({ slug }: { slug: SaasSlug }) {
           <Reveal variant="scale" duration={0.9}>
             <div className="mx-auto w-full lg:w-3/4">
               <Beam always className="rounded-xl">
-                <div className="group relative aspect-video overflow-hidden rounded-xl border border-line bg-deep">
-                  {embedUrl ? (
+                <div
+                  className={`group relative aspect-video overflow-hidden rounded-xl border bg-deep ${
+                    dbVideoId ? "border-gold/30" : "border-line"
+                  }`}
+                >
+                  {dbVideoId ? (
+                    /* Vidéo configurée dans l'Espace équipe — lecteur YouTube sans cookies */
+                    <iframe
+                      src={youTubeEmbedUrl(dbVideoId)}
+                      title={`Vidéo de présentation — ${d.name}`}
+                      className="absolute inset-0 h-full w-full"
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : embedUrl ? (
                     <iframe
                       src={embedUrl}
                       title={`${d.name} — ${d.video.label}`}
@@ -150,7 +204,7 @@ export function SaasDetailPage({ slug }: { slug: SaasSlug }) {
                   )}
                 </div>
               </Beam>
-              {!d.videoUrl && (
+              {!d.videoUrl && !dbVideoId && (
                 <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-mute">
                   {d.video.soonNote}
                 </p>
@@ -308,6 +362,17 @@ export function SaasDetailPage({ slug }: { slug: SaasSlug }) {
                 <Calendar size={15} strokeWidth={1.25} aria-hidden />
                 {d.cta.demoLabel}
               </GoldButton>
+              {demoUrl && (
+                <GoldButton
+                  href={demoUrl}
+                  external
+                  onClick={() => trackCta("saas-detail", `${slug}-open-software-cta`)}
+                  ariaLabel={`${t("saas.openSoftware")} — ${d.name}`}
+                >
+                  <ExternalLink size={15} strokeWidth={1.25} aria-hidden />
+                  {t("saas.openSoftware")}
+                </GoldButton>
+              )}
               <GoldButton
                 variant="outline"
                 onClick={() => {
