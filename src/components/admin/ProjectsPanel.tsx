@@ -8,22 +8,35 @@ import {
   type FormEvent,
 } from "react";
 import Image from "next/image";
+import { toast } from "sonner";
 import {
   ArrowDown,
   ArrowUp,
+  Check,
+  ChevronDown,
+  FolderOpen,
   ImagePlus,
   Loader2,
   Pencil,
   Plus,
   Trash2,
+  X,
 } from "lucide-react";
 import { GoldButton } from "@/components/site/kit";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /* ── Réalisations — gestion complète (création, édition dépliable de TOUS les
- * champs, upload d'image, publication, réordonnancement, suppression).
+ * champs, upload d'image, catégorie via gestionnaire dédié, publication,
+ * réordonnancement, suppression).
  * Panneau autonome de l'Espace équipe ; câblage : <ProjectsPanel onUnauthorized={() => …} />
  * L'image alimente l'aperçu du carrousel public (imageUrl ?? capture statique). ── */
 
@@ -38,8 +51,18 @@ interface ProjectRow {
   description: string | null;
   linkUrl: string | null;
   imageUrl: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
   isPublished: boolean;
   sortOrder: number;
+}
+
+interface CategoryRow {
+  id: string;
+  slug: string;
+  name: string;
+  sortOrder: number;
+  projectCount: number;
 }
 
 interface FormState {
@@ -53,6 +76,7 @@ interface FormState {
   imageUrl: string;
   slug: string;
   sortOrder: string;
+  categoryId: string;
   isPublished: boolean;
 }
 
@@ -79,6 +103,7 @@ const emptyForm = (nextSort: number): FormState => ({
   imageUrl: "",
   slug: "",
   sortOrder: String(nextSort),
+  categoryId: "",
   isPublished: false,
 });
 
@@ -93,6 +118,7 @@ const formFromRow = (r: ProjectRow): FormState => ({
   imageUrl: r.imageUrl ?? "",
   slug: r.slug,
   sortOrder: String(r.sortOrder),
+  categoryId: r.categoryId ?? "",
   isPublished: r.isPublished,
 });
 
@@ -141,6 +167,7 @@ function payloadFrom(f: FormState): Record<string, unknown> {
     description: f.description.trim(),
     linkUrl: f.linkUrl.trim(),
     imageUrl: f.imageUrl.trim(),
+    categoryId: f.categoryId.trim(),
     isPublished: f.isPublished,
     sortOrder: f.sortOrder.trim() === "" ? 0 : Number(f.sortOrder),
   };
@@ -238,6 +265,7 @@ function ProjectForm({
   initial,
   busy,
   error,
+  categories,
   onSubmit,
   onCancel,
   onUnauthorized,
@@ -246,6 +274,7 @@ function ProjectForm({
   initial: FormState;
   busy: boolean;
   error: string | null;
+  categories: CategoryRow[];
   onSubmit: (values: FormState) => void;
   onCancel: () => void;
   onUnauthorized: () => void;
@@ -373,6 +402,35 @@ function ProjectForm({
           placeholder="Ex : Logistique & transit"
         />
       </label>
+      <label className="grid gap-1.5">
+        <span className={labelCls}>Catégorie (optionnelle)</span>
+        <Select
+          value={form.categoryId === "" ? "__none__" : form.categoryId}
+          onValueChange={(v) =>
+            setValues((f) => ({ ...f, categoryId: v === "__none__" ? "" : v }))
+          }
+        >
+          <SelectTrigger
+            aria-label="Catégorie de la réalisation"
+            className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm focus:border-gold focus:outline-none data-[placeholder]:text-ink"
+          >
+            <SelectValue placeholder="— Aucune —" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">— Aucune —</SelectItem>
+            {categories.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {categories.length === 0 && (
+          <span className="text-xs text-mute">
+            Aucune catégorie — créez-en dans le gestionnaire ci-dessus.
+          </span>
+        )}
+      </label>
       <label className="grid gap-1.5 md:col-span-2">
         <span className={labelCls}>Résumé affiché sur la carte *</span>
         <textarea
@@ -481,6 +539,317 @@ function ProjectForm({
   );
 }
 
+/* ── Gestionnaire de catégories — repliable en haut du panel ── */
+
+const catInputCls =
+  "h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm focus:border-gold focus:outline-none";
+
+function CategoryManager({
+  categories,
+  onUnauthorized,
+  onChanged,
+}: {
+  categories: CategoryRow[];
+  onUnauthorized: () => void;
+  /** Appelé après toute écriture réussie (rechargement catégories + projets). */
+  onChanged: (message?: string) => void;
+}) {
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  const create = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const nameFr = name.trim();
+    if (nameFr.length < 2) {
+      setError("Le nom de la catégorie doit contenir au moins 2 caractères.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/portfolio-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nameFr }),
+      });
+      if (res.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      if (res.ok) {
+        setName("");
+        onChanged(`Catégorie « ${nameFr} » créée.`);
+      } else {
+        setError("Création impossible — vérifiez le nom (2 à 80 caractères).");
+      }
+    } catch {
+      setError("Erreur réseau. Réessayez.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const patchCat = async (id: string, body: Record<string, unknown>): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/admin/portfolio-categories", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...body }),
+      });
+      if (res.status === 401) {
+        onUnauthorized();
+        return false;
+      }
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+
+  const submitRename = async (cat: CategoryRow) => {
+    const nameFr = renameValue.trim();
+    if (nameFr.length < 2 || nameFr.length > 80) {
+      setError("Le nom de la catégorie doit contenir 2 à 80 caractères.");
+      return;
+    }
+    setBusyId(cat.id);
+    setError(null);
+    const ok = await patchCat(cat.id, { nameFr });
+    if (ok) {
+      setRenamingId(null);
+      onChanged("Catégorie renommée.");
+    } else {
+      setError("Renommage impossible. Réessayez.");
+    }
+    setBusyId(null);
+  };
+
+  const move = async (cat: CategoryRow, dir: -1 | 1) => {
+    if (busyId) return;
+    const idx = categories.findIndex((c) => c.id === cat.id);
+    const other = categories[idx + dir];
+    if (idx < 0 || !other) return;
+    setBusyId(cat.id);
+    setError(null);
+    let catTarget = other.sortOrder;
+    let otherTarget = cat.sortOrder;
+    if (catTarget === otherTarget) {
+      if (dir === -1) {
+        if (other.sortOrder === 0) {
+          catTarget = 0;
+          otherTarget = 1;
+        } else {
+          catTarget = other.sortOrder - 1;
+          otherTarget = other.sortOrder;
+        }
+      } else {
+        catTarget = cat.sortOrder + 1;
+        otherTarget = cat.sortOrder;
+      }
+    }
+    const first = await patchCat(cat.id, { sortOrder: catTarget });
+    const second = first ? await patchCat(other.id, { sortOrder: otherTarget }) : false;
+    if (first && second) {
+      onChanged();
+    } else if (first) {
+      onChanged("Ordre partiellement mis à jour — rechargez et réessayez.");
+    } else {
+      setError("Réordonnancement impossible. Réessayez.");
+    }
+    setBusyId(null);
+  };
+
+  const remove = async (cat: CategoryRow) => {
+    if (
+      !window.confirm(
+        cat.projectCount > 0
+          ? `Supprimer « ${cat.name} » ? ${cat.projectCount} projet(s) seront détachés (pas supprimés).`
+          : `Supprimer « ${cat.name} » ?`
+      )
+    ) {
+      return;
+    }
+    setBusyId(cat.id);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/admin/portfolio-categories?id=${encodeURIComponent(cat.id)}`,
+        { method: "DELETE" }
+      );
+      if (res.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      const json = (await res.json().catch(() => null)) as {
+        ok: boolean;
+        data?: { detached: number };
+      } | null;
+      if (res.ok && json?.ok) {
+        const detached = json.data?.detached ?? 0;
+        if (detached > 0) {
+          toast.success(
+            `Catégorie supprimée — ${detached} projet${detached > 1 ? "s" : ""} détaché${detached > 1 ? "s" : ""}.`
+          );
+        } else {
+          toast.success("Catégorie supprimée.");
+        }
+        onChanged();
+      } else if (res.status === 404) {
+        toast.success("Catégorie déjà supprimée.");
+        onChanged();
+      } else {
+        setError("Suppression impossible. Réessayez.");
+      }
+    } catch {
+      setError("Erreur réseau. Réessayez.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div>
+      <form onSubmit={create} className="flex flex-wrap items-end gap-2">
+        <label className="grid min-w-0 flex-1 gap-1.5">
+          <span className="text-xs text-mute">Nouvelle catégorie</span>
+          <input
+            className={catInputCls}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={80}
+            placeholder="Ex : Site vitrine, Boutique en ligne, Application mobile…"
+            aria-label="Nom de la nouvelle catégorie"
+          />
+        </label>
+        <GoldButton type="submit" disabled={busy} className="min-h-10! px-3! text-xs!">
+          {busy ? (
+            <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.25} aria-hidden />
+          ) : (
+            <Plus className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+          )}
+          Créer
+        </GoldButton>
+      </form>
+
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
+
+      <div className="mt-3 flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
+        {categories.length === 0 ? (
+          <p className="py-2 text-center text-xs text-mute">
+            Aucune catégorie — créez la première ci-dessus (ex : Site vitrine).
+          </p>
+        ) : (
+          categories.map((c, i) => (
+            <div
+              key={c.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-bg px-3 py-2"
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                {renamingId === c.id ? (
+                  <>
+                    <input
+                      className={catInputCls}
+                      value={renameValue}
+                      autoFocus
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      maxLength={80}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void submitRename(c);
+                        }
+                      }}
+                      aria-label={`Nouveau nom de ${c.name}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void submitRename(c)}
+                      disabled={busyId === c.id}
+                      aria-label={`Valider le renommage de ${c.name}`}
+                      className={iconBtn}
+                    >
+                      <Check className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRenamingId(null);
+                        setError(null);
+                      }}
+                      aria-label="Annuler le renommage"
+                      className={deleteBtn}
+                    >
+                      <X className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="truncate text-sm">{c.name}</span>
+                    <Badge variant="outline" className="shrink-0 text-[0.65rem] text-mute">
+                      {c.projectCount} projet{c.projectCount > 1 ? "s" : ""}
+                    </Badge>
+                  </>
+                )}
+              </div>
+              {renamingId !== c.id && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => void move(c, -1)}
+                    disabled={i === 0 || busyId !== null}
+                    aria-label={`Monter la catégorie — ${c.name}`}
+                    className={iconBtn}
+                  >
+                    <ArrowUp className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void move(c, 1)}
+                    disabled={i === categories.length - 1 || busyId !== null}
+                    aria-label={`Descendre la catégorie — ${c.name}`}
+                    className={iconBtn}
+                  >
+                    <ArrowDown className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRenameValue(c.name);
+                      setError(null);
+                      setRenamingId(c.id);
+                    }}
+                    aria-label={`Renommer — ${c.name}`}
+                    className={iconBtn}
+                  >
+                    <Pencil className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void remove(c)}
+                    disabled={busyId === c.id}
+                    aria-label={`Supprimer — ${c.name}`}
+                    className={deleteBtn}
+                  >
+                    <Trash2 className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── Panneau principal ───────────────────────────────────────── */
 
 export function ProjectsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
@@ -488,6 +857,11 @@ export function ProjectsPanel({ onUnauthorized }: { onUnauthorized: () => void }
   const [reload, setReload] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  /* Catégories (gestionnaire + select du formulaire) */
+  const [categories, setCategories] = useState<CategoryRow[] | null>(null);
+  const [catsReload, setCatsReload] = useState(0);
+  const [catsOpen, setCatsOpen] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createBusy, setCreateBusy] = useState(false);
@@ -516,6 +890,26 @@ export function ProjectsPanel({ onUnauthorized }: { onUnauthorized: () => void }
       cancelled = true;
     };
   }, [onUnauthorized, reload]);
+
+  /* ── Catégories ───────────────────────────────────────────── */
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/portfolio-categories", { cache: "no-store" })
+      .then(async (res) => {
+        if (res.status === 401) {
+          onUnauthorized();
+          return;
+        }
+        const json = (await res.json()) as { ok: boolean; data?: CategoryRow[] };
+        if (!cancelled) setCategories(json.ok && json.data ? json.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setCategories([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [onUnauthorized, catsReload]);
 
   /** PATCH brut (retourne true si succès). */
   const patchRaw = async (id: string, body: Record<string, unknown>): Promise<boolean> => {
@@ -720,6 +1114,42 @@ export function ProjectsPanel({ onUnauthorized }: { onUnauthorized: () => void }
         Tant qu&apos;aucune n&apos;est publiée, le site retombe sur les travaux statiques.
       </p>
 
+      {/* Gestionnaire de catégories (repliable) */}
+      <div className="mt-4 rounded-lg border border-line bg-surface">
+        <button
+          type="button"
+          onClick={() => setCatsOpen((o) => !o)}
+          aria-expanded={catsOpen}
+          className="flex w-full items-center justify-between gap-3 p-4 text-left"
+        >
+          <span className="flex items-center gap-2 font-medium">
+            <FolderOpen className="h-4 w-4 text-goldtext" strokeWidth={1.25} aria-hidden />
+            Catégories des réalisations
+            {categories && (
+              <span className="text-xs font-normal text-mute">({categories.length})</span>
+            )}
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-mute transition-transform ${catsOpen ? "rotate-180" : ""}`}
+            strokeWidth={1.25}
+            aria-hidden
+          />
+        </button>
+        {catsOpen && categories !== null && (
+          <div className="border-t border-line p-4">
+            <CategoryManager
+              categories={categories}
+              onUnauthorized={onUnauthorized}
+              onChanged={(message) => {
+                setCatsReload((k) => k + 1);
+                setReload((k) => k + 1); /* les badges/noms des projets peuvent changer */
+                if (message) setNotice(message);
+              }}
+            />
+          </div>
+        )}
+      </div>
+
       {notice && (
         <p role="status" className="mt-3 text-sm text-mute">
           {notice}
@@ -737,6 +1167,7 @@ export function ProjectsPanel({ onUnauthorized }: { onUnauthorized: () => void }
             initial={emptyForm((rows?.reduce((m, r) => Math.max(m, r.sortOrder), 0) ?? 0) + 1)}
             busy={createBusy}
             error={createError}
+            categories={categories ?? []}
             onSubmit={(values) => void submitCreate(values)}
             onCancel={() => {
               setCreateOpen(false);
@@ -787,7 +1218,7 @@ export function ProjectsPanel({ onUnauthorized }: { onUnauthorized: () => void }
                     </span>
                   )}
                   <div className="min-w-0">
-                    <p className="flex items-center gap-2 font-medium">
+                    <p className="flex flex-wrap items-center gap-2 font-medium">
                       <span className="truncate">{p.title}</span>
                       {p.isPublished ? (
                         <Badge
@@ -799,6 +1230,14 @@ export function ProjectsPanel({ onUnauthorized }: { onUnauthorized: () => void }
                       ) : (
                         <Badge variant="outline" className="shrink-0 text-[0.65rem] text-mute">
                           Brouillon
+                        </Badge>
+                      )}
+                      {p.categoryName && (
+                        <Badge
+                          variant="outline"
+                          className="shrink-0 border-line text-[0.65rem] text-mute"
+                        >
+                          {p.categoryName}
                         </Badge>
                       )}
                     </p>
@@ -869,6 +1308,7 @@ export function ProjectsPanel({ onUnauthorized }: { onUnauthorized: () => void }
                     initial={formFromRow(p)}
                     busy={editBusy}
                     error={editError}
+                    categories={categories ?? []}
                     onSubmit={(values) => void submitEdit(p.id, values)}
                     onCancel={() => {
                       setEditingId(null);

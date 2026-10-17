@@ -1,11 +1,19 @@
 "use client";
 
-import React, { useEffect, useState, type FormEvent } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
+import Image from "next/image";
+import { ImagePlus, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { GoldButton } from "@/components/site/kit";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parseYouTubeId, youTubeThumbUrl } from "@/lib/youtube";
 
 /* ── Témoignages — gestion complète (création, édition, publication, suppression).
  * Panneau autonome de l'Espace équipe ; câblage : <TestimonialsPanel onUnauthorized={() => …} />
@@ -22,6 +30,8 @@ interface TestimonialRow {
   sector: string | null;
   quote: Partial<Record<Lang, string>>;
   rating: number | null;
+  authorPhotoUrl: string | null;
+  videoUrl: string | null;
   sortOrder: number;
   isPublished: boolean;
   createdAt: string;
@@ -49,6 +59,8 @@ interface FormState {
   rating: string;
   sortOrder: string;
   isPublished: boolean;
+  authorPhotoUrl: string;
+  videoUrl: string;
 }
 
 const emptyForm = (): FormState => ({
@@ -60,7 +72,11 @@ const emptyForm = (): FormState => ({
   rating: "",
   sortOrder: "0",
   isPublished: false,
+  authorPhotoUrl: "",
+  videoUrl: "",
 });
+
+const MAX_UPLOAD_BYTES = 6 * 1024 * 1024; // 6 Mo (miroir de la validation serveur)
 
 const inputCls =
   "h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm focus:border-gold focus:outline-none";
@@ -95,6 +111,56 @@ export function TestimonialsPanel({ onUnauthorized }: { onUnauthorized: () => vo
   const [lang, setLang] = useState<Lang>("fr");
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  /* Upload de la photo de l'auteur (pattern ProjectsPanel) */
+  const photoFileRef = useRef<HTMLInputElement>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
+
+  const uploadPhoto = async (file: File) => {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setPhotoUploadError("Image trop lourde — 6 Mo maximum.");
+      return;
+    }
+    setPhotoUploading(true);
+    setPhotoUploadError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      if (res.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      const json = (await res.json().catch(() => null)) as {
+        ok: boolean;
+        data?: { url: string };
+        error?: { code?: string };
+      } | null;
+      if (res.ok && json?.ok && json.data?.url) {
+        setForm((f) => ({ ...f, authorPhotoUrl: json.data!.url }));
+      } else {
+        const code = json?.error?.code;
+        setPhotoUploadError(
+          code === "too_large"
+            ? "Image trop lourde — 6 Mo maximum."
+            : code === "bad_type"
+              ? "Format non reconnu — JPEG, PNG, WebP, AVIF ou GIF attendu."
+              : "Envoi impossible. Réessayez."
+        );
+      }
+    } catch {
+      setPhotoUploadError("Erreur réseau. Réessayez.");
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  const onPhotoFile = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; /* permet de re-choisir le même fichier */
+    if (file) void uploadPhoto(file);
+  };
 
   /* ── Liste ─────────────────────────────────────────────────── */
   useEffect(() => {
@@ -192,6 +258,8 @@ export function TestimonialsPanel({ onUnauthorized }: { onUnauthorized: () => vo
       rating: row.rating != null ? String(row.rating) : "",
       sortOrder: String(row.sortOrder),
       isPublished: row.isPublished,
+      authorPhotoUrl: row.authorPhotoUrl ?? "",
+      videoUrl: row.videoUrl ?? "",
     });
     setLang("fr");
     setFormError(null);
@@ -242,6 +310,22 @@ export function TestimonialsPanel({ onUnauthorized }: { onUnauthorized: () => vo
       return;
     }
 
+    /* Photo + vidéo de l'auteur (validations miroir de l'API). */
+    const photo = form.authorPhotoUrl.trim();
+    if (photo && !photo.startsWith("/") && !/^https:\/\//.test(photo)) {
+      setFormError(
+        "La photo doit être une URL https:// ou un chemin interne commençant par /."
+      );
+      return;
+    }
+    const video = form.videoUrl.trim();
+    if (video && parseYouTubeId(video) === null) {
+      setFormError(
+        "Lien vidéo invalide — collez une URL YouTube (youtube.com/watch?v=…, youtu.be/…, shorts/…)."
+      );
+      return;
+    }
+
     const payload: Record<string, unknown> = {
       authorName,
       authorRole: form.authorRole.trim(),
@@ -251,6 +335,8 @@ export function TestimonialsPanel({ onUnauthorized }: { onUnauthorized: () => vo
       rating: rating === "" ? null : Number(rating),
       sortOrder,
       isPublished: form.isPublished,
+      authorPhotoUrl: form.authorPhotoUrl.trim(),
+      videoUrl: form.videoUrl.trim(),
     };
     if (editor.id !== null) payload.id = editor.id;
 
@@ -273,7 +359,7 @@ export function TestimonialsPanel({ onUnauthorized }: { onUnauthorized: () => vo
       }
       if (res.status === 400) {
         setFormError(
-          "Valeurs refusées. Vérifiez : nom 2 à 120 caractères, citation 10 à 600 par langue, note entre 1 et 5."
+          "Valeurs refusées. Vérifiez : nom 2 à 120 caractères, citation 10 à 600 par langue, note entre 1 et 5, photo https ou interne, vidéo YouTube valide."
         );
         return;
       }
@@ -395,6 +481,139 @@ export function TestimonialsPanel({ onUnauthorized }: { onUnauthorized: () => vo
             </label>
           </div>
 
+          {/* Photo + vidéo de l'auteur (DASH-5) */}
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {/* Photo : upload + aperçu rond + URL manuelle */}
+            <div className="grid content-start gap-1.5">
+              <span className={labelCls}>Photo de l&apos;auteur (optionnelle)</span>
+              <div className="flex flex-wrap items-center gap-3">
+                {form.authorPhotoUrl ? (
+                  <>
+                    <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-gold/40 bg-bg">
+                      <Image
+                        src={form.authorPhotoUrl}
+                        alt="Aperçu de la photo de l'auteur"
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </span>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => photoFileRef.current?.click()}
+                        disabled={photoUploading}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line px-3 text-sm text-mute transition-colors hover:border-gold/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {photoUploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.25} aria-hidden />
+                        ) : (
+                          <ImagePlus className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                        )}
+                        Remplacer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, authorPhotoUrl: "" }))}
+                        disabled={photoUploading}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line px-3 text-sm text-mute transition-colors hover:border-destructive/60 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Retirer
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => photoFileRef.current?.click()}
+                    disabled={photoUploading}
+                    className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg border border-dashed border-line bg-surface px-4 py-2.5 text-sm text-mute transition-colors hover:border-gold/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {photoUploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.25} aria-hidden />
+                        Envoi en cours…
+                      </>
+                    ) : (
+                      <>
+                        <ImagePlus className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                        Choisir une photo (6 Mo max)
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+              <input
+                className={inputCls}
+                value={form.authorPhotoUrl}
+                onChange={(e) => setForm((f) => ({ ...f, authorPhotoUrl: e.target.value }))}
+                maxLength={600}
+                placeholder="…ou collez une URL d'image (https://… ou /uploads/…)"
+                aria-label="URL de la photo de l'auteur"
+              />
+              {photoUploadError && (
+                <p role="alert" className="text-xs text-destructive">
+                  {photoUploadError}
+                </p>
+              )}
+            </div>
+
+            {/* Vidéo YouTube : validation live + miniature (pattern SoftwareLinksPanel) */}
+            <div className="grid content-start gap-1.5">
+              <label htmlFor="testimonial-video-url" className={labelCls}>
+                Témoignage vidéo (YouTube, optionnel)
+              </label>
+              <input
+                id="testimonial-video-url"
+                className={inputCls}
+                value={form.videoUrl}
+                onChange={(e) => setForm((f) => ({ ...f, videoUrl: e.target.value }))}
+                maxLength={500}
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=…"
+                aria-invalid={
+                  form.videoUrl.trim() !== "" && parseYouTubeId(form.videoUrl) === null
+                }
+              />
+              {form.videoUrl.trim() !== "" && parseYouTubeId(form.videoUrl) === null ? (
+                <p role="alert" className="text-xs leading-relaxed text-destructive">
+                  Cette URL n&apos;est pas une vidéo YouTube reconnue — collez un lien au format
+                  youtube.com/watch?v=…, youtu.be/…, shorts/… ou embed/…
+                </p>
+              ) : parseYouTubeId(form.videoUrl) ? (
+                <div className="flex items-center gap-3 pt-1">
+                  <span
+                    role="img"
+                    aria-label="Aperçu de la miniature YouTube"
+                    className="h-11 w-20 shrink-0 rounded-md border border-gold/40 bg-deep bg-cover bg-center"
+                    style={{
+                      backgroundImage: `url(${youTubeThumbUrl(parseYouTubeId(form.videoUrl) ?? "")})`,
+                    }}
+                  />
+                  <p className="text-xs leading-relaxed text-mute">
+                    Vidéo reconnue — elle sera intégrée à la carte du témoignage.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs leading-relaxed text-mute">
+                  L&apos;aperçu de la miniature apparaît dès qu&apos;un lien YouTube valide est
+                  collé.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <input
+            ref={photoFileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+            className="hidden"
+            onChange={onPhotoFile}
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+
           <Tabs value={lang} onValueChange={(v) => setLang(v as Lang)} className="mt-5">
             <TabsList className="h-auto flex-wrap justify-start rounded-lg border border-line bg-transparent p-1">
               {LANG_TABS.map((l) => {
@@ -467,10 +686,29 @@ export function TestimonialsPanel({ onUnauthorized }: { onUnauthorized: () => vo
               className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4"
             >
               <div className="min-w-0">
-                <p className="font-medium">
-                  {r.authorName}
+                <p className="flex items-center gap-2 font-medium">
+                  {r.authorPhotoUrl ? (
+                    <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-line">
+                      <Image
+                        src={r.authorPhotoUrl}
+                        alt=""
+                        fill
+                        sizes="32px"
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </span>
+                  ) : (
+                    <span
+                      aria-hidden
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-bg font-serif text-sm text-goldtext"
+                    >
+                      {r.authorName.charAt(0)}
+                    </span>
+                  )}
+                  <span className="truncate">{r.authorName}</span>
                   {r.rating != null && (
-                    <span className="ml-2 text-xs font-normal text-mute">{r.rating}/5</span>
+                    <span className="text-xs font-normal text-mute">{r.rating}/5</span>
                   )}
                 </p>
                 <p className="mt-0.5 truncate text-xs text-mute">

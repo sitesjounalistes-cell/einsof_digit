@@ -16,6 +16,7 @@ export async function GET() {
       where: { isPublished: true },
       orderBy: [{ sortOrder: "asc" }, { year: "desc" }],
       take: 24,
+      include: { category: { select: { slug: true, nameJson: true } } },
     });
     return NextResponse.json({
       ok: true,
@@ -30,6 +31,11 @@ export async function GET() {
         description: parseLocaleJson(p.description),
         linkUrl: p.linkUrl,
         imageUrl: p.imageUrl,
+        /* Catégorie de réalisation (filtres) — nameJson parsé défensivement,
+           repli fr effectué côté client via pickLocale. */
+        category: p.category
+          ? { slug: p.category.slug, name: parseLocaleJson(p.category.nameJson) }
+          : null,
       })),
     });
   } catch (e) {

@@ -578,6 +578,18 @@ export const PAGE_KEYWORDS: Record<string, string[]> = {
     "guide création application Guinée",
     "conseils réseaux sociaux entreprise Guinée",
   ],
+  podcast: [
+    "podcast digital Guinée",
+    "podcast business Conakry",
+    "podcast entrepreneuriat Guinée",
+    "podcast EINSOF",
+    "podcast marketing digital Guinée",
+    "podcast création site web Guinée",
+    "podcast tech Afrique de l'Ouest",
+    "écouter podcast business Guinée",
+    "podcast gestion d'entreprise Guinée",
+    "podcast francophone entrepreneuriat Afrique",
+  ],
   faq: [
     "questions création site web Guinée",
     "FAQ agence digitale Guinée",

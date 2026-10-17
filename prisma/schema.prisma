@@ -142,6 +142,13 @@ model BlogPost {
   /* ── Espaces publicitaires insérés dans le contenu ── */
   /// [{"id":"…","title":"…","text":"…","imageUrl":"…","linkUrl":"…","ctaLabel":"…","position":2,"isActive":true}]
   adsJson     String    @default("[]")
+  /* ── Éditorial enrichi (dashboard) ── */
+  /// Image d'aperçu de l'article (URL /uploads/… ou https)
+  coverImageUrl String?
+  /// Article mis en avant (« À la une ») en tête du journal
+  isFeatured    Boolean @default(false)
+  /// Lien YouTube d'une vidéo intégrée à l'article (watch, youtu.be, shorts)
+  videoUrl      String?
 }
 
 /* ── Réalisations — infrastructure prête, section masquée tant que vide ── */
@@ -159,10 +166,26 @@ model Project {
   linkUrl     String?
   /// URL de la capture d'écran (/uploads/… ou /images/works/…)
   imageUrl    String?
+  /// Catégorie de réalisation (site vitrine, boutique, média, entreprise…)
+  categoryId  String?
+  category    PortfolioCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   isPublished Boolean  @default(false)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+/* ── Catégories des réalisations — gérées depuis le tableau de bord ── */
+
+model PortfolioCategory {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  /// {"fr":"Site vitrine","en":"Showcase site"} — repli fr
+  nameJson  String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  projects  Project[]
 }
 
 /* ── Réglages éditables du site — page contact, mot du gérant (singleton) ── */
@@ -221,10 +244,54 @@ model Testimonial {
   quote      String
   /// 1-5, optionnel — affiché tel quel, jamais inventé
   rating      Int?
+  /// Photo de l'auteur (URL /uploads/… ou https) — monogramme sinon
+  authorPhotoUrl String?
+  /// Témoignage vidéo (lien YouTube) — optionnel
+  videoUrl       String?
   sortOrder   Int      @default(0)
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+/* ── Podcast — audios hébergés via liens (Google Drive ou URL directe) ── */
+
+model Podcast {
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  /// {"fr":"…"} — repli fr
+  titleJson   String
+  /// {"fr":"…"} — repli fr
+  descriptionJson String?
+  /// URL directement jouable (conversion Drive automatique ou mp3 direct)
+  audioUrl    String
+  /// Lien original collé dans le tableau de bord (Drive…)
+  sourceUrl   String?
+  durationSec Int?
+  coverImageUrl String?
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+/* ── Journal des notifications push envoyées (articles + publicités) ── */
+
+model NotificationLog {
+  id        String   @id @default(uuid())
+  title     String
+  body      String
+  /// Lien ouvert au clic sur la notification
+  url       String?
+  /// article | promo | test
+  kind      String   @default("promo")
+  sentTo    Int      @default(0)
+  delivered Int      @default(0)
+  failed    Int      @default(0)
+  /// Incrémenté quand un abonné clique (ouvre) la notification
+  opened    Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 model Document {

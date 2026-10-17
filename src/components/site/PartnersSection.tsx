@@ -76,9 +76,9 @@ export function PartnersSection() {
                   <Image
                     src={p.logoUrl}
                     alt={p.name}
-                    width={180}
-                    height={72}
-                    className="h-16 w-auto object-contain grayscale transition-all duration-500 hover:scale-105 hover:grayscale-0"
+                    width={150}
+                    height={48}
+                    className="h-12 w-auto object-contain grayscale transition-all duration-500 hover:scale-105 hover:grayscale-0"
                     unoptimized
                   />
                 ) : (
@@ -102,19 +102,17 @@ export function PartnersSection() {
             <StaggerItem key={p.id} y={32} className="h-full">
               <SpotlightCard size={400} className="h-full rounded-xl">
                 <article className="card-lift group flex h-full flex-col rounded-xl border border-line bg-bg p-6">
-                  {/* Logo dans un cadre fixe, sinon bloc typographique (jamais d'image générée) */}
-                  <div className="flex h-20 items-center justify-center">
+                  {/* Logo réel (Espace équipe) — sinon nom typographique en repli */}
+                  <div className="flex h-16 items-center justify-center">
                     {p.logoUrl ? (
-                      <div className="relative h-20 w-full">
-                        <Image
-                          src={p.logoUrl}
-                          alt={p.name}
-                          fill
-                          sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 30vw"
-                          className="object-contain grayscale transition-all duration-500 group-hover:scale-[1.04] group-hover:grayscale-0"
-                          unoptimized
-                        />
-                      </div>
+                      <Image
+                        src={p.logoUrl}
+                        alt={p.name}
+                        width={150}
+                        height={48}
+                        className="h-12 w-auto max-w-full object-contain grayscale transition-all duration-500 group-hover:scale-[1.04] group-hover:grayscale-0"
+                        unoptimized
+                      />
                     ) : (
                       <span className="font-serif text-2xl leading-tight transition-transform duration-500 group-hover:scale-[1.04]">
                         {p.name}

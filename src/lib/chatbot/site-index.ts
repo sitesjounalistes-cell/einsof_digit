@@ -195,6 +195,15 @@ export function buildSiteDocs(): SiteDoc[] {
     "/blog"
   );
 
+  /* ── Podcast (page produite par un chantier parallèle) ──
+     Un seul fait, aucune invention : pas de titre d'épisode, pas de
+     chronologie — le chatbot la cite comme PREUVE D'EXPERTISE. */
+  push(
+    "Podcast — audios EINSOF",
+    `${BRAND} anime un podcast : des audios sur le digital et la vente en Guinée — conseils concrets pour les entreprises locales (visibilité en ligne, outils de gestion, méthode commerciale). Les épisodes sont à écouter sur la page Podcast. C'est aussi une preuve d'expertise de l'agence sur le terrain guinéen.`,
+    "/podcast"
+  );
+
   return docs;
 }
 

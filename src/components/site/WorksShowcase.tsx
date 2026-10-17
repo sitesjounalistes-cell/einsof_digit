@@ -44,6 +44,8 @@ interface WorkView {
   shot: string | null;
   shotH: number;
   logo: string | null;
+  /** slug de la catégorie de réalisation (null = travaux statiques / non classés) */
+  categorySlug: string | null;
 }
 
 interface ProjectFeedRow {
@@ -56,6 +58,15 @@ interface ProjectFeedRow {
   summary: LocaleMap;
   linkUrl: string | null;
   imageUrl: string | null;
+  category?: { slug: string; name: LocaleMap } | null;
+}
+
+/** Option de filtre renvoyée par GET /api/portfolio-categories. */
+interface CategoryOption {
+  id: string;
+  slug: string;
+  name: LocaleMap;
+  count: number;
 }
 
 /** Hauteur indicative des captures externes (fenêtre d'aperçu fixe de toute façon). */
@@ -79,6 +90,7 @@ function staticViews(lang: Lang): WorkView[] {
     shot: w.shot,
     shotH: w.shotH,
     logo: w.logo,
+    categorySlug: null,
   }));
 }
 
@@ -104,6 +116,7 @@ function projectViews(rows: ProjectFeedRow[], lang: string): WorkView[] {
     shot: p.imageUrl ?? STATIC_SHOTS[p.slug] ?? null,
     shotH: DEFAULT_SHOT_H,
     logo: null,
+    categorySlug: p.category?.slug ?? null,
   }));
 }
 
@@ -112,6 +125,8 @@ function projectViews(rows: ProjectFeedRow[], lang: string): WorkView[] {
 export function WorksShowcase() {
   const { lang, t } = useI18n();
   const [dbRows, setDbRows] = useState<ProjectFeedRow[] | null>(null);
+  const [categories, setCategories] = useState<CategoryOption[] | null>(null);
+  const [activeCat, setActiveCat] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,8 +144,42 @@ export function WorksShowcase() {
     };
   }, []);
 
-  const views: WorkView[] =
+  /* Bande de filtres : échec API ou liste vide → aucun filtre affiché,
+     rendu inchangé. Seules les catégories avec au moins 1 projet publié
+     sont proposées (une puce jamais vide). */
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/portfolio-categories", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { ok: boolean; data?: CategoryOption[] } | null) => {
+        if (cancelled) return;
+        setCategories(
+          j?.ok && Array.isArray(j.data) ? j.data.filter((c) => c.count > 0) : []
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setCategories([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const allViews: WorkView[] =
     dbRows && dbRows.length > 0 ? projectViews(dbRows, lang) : staticViews(lang);
+
+  /* Filtre actif uniquement si la catégorie existe encore dans la liste */
+  const effCat =
+    activeCat && categories?.some((c) => c.slug === activeCat) ? activeCat : null;
+
+  /* Travaux statiques (sans catégorie) : visibles dans « Tous les projets »
+     uniquement — une catégorie ne mélange jamais du contenu non classé.
+     Garde : un filtre sans résultat (API projet en échec, ex.) retombe sur
+     la liste complète plutôt qu'un coverflow vide. */
+  const filtered = effCat
+    ? allViews.filter((v) => v.categorySlug === effCat)
+    : allViews;
+  const views: WorkView[] = filtered.length > 0 ? filtered : allViews;
 
   const items: CoverflowItem[] = views.map((v) => ({
     key: v.key,
@@ -147,7 +196,33 @@ export function WorksShowcase() {
           sub={t("works.sub")}
         />
 
+        {categories && categories.length > 0 && (
+          <div
+            role="group"
+            aria-label={t("works.label")}
+            className="mb-8 flex flex-wrap items-center justify-center gap-2"
+          >
+            <FilterChip
+              active={effCat === null}
+              onClick={() => setActiveCat(null)}
+              label={t("projects.filterAll")}
+            />
+            {categories.map((c) => (
+              <FilterChip
+                key={c.slug}
+                active={effCat === c.slug}
+                onClick={() => setActiveCat(c.slug)}
+                label={pickLocale(c.name, lang) || c.slug}
+                count={c.count}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* key = filtre : le coverflow repart de la première carte à chaque
+            changement de catégorie (index 0, tempo et halos réinitialisés). */}
         <CoverflowCarousel
+          key={effCat ?? "all"}
           items={items}
           ariaLabel={t("works.label")}
           autoplayMs={3000}
@@ -164,6 +239,45 @@ export function WorksShowcase() {
         </p>
       </Container>
     </Section>
+  );
+}
+
+/* ── Puce de filtre par catégorie — état actif or, aria-pressed ── */
+
+function FilterChip({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count?: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-full border px-5 text-[0.75rem] font-semibold uppercase tracking-[0.12em] transition-all duration-300 focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold ${
+        active
+          ? "border-gold bg-gold text-bg shadow-[0_8px_24px_-10px_rgba(212,175,55,0.65)]"
+          : "border-line bg-surface text-mute hover:border-gold/60 hover:text-goldtext"
+      }`}
+    >
+      <span className="truncate">{label}</span>
+      {typeof count === "number" && (
+        <span
+          aria-hidden
+          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[0.5625rem] leading-none ${
+            active ? "bg-bg/20 text-bg" : "bg-line/60 text-mute"
+          }`}
+        >
+          {count}
+        </span>
+      )}
+    </button>
   );
 }
 

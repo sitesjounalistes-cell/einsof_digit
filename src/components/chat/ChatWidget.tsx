@@ -199,8 +199,10 @@ export function ChatWidget() {
               )
             )}
 
-            {/* Suggestions */}
-            {messages.length <= 1 && !streaming && (
+            {/* Suggestions — visibles tant que le fil est au repos et que le
+                dernier message vient de l'assistant : des relances d'action
+                toujours à portée de main (tarifs, démo, essai) pour conclure. */}
+            {!streaming && messages[messages.length - 1]?.role === "assistant" && (
               <div className="flex flex-wrap gap-2 pt-1">
                 {SUGGESTION_KEYS.map((k) => (
                   <button

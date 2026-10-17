@@ -86,11 +86,11 @@ self.addEventListener("fetch", (event) => {
 /* ── Notifications push (spécification §6/§14/§28) ──────────── */
 
 self.addEventListener("push", (event) => {
-  let payload = { title: "", body: "" };
+  let payload = { title: "", body: "", url: "/", logId: null };
   try {
-    if (event.data) payload = event.data.json();
+    if (event.data) payload = { ...payload, ...event.data.json() };
   } catch {
-    payload = { title: "", body: event.data ? event.data.text() : "" };
+    payload = { ...payload, body: event.data ? event.data.text() : "" };
   }
   event.waitUntil(
     self.registration.showNotification(payload.title || "EINSOF", {
@@ -98,18 +98,49 @@ self.addEventListener("push", (event) => {
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
       tag: "einsof-push",
+      data: { url: payload.url || "/", logId: payload.logId || null },
     })
   );
 });
 
 self.addEventListener("notificationclick", (event) => {
+  const data = (event.notification && event.notification.data) || {};
+  const target = typeof data.url === "string" && data.url.startsWith("/") ? data.url : "/";
+  const logId = data.logId || null;
   event.notification.close();
+
+  // Statistique d'ouverture : la notification a été consultée.
+  if (logId) {
+    try {
+      event.waitUntil(
+        fetch("/api/push/open", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ logId }),
+        }).catch(() => {})
+      );
+    } catch {
+      /* jamais bloquant */
+    }
+  }
+
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      // Un onglet déjà ouvert sur la cible ? on le focusse.
       for (const client of list) {
-        if ("focus" in client) return client.focus();
+        try {
+          if (new URL(client.url).pathname === target) return client.focus();
+        } catch {
+          /* URL opaque — ignorée */
+        }
       }
-      return self.clients.openWindow("/");
+      for (const client of list) {
+        if ("focus" in client) {
+          client.navigate(target).catch(() => {});
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(target);
     })
   );
 });

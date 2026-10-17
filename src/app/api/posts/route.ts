@@ -23,6 +23,10 @@ export async function GET() {
         category: p.category,
         readingMin: p.readingMin,
         publishedAt: p.publishedAt?.toISOString() ?? null,
+        /* Éditorial enrichi : couverture, mise en avant, vidéo YouTube */
+        coverImageUrl: p.coverImageUrl,
+        isFeatured: p.isFeatured,
+        videoUrl: p.videoUrl,
       })),
     });
   } catch (e) {

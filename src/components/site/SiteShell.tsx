@@ -14,6 +14,7 @@ import { MobileActionBar } from "@/components/site/MobileActionBar";
 import { CustomCursor } from "@/components/site/CustomCursor";
 import { AdminOverlay } from "@/components/admin/AdminOverlay";
 import { RegisterServiceWorker } from "@/components/site/RegisterSW";
+import { AnalyticsListener } from "@/lib/analytics";
 import { onNavigate, onNavigatePath, scrollToSection } from "@/lib/chat-bus";
 import { SECTION_ROUTES } from "@/lib/routes";
 
@@ -108,6 +109,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <MobileActionBar />
         <AdminOverlay />
         <RegisterServiceWorker />
+        {/* Tracking comportemental automatique (soumis au consentement §28) */}
+        <AnalyticsListener />
       </div>
     </ChatProvider>
   );

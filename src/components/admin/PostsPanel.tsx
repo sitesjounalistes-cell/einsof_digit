@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, Megaphone, Pencil, Plus, Trash2 } from "lucide-react";
+import React, { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import Image from "next/image";
+import { ArrowLeft, ImagePlus, Loader2, Megaphone, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { GoldButton } from "@/components/site/kit";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { parseAds, type PostAd } from "@/lib/post-ads";
+import { parseYouTubeId, youTubeThumbUrl } from "@/lib/youtube";
 
 /* ── Journal — rédaction complète (création, édition, publication, suppression).
  * Panneau autonome de l'Espace équipe ; câblage : <PostsPanel onUnauthorized={() => …} />
@@ -23,6 +25,7 @@ interface PostRow {
   category: string;
   readingMin: number;
   isPublished: boolean;
+  isFeatured: boolean;
   publishedAt: string | null;
   createdAt: string;
 }
@@ -42,6 +45,9 @@ interface PostDetail {
   metaDescription: string | null;
   keywords: string | null;
   ads: PostAd[];
+  coverImageUrl: string | null;
+  isFeatured: boolean;
+  videoUrl: string | null;
 }
 
 const LANGS: { id: Lang; label: string; optional: boolean }[] = [
@@ -112,6 +118,10 @@ interface FormState {
   metaDescription: string;
   keywords: string;
   ads: AdForm[];
+  /* Éditorial enrichi (DASH-5) */
+  coverImageUrl: string;
+  isFeatured: boolean;
+  videoUrl: string;
 }
 
 /** Espace publicitaire en cours d'édition — position gardée en chaîne pour
@@ -161,7 +171,12 @@ const emptyForm = (): FormState => ({
   metaDescription: "",
   keywords: "",
   ads: [],
+  coverImageUrl: "",
+  isFeatured: false,
+  videoUrl: "",
 });
+
+const MAX_UPLOAD_BYTES = 6 * 1024 * 1024; // 6 Mo (miroir de la validation serveur)
 
 /** Corps : un paragraphe par ligne -> tableau de paragraphes (normalisé \n\n par l'API). */
 const toParagraphs = (v: string): string[] =>
@@ -204,6 +219,56 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const slugTouched = useRef(false);
+
+  /* Upload de l'image de couverture (pattern ProjectsPanel) */
+  const coverFileRef = useRef<HTMLInputElement>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverUploadError, setCoverUploadError] = useState<string | null>(null);
+
+  const uploadCover = async (file: File) => {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setCoverUploadError("Image trop lourde — 6 Mo maximum.");
+      return;
+    }
+    setCoverUploading(true);
+    setCoverUploadError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      if (res.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      const json = (await res.json().catch(() => null)) as {
+        ok: boolean;
+        data?: { url: string };
+        error?: { code?: string };
+      } | null;
+      if (res.ok && json?.ok && json.data?.url) {
+        setForm((f) => ({ ...f, coverImageUrl: json.data!.url }));
+      } else {
+        const code = json?.error?.code;
+        setCoverUploadError(
+          code === "too_large"
+            ? "Image trop lourde — 6 Mo maximum."
+            : code === "bad_type"
+              ? "Format non reconnu — JPEG, PNG, WebP, AVIF ou GIF attendu."
+              : "Envoi impossible. Réessayez."
+        );
+      }
+    } catch {
+      setCoverUploadError("Erreur réseau. Réessayez.");
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
+  const onCoverFile = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; /* permet de re-choisir le même fichier */
+    if (file) void uploadCover(file);
+  };
 
   /* ── Liste ─────────────────────────────────────────────────── */
   useEffect(() => {
@@ -337,6 +402,9 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
         metaTitle: p.metaTitle ?? "",
         metaDescription: p.metaDescription ?? "",
         keywords: p.keywords ?? "",
+        coverImageUrl: p.coverImageUrl ?? "",
+        isFeatured: p.isFeatured,
+        videoUrl: p.videoUrl ?? "",
         ads: parseAds(JSON.stringify(p.ads ?? [])).map((a) => ({
           id: a.id,
           title: a.title ?? "",
@@ -412,6 +480,22 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
       return;
     }
 
+    /* Éditorial enrichi : vidéo YouTube valide si renseignée. */
+    const videoUrl = form.videoUrl.trim();
+    if (videoUrl && parseYouTubeId(videoUrl) === null) {
+      setFormError(
+        "Lien vidéo invalide — collez une URL YouTube (youtube.com/watch?v=…, youtu.be/…, shorts/…)."
+      );
+      return;
+    }
+    const coverUrl = form.coverImageUrl.trim();
+    if (coverUrl && !coverUrl.startsWith("/") && !/^https:\/\//.test(coverUrl)) {
+      setFormError(
+        "L'image de couverture doit être une URL https:// ou un chemin interne commençant par /."
+      );
+      return;
+    }
+
     /* Espaces publicitaires : validations miroir de l'API (retours immédiats). */
     if (form.ads.length > MAX_ADS) {
       setFormError(`Maximum ${MAX_ADS} espaces publicitaires par article.`);
@@ -452,6 +536,9 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
       metaTitle: form.metaTitle.trim(),
       metaDescription: form.metaDescription.trim(),
       keywords: form.keywords.trim(),
+      coverImageUrl: form.coverImageUrl.trim(),
+      isFeatured: form.isFeatured,
+      videoUrl: form.videoUrl.trim(),
       ads: form.ads.map((a) => ({
         id: a.id,
         title: a.title.trim() || undefined,
@@ -493,7 +580,7 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
       }
       if (res.status === 400) {
         setFormError(
-          "Valeurs refusées. Vérifiez : titre 3 à 200 caractères, extrait 20 à 400 et texte 100 à 20 000 en français ; traductions 3 caractères minimum ; catégorie 2 à 40 ; espaces publicitaires — maximum 10, lien https et position entière ≥ 0."
+          "Valeurs refusées. Vérifiez : titre 3 à 200 caractères, extrait 20 à 400 et texte 100 à 20 000 en français ; traductions 3 caractères minimum ; catégorie 2 à 40 ; vidéo — lien YouTube valide ; espaces publicitaires — maximum 10, lien https et position entière ≥ 0."
         );
         return;
       }
@@ -601,6 +688,166 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
                   {editor.id !== null ? "Publié" : "Publier immédiatement"}
                 </label>
               </div>
+
+              {/* Couverture, mise en avant & vidéo (DASH-5) */}
+              <section
+                aria-labelledby="admin-posts-media-t"
+                className="mt-6 rounded-lg border border-line bg-bg p-4 md:p-5"
+              >
+                <h3 id="admin-posts-media-t" className="text-xs uppercase tracking-[0.14em] text-goldtext">
+                  Couverture, mise en avant &amp; vidéo
+                </h3>
+                <p className="mt-1 text-xs text-mute">
+                  L&apos;image de couverture illustre l&apos;article dans le Journal, « À la une » le
+                  place en tête, et la vidéo YouTube est intégrée à l&apos;article.
+                </p>
+                <div className="mt-3 grid gap-4 md:grid-cols-2">
+                  {/* Image de couverture : upload + aperçu + URL manuelle */}
+                  <div className="grid content-start gap-1.5">
+                    <span className={labelCls}>Image de couverture (optionnelle)</span>
+                    {form.coverImageUrl ? (
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg border border-line bg-bg">
+                          <Image
+                            src={form.coverImageUrl}
+                            alt="Aperçu de l'image de couverture"
+                            fill
+                            sizes="112px"
+                            className="object-cover"
+                            unoptimized
+                          />
+                        </span>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            type="button"
+                            onClick={() => coverFileRef.current?.click()}
+                            disabled={coverUploading}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line px-3 text-sm text-mute transition-colors hover:border-gold/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {coverUploading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.25} aria-hidden />
+                            ) : (
+                              <ImagePlus className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                            )}
+                            Remplacer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setForm((f) => ({ ...f, coverImageUrl: "" }))}
+                            disabled={coverUploading}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line px-3 text-sm text-mute transition-colors hover:border-destructive/60 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Retirer
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => coverFileRef.current?.click()}
+                        disabled={coverUploading}
+                        className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-dashed border-line bg-surface px-4 py-2.5 text-sm text-mute transition-colors hover:border-gold/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {coverUploading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.25} aria-hidden />
+                            Envoi en cours…
+                          </>
+                        ) : (
+                          <>
+                            <ImagePlus className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                            Choisir une image — JPEG, PNG, WebP, AVIF, GIF (6 Mo max)
+                          </>
+                        )}
+                      </button>
+                    )}
+                    <input
+                      className={inputCls}
+                      value={form.coverImageUrl}
+                      onChange={(e) => setForm((f) => ({ ...f, coverImageUrl: e.target.value }))}
+                      maxLength={600}
+                      placeholder="…ou collez une URL d'image (https://… ou /uploads/…)"
+                      aria-label="URL de l'image de couverture"
+                    />
+                    {coverUploadError && (
+                      <p role="alert" className="text-xs text-destructive">
+                        {coverUploadError}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* À la une + vidéo YouTube (validation live, miniature) */}
+                  <div className="grid content-start gap-4">
+                    <label className="flex items-center gap-3 text-sm text-mute">
+                      <Switch
+                        checked={form.isFeatured}
+                        onCheckedChange={(v) => setForm((f) => ({ ...f, isFeatured: v }))}
+                        aria-label="Mettre l'article à la une"
+                      />
+                      <Star
+                        className={`h-4 w-4 ${form.isFeatured ? "text-goldtext" : "text-mute"}`}
+                        strokeWidth={1.25}
+                        aria-hidden
+                      />
+                      À la une (placé en tête du Journal)
+                    </label>
+
+                    <div className="grid gap-1.5">
+                      <label htmlFor="post-video-url" className={labelCls}>
+                        Vidéo YouTube (lien, optionnelle)
+                      </label>
+                      <input
+                        id="post-video-url"
+                        className={inputCls}
+                        value={form.videoUrl}
+                        onChange={(e) => setForm((f) => ({ ...f, videoUrl: e.target.value }))}
+                        maxLength={500}
+                        type="url"
+                        placeholder="https://www.youtube.com/watch?v=…"
+                        aria-invalid={
+                          form.videoUrl.trim() !== "" &&
+                          parseYouTubeId(form.videoUrl) === null
+                        }
+                      />
+                      {form.videoUrl.trim() !== "" &&
+                      parseYouTubeId(form.videoUrl) === null ? (
+                        <p role="alert" className="text-xs leading-relaxed text-destructive">
+                          Cette URL n&apos;est pas une vidéo YouTube reconnue — collez un lien au
+                          format youtube.com/watch?v=…, youtu.be/…, shorts/… ou embed/…
+                        </p>
+                      ) : parseYouTubeId(form.videoUrl) ? (
+                        <div className="flex items-center gap-3 pt-1">
+                          <span
+                            role="img"
+                            aria-label="Aperçu de la miniature YouTube"
+                            className="h-11 w-20 shrink-0 rounded-md border border-gold/40 bg-deep bg-cover bg-center"
+                            style={{ backgroundImage: `url(${youTubeThumbUrl(parseYouTubeId(form.videoUrl) ?? "")})` }}
+                          />
+                          <p className="text-xs leading-relaxed text-mute">
+                            Vidéo reconnue — elle sera intégrée en lecteur sans cookies dans
+                            l&apos;article.
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-xs leading-relaxed text-mute">
+                          L&apos;aperçu de la miniature apparaît dès qu&apos;un lien YouTube valide
+                          est collé.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <input
+                  ref={coverFileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+                  className="hidden"
+                  onChange={onCoverFile}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                />
+              </section>
 
               <Tabs value={lang} onValueChange={(v) => setLang(v as Lang)} className="mt-5">
                 <TabsList className="h-auto flex-wrap justify-start rounded-lg border border-line bg-transparent p-1">
@@ -899,7 +1146,16 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
               className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4"
             >
               <div className="min-w-0">
-                <p className="font-medium">{p.title}</p>
+                <p className="flex items-center gap-2 font-medium">
+                  <span className="truncate">{p.title}</span>
+                  {p.isFeatured && (
+                    <Star
+                      className="h-3.5 w-3.5 shrink-0 fill-goldtext text-goldtext"
+                      strokeWidth={1.25}
+                      aria-label="À la une"
+                    />
+                  )}
+                </p>
                 <p className="mt-0.5 truncate text-xs text-mute">
                   /{p.slug} · {p.category} · {p.readingMin} min · {fmtDate(p.createdAt)}
                 </p>

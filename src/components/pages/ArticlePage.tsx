@@ -3,7 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Facebook, Linkedin, Link2, MessageCircle, Twitter } from "lucide-react";
+import { toast } from "sonner";
 import { CtaBanner } from "@/components/site/PageBlocks";
 import { Container, GoldBadge, GoldButton, Section } from "@/components/site/kit";
 import { Beam, DrawRule, Reveal, Shimmer, Stagger, StaggerItem, WordMask } from "@/components/motion";
@@ -11,6 +12,9 @@ import { useI18n } from "@/lib/i18n";
 import { pickLocale, type LocaleMap } from "@/lib/locale-json";
 import { useLocalized } from "@/lib/page-content";
 import type { PostAd } from "@/lib/post-ads";
+import { parseYouTubeId, youTubeEmbedUrl } from "@/lib/youtube";
+import { track } from "@/lib/analytics";
+import { SITE_URL } from "@/lib/seo";
 import { ARTICLE } from "@/lib/pages-content/article";
 
 interface PostRow {
@@ -22,6 +26,10 @@ interface PostRow {
   category: string;
   readingMin: number;
   publishedAt: string | null;
+  /* Éditorial enrichi (dashboard) */
+  coverImageUrl: string | null;
+  isFeatured: boolean;
+  videoUrl: string | null;
 }
 
 function fmtDate(iso: string | null, lang: string): string {
@@ -83,16 +91,127 @@ function AdBlock({ ad }: { ad: PostAd }) {
   );
 }
 
+/* ── Vidéo YouTube intégrée (youtube-nocookie, 16/9, chargement différé) ── */
+
+function VideoEmbed({ videoId, articleTitle }: { videoId: string; articleTitle: string }) {
+  const { t } = useI18n();
+  return (
+    <Reveal y={14} duration={0.6}>
+      <figure className="my-10 overflow-hidden rounded-xl border border-gold/30 bg-black">
+        <div className="relative aspect-video w-full">
+          <iframe
+            src={youTubeEmbedUrl(videoId)}
+            title={`${t("journal.video")} — ${articleTitle}`}
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+            className="absolute inset-0 h-full w-full border-0"
+          />
+        </div>
+        <figcaption className="border-t border-gold/20 px-5 py-3 text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-mute">
+          {t("journal.video")}
+        </figcaption>
+      </figure>
+    </Reveal>
+  );
+}
+
+/* ── Barre de partage : WhatsApp, Facebook, X, LinkedIn + copier ───── */
+
+const SHARE_CHANNELS = [
+  { id: "whatsapp", Icon: MessageCircle, label: "WhatsApp" },
+  { id: "facebook", Icon: Facebook, label: "Facebook" },
+  { id: "x", Icon: Twitter, label: "X" },
+  { id: "linkedin", Icon: Linkedin, label: "LinkedIn" },
+] as const;
+
+type ShareChannel = (typeof SHARE_CHANNELS)[number]["id"];
+
+function buildShareUrl(channel: ShareChannel, title: string, url: string): string {
+  const enc = encodeURIComponent;
+  switch (channel) {
+    case "whatsapp":
+      return `https://wa.me/?text=${enc(`${title} ${url}`)}`;
+    case "facebook":
+      return `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`;
+    case "x":
+      return `https://twitter.com/intent/tweet?text=${enc(title)}&url=${enc(url)}`;
+    case "linkedin":
+      return `https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}`;
+  }
+}
+
+function ShareBar({ slug, title }: { slug: string; title: string }) {
+  const { t } = useI18n();
+  /* Partage : URL canonique du domaine (stable SSR/hydratation) ;
+     « Copier le lien » utilise l'origine réelle du visiteur. */
+  const url = `${SITE_URL}/blog/${slug}`;
+
+  const onShare = (channel: ShareChannel) => {
+    track("article_shared", { slug, channel });
+  };
+
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/blog/${slug}`);
+      toast.success(t("journal.shareCopied"));
+      track("article_shared", { slug, channel: "copy" });
+    } catch {
+      /* presse-papiers indisponible */
+    }
+  };
+
+  const iconCls =
+    "inline-flex h-11 w-11 items-center justify-center rounded-full border border-line text-mute transition-all duration-300 hover:border-gold/50 hover:text-goldtext focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold";
+
+  return (
+    <div className="mt-10 flex flex-wrap items-center gap-2.5 border-y border-line py-4">
+      <span className="label-caps mr-2">{t("journal.share")}</span>
+      {SHARE_CHANNELS.map(({ id, Icon, label }) => (
+        <a
+          key={id}
+          href={buildShareUrl(id, title, url)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => onShare(id)}
+          aria-label={`${t("journal.share")} — ${label}`}
+          title={label}
+          className={iconCls}
+        >
+          <Icon className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+        </a>
+      ))}
+      <button
+        type="button"
+        onClick={() => void onCopy()}
+        aria-label={t("journal.shareCopied")}
+        title={t("journal.share")}
+        className={iconCls}
+      >
+        <Link2 className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+      </button>
+    </div>
+  );
+}
+
 /**
  * Page article /blog/[slug] — le slug est résolu côté serveur (base
  * réelle, 404 si introuvable) ; côté client, l'article est chargé
  * depuis /api/posts puis rendu en paragraphes. Le texte se révèle
  * progressivement (Reveal once) mais finit toujours 100 % visible.
+ * Enrichi : image de couverture, vidéo YouTube (champ dédié + liens
+ * nus dans le corps) et barre de partage multi-canaux.
  */
 export function ArticlePage({ slug, ads = [] }: { slug: string; ads?: PostAd[] }) {
   const { lang, tr } = useI18n();
   const c = useLocalized(ARTICLE);
   const [posts, setPosts] = useState<PostRow[] | null>(null);
+
+  /* Suivi de lecture (analytics, après consentement) */
+  useEffect(() => {
+    track("article_read", { slug });
+  }, [slug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -174,21 +293,34 @@ export function ArticlePage({ slug, ads = [] }: { slug: string; ads?: PostAd[] }
   }
 
   /* ── Article trouvé : jusqu'à 2 autres articles pour « lire aussi » ── */
+  const title = pickLocale(post.title, lang);
   const others = posts!.filter((p) => p.slug !== slug).slice(0, 2);
-  const paragraphs = pickLocale(post.body, lang)
-    .split("\n\n")
-    .map((par) => par.trim())
-    .filter(Boolean);
+
+  /* Corps : chaque paragraphe devient du texte OU une vidéo intégrée
+     quand il s'agit d'un simple lien YouTube (commence par http…). */
+  const blocks: Array<{ kind: "p"; text: string } | { kind: "video"; videoId: string }> =
+    pickLocale(post.body, lang)
+      .split("\n\n")
+      .map((par) => par.trim())
+      .filter(Boolean)
+      .map((par) => {
+        const videoId = par.startsWith("http") ? parseYouTubeId(par) : null;
+        return videoId ? { kind: "video" as const, videoId } : { kind: "p" as const, text: par };
+      });
+
+  /* Vidéo dédiée du dashboard (champ videoUrl) */
+  const fieldVideoId = post.videoUrl ? parseYouTubeId(post.videoUrl) : null;
 
   /* Espaces publicitaires actifs : position N = insérés après le N-ième
-   * paragraphe ; 0 (ou au-delà du dernier) = tout à la fin. */
+   * paragraphe ; 0 (ou au-delà du dernier) = tout à la fin.
+   * Les indices suivent les blocs 1:1 (texte ou vidéo remplacée). */
   const adsAfter = new Map<number, PostAd[]>();
   for (const ad of ads) {
     if (!ad.isActive) continue;
     const at =
       ad.position <= 0
-        ? paragraphs.length
-        : Math.min(ad.position, paragraphs.length);
+        ? blocks.length
+        : Math.min(ad.position, blocks.length);
     adsAfter.set(at, [...(adsAfter.get(at) ?? []), ad]);
   }
 
@@ -230,7 +362,7 @@ export function ArticlePage({ slug, ads = [] }: { slug: string; ads?: PostAd[] }
             </Reveal>
 
             <h1 className="mt-5 font-serif text-3xl leading-tight text-ink md:text-5xl">
-              <WordMask text={pickLocale(post.title, lang)} />
+              <WordMask text={title} />
             </h1>
 
             <DrawRule className="mt-6 h-px w-24" delay={0.3} />
@@ -246,11 +378,41 @@ export function ArticlePage({ slug, ads = [] }: { slug: string; ads?: PostAd[] }
       <Section id="article-body">
         <Container>
           <div className="mx-auto max-w-3xl">
-            {paragraphs.map((par, i) => (
+            {/* Image de couverture (avant le contenu) */}
+            {post.coverImageUrl ? (
+              <Reveal y={14} duration={0.7}>
+                <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-line">
+                  <Image
+                    src={post.coverImageUrl}
+                    alt={title}
+                    priority
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 768px"
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+              </Reveal>
+            ) : null}
+
+            {/* Barre de partage multi-canaux */}
+            <ShareBar slug={post.slug} title={title} />
+
+            {/* Vidéo dédiée (dashboard) */}
+            {fieldVideoId ? <VideoEmbed videoId={fieldVideoId} articleTitle={title} /> : null}
+
+            {blocks.map((block, i) => (
               <React.Fragment key={i}>
-                <Reveal y={18} duration={0.7} delay={Math.min(i * 0.05, 0.25)}>
-                  <p className="text-[0.9375rem] leading-relaxed text-ink md:text-base">{par}</p>
-                </Reveal>
+                {block.kind === "p" ? (
+                  <Reveal y={18} duration={0.7} delay={Math.min(i * 0.05, 0.25)}>
+                    <p className="text-[0.9375rem] leading-relaxed text-ink md:text-base">
+                      {block.text}
+                    </p>
+                  </Reveal>
+                ) : (
+                  /* Paragraphe « lien YouTube nu » → lecteur intégré */
+                  <VideoEmbed videoId={block.videoId} articleTitle={title} />
+                )}
                 {(adsAfter.get(i + 1) ?? []).map((ad) => (
                   <AdBlock key={ad.id} ad={ad} />
                 ))}

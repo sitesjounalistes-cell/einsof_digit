@@ -460,7 +460,7 @@ function PushPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
         <form onSubmit={send} className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-5">
           <p className="text-xs uppercase tracking-[0.14em] text-mute">Notification de test</p>
           <input
-            className={projectInputCls}
+            className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm focus:border-gold focus:outline-none"
             placeholder="Titre (80 caractères max.)"
             aria-label="Titre de la notification"
             value={title}
@@ -468,7 +468,7 @@ function PushPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
             maxLength={80}
           />
           <input
-            className={projectInputCls}
+            className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm focus:border-gold focus:outline-none"
             placeholder="Message (280 caractères max.)"
             aria-label="Message de la notification"
             value={body}

@@ -56,7 +56,11 @@ export interface PushSendResult {
   configured: boolean;
 }
 
-export async function sendPushToAll(title: string, body: string): Promise<PushSendResult> {
+export async function sendPushToAll(
+  title: string,
+  body: string,
+  url?: string
+): Promise<PushSendResult> {
   const { publicKey, privateKey } = await getVapid();
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT?.trim() || "mailto:contact@example.com",
@@ -68,13 +72,14 @@ export async function sendPushToAll(title: string, body: string): Promise<PushSe
   let sent = 0;
   let failed = 0;
   let removed = 0;
+  const payload = JSON.stringify({ title, body, url: url || "/" });
 
   await Promise.all(
     subs.map(async (s) => {
       try {
         await webpush.sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-          JSON.stringify({ title, body })
+          payload
         );
         sent += 1;
       } catch (e) {

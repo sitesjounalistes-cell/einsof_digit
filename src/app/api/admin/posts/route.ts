@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/admin-auth";
 import { parseLocaleJson } from "@/lib/locale-json";
 import { parseAds, stringifyAds, type PostAdInput } from "@/lib/post-ads";
+import { parseYouTubeId } from "@/lib/youtube";
+import { notifyAll } from "@/lib/push-notify";
 
 /* Journal (blog) — rédaction complète pour l'Espace équipe (cahier des charges §26).
  * Format de stockage identique à scripts/seed-content.ts :
@@ -109,6 +111,25 @@ const adSchema = z.object({
 });
 const adsField = z.array(adSchema).max(10, "too_many_ads");
 
+/* ── Éditorial enrichi (DASH-5) — couverture, à la une, vidéo YouTube ──
+ * Chaîne vide = remise à blanc (null en base). */
+const coverUrlField = z
+  .string()
+  .trim()
+  .max(600, "cover_too_long")
+  .transform((v) => (v.length > 0 ? v : null))
+  .refine(
+    (v) => v === null || v.startsWith("/") || /^https:\/\//i.test(v),
+    "bad_cover_url"
+  );
+/** Lien YouTube : watch, youtu.be, shorts, embed — null si vide, 400 sinon. */
+const videoUrlField = z
+  .string()
+  .trim()
+  .max(500, "video_too_long")
+  .transform((v) => (v.length > 0 ? v : null))
+  .refine((v) => v === null || parseYouTubeId(v) !== null, "bad_video_url");
+
 const createSchema = z.object({
   slug: slugField,
   title: titleMap,
@@ -122,6 +143,9 @@ const createSchema = z.object({
   metaDescription: metaDescriptionField.optional(),
   keywords: keywordsField.optional(),
   ads: adsField.optional(),
+  coverImageUrl: coverUrlField.optional(),
+  isFeatured: z.boolean().optional(),
+  videoUrl: videoUrlField.optional(),
 });
 
 const updateSchema = z.object({
@@ -138,6 +162,9 @@ const updateSchema = z.object({
   metaDescription: metaDescriptionField.optional(),
   keywords: keywordsField.optional(),
   ads: adsField.optional(),
+  coverImageUrl: coverUrlField.optional(),
+  isFeatured: z.boolean().optional(),
+  videoUrl: videoUrlField.optional(),
 });
 
 /* PATCH (publication) — contrat historique conservé à l'identique. */
@@ -161,6 +188,38 @@ function toStoreJson(map: Record<string, string | undefined>): string {
 function estimateReadingMin(frBody: string): number {
   const words = frBody.trim().split(/\s+/).filter(Boolean).length;
   return Math.min(60, Math.max(1, Math.ceil(words / 200)));
+}
+
+/** Colonnes éditorial enrichi (DASH-5) pour create/update. Les champs non fournis
+ * ne touchent pas à la base ; une chaîne vide remet à blanc (null). */
+function editorialColumns(d: {
+  coverImageUrl?: string | null;
+  isFeatured?: boolean;
+  videoUrl?: string | null;
+}): Record<string, unknown> {
+  const data: Record<string, unknown> = {};
+  if (d.coverImageUrl !== undefined) data.coverImageUrl = d.coverImageUrl;
+  if (d.isFeatured !== undefined) data.isFeatured = d.isFeatured;
+  if (d.videoUrl !== undefined) data.videoUrl = d.videoUrl;
+  return data;
+}
+
+/** AUTOPUSH — publication d'un article (transition false→true uniquement).
+ * FIRE-AND-FORGET : ne bloque jamais la réponse, n'échoue jamais la requête. */
+function notifyArticlePublished(prevPublished: boolean, nextPublished: boolean, frTitle: string, slug: string): void {
+  if (!nextPublished || prevPublished) return;
+  void notifyAll({
+    title: "📰 Nouvel article",
+    body: (frTitle || slug).slice(0, 120),
+    url: `/blog/${slug}`,
+    kind: "article",
+  }).catch(() => {});
+}
+
+/** Titre français d'un post stocké en JSON (repli : texte brut puis slug). */
+function frTitleOf(titleJson: string, slug: string): string {
+  const map = parseLocaleJson(titleJson);
+  return map.fr ?? Object.values(map)[0] ?? slug;
 }
 
 /** Colonnes SEO + adsJson pour create/update (DASH-3). Les champs non fournis
@@ -225,6 +284,9 @@ export async function GET(req: Request) {
           metaDescription: p.metaDescription,
           keywords: p.keywords,
           ads: parseAds(p.adsJson),
+          coverImageUrl: p.coverImageUrl,
+          isFeatured: p.isFeatured,
+          videoUrl: p.videoUrl,
         },
       });
     }
@@ -244,6 +306,9 @@ export async function GET(req: Request) {
         metaDescription: p.metaDescription,
         keywords: p.keywords,
         ads: parseAds(p.adsJson),
+        coverImageUrl: p.coverImageUrl,
+        isFeatured: p.isFeatured,
+        videoUrl: p.videoUrl,
       })),
     });
   } catch (e) {
@@ -286,8 +351,11 @@ export async function POST(req: Request) {
         isPublished: d.isPublished,
         publishedAt: d.publishedAt ? new Date(d.publishedAt) : d.isPublished ? new Date() : null,
         ...seoColumns(d),
+        ...editorialColumns(d),
       },
     });
+    /* AUTOPUSH — article créé directement publié (fire-and-forget). */
+    notifyArticlePublished(false, post.isPublished, frTitleOf(post.title, post.slug), post.slug);
     return NextResponse.json({ ok: true, data: { id: post.id } }, { status: 201 });
   } catch (e) {
     console.error("[admin/posts POST]", e);
@@ -346,7 +414,10 @@ export async function PUT(req: Request) {
     }
     if (d.publishedAt !== undefined) data.publishedAt = new Date(d.publishedAt);
     Object.assign(data, seoColumns(d));
+    Object.assign(data, editorialColumns(d));
     const post = await db.blogPost.update({ where: { id: d.id }, data });
+    /* AUTOPUSH — transition false→true via l'enregistrement complet. */
+    notifyArticlePublished(existing.isPublished, post.isPublished, frTitleOf(post.title, post.slug), post.slug);
     return NextResponse.json({ ok: true, data: { id: post.id } });
   } catch (e) {
     console.error("[admin/posts PUT]", e);
@@ -369,6 +440,13 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ ok: false, error: { code: "validation" } }, { status: 400 });
   }
   try {
+    const existing = await db.blogPost.findUnique({
+      where: { id: parsed.data.id },
+      select: { isPublished: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ ok: false, error: { code: "not_found" } }, { status: 404 });
+    }
     const post = await db.blogPost.update({
       where: { id: parsed.data.id },
       data: {
@@ -376,6 +454,8 @@ export async function PATCH(req: Request) {
         ...(parsed.data.isPublished ? { publishedAt: new Date() } : {}),
       },
     });
+    /* AUTOPUSH — transition false→true (contrat historique conservé). */
+    notifyArticlePublished(existing.isPublished, post.isPublished, frTitleOf(post.title, post.slug), post.slug);
     return NextResponse.json({ ok: true, data: { id: post.id, isPublished: post.isPublished } });
   } catch (e) {
     console.error("[admin/posts PATCH]", e);

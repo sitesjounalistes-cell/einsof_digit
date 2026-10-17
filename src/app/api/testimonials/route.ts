@@ -26,6 +26,8 @@ export async function GET() {
         sector: r.sector,
         quote: parseLocaleJson(r.quote),
         rating: r.rating,
+        authorPhotoUrl: r.authorPhotoUrl,
+        videoUrl: r.videoUrl,
       })),
     });
   } catch (e) {

@@ -44,6 +44,11 @@ const SAAS_PAGES: SiteRoute[] = SAAS_PRODUCTS.map((p) => ({
 export const SITE_ROUTES: SiteRoute[] = [
   { path: "/", label: "Accueil" },
   ...STATIC_PAGES,
+  /* Podcast — page éditée par un autre chantier (PAGES pas encore à jour) :
+     déclarée ici pour que le chatbot puisse y emmener le visiteur et
+     s'en servir comme preuve d'expertise (audios sur le digital et la
+     vente en Guinée). */
+  { path: "/podcast", label: "Podcast EINSOF", hint: "podcast audio digital vente guinée" },
   ...SERVICE_PAGES,
   ...SAAS_PAGES,
 ];

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/admin-auth";
 import { parseLocaleJson } from "@/lib/locale-json";
+import { parseYouTubeId } from "@/lib/youtube";
 
 /** Témoignages : CRUD complet pour l'équipe (H-08 — données réelles du client). */
 
@@ -16,6 +17,23 @@ const quoteSchema = z.object({
 
 const optional120 = z.string().trim().max(120).optional();
 
+/* ── Photo + vidéo de l'auteur (DASH-5) — chaîne vide = remise à blanc ── */
+const photoUrlField = z
+  .string()
+  .trim()
+  .max(600, "photo_too_long")
+  .transform((v) => (v.length > 0 ? v : null))
+  .refine(
+    (v) => v === null || v.startsWith("/") || /^https:\/\//i.test(v),
+    "bad_photo_url"
+  );
+const videoUrlField = z
+  .string()
+  .trim()
+  .max(500, "video_too_long")
+  .transform((v) => (v.length > 0 ? v : null))
+  .refine((v) => v === null || parseYouTubeId(v) !== null, "bad_video_url");
+
 const createSchema = z.object({
   authorName: z.string().trim().min(2).max(120),
   authorRole: optional120,
@@ -25,6 +43,8 @@ const createSchema = z.object({
   rating: z.coerce.number().int().min(1).max(5).nullable().optional(),
   sortOrder: z.coerce.number().int().min(0).max(999).default(0),
   isPublished: z.boolean().default(false),
+  authorPhotoUrl: photoUrlField.optional(),
+  videoUrl: videoUrlField.optional(),
 });
 
 const putSchema = z.object({
@@ -37,6 +57,8 @@ const putSchema = z.object({
   rating: z.coerce.number().int().min(1).max(5).nullable().optional(),
   sortOrder: z.coerce.number().int().min(0).max(999).optional(),
   isPublished: z.boolean().optional(),
+  authorPhotoUrl: photoUrlField.nullable().optional(),
+  videoUrl: videoUrlField.nullable().optional(),
 });
 
 function clean(v?: string | null): string | null {
@@ -62,6 +84,8 @@ export async function GET() {
         sector: r.sector,
         quote: parseLocaleJson(r.quote),
         rating: r.rating,
+        authorPhotoUrl: r.authorPhotoUrl,
+        videoUrl: r.videoUrl,
         sortOrder: r.sortOrder,
         isPublished: r.isPublished,
         createdAt: r.createdAt,
@@ -100,6 +124,8 @@ export async function POST(req: Request) {
         sector: clean(d.sector),
         quote: JSON.stringify(d.quote),
         rating: d.rating ?? null,
+        authorPhotoUrl: d.authorPhotoUrl ?? null,
+        videoUrl: d.videoUrl ?? null,
         sortOrder: d.sortOrder,
         isPublished: d.isPublished,
       },
@@ -126,13 +152,16 @@ export async function PUT(req: Request) {
     return NextResponse.json({ ok: false, error: { code: "validation" } }, { status: 400 });
   }
   try {
-    const { id, authorRole, company, sector, quote, rating, ...rest } = parsed.data;
+    const { id, authorRole, company, sector, quote, rating, authorPhotoUrl, videoUrl, ...rest } =
+      parsed.data;
     const data: Record<string, unknown> = { ...rest };
     if (authorRole !== undefined) data.authorRole = clean(authorRole);
     if (company !== undefined) data.company = clean(company);
     if (sector !== undefined) data.sector = clean(sector);
     if (quote !== undefined) data.quote = JSON.stringify(quote);
     if (rating !== undefined) data.rating = rating;
+    if (authorPhotoUrl !== undefined) data.authorPhotoUrl = authorPhotoUrl;
+    if (videoUrl !== undefined) data.videoUrl = videoUrl;
     const testimonial = await db.testimonial.update({ where: { id }, data });
     return NextResponse.json({ ok: true, data: { id: testimonial.id } });
   } catch (e) {

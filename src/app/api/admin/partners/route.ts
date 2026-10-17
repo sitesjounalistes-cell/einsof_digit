@@ -5,7 +5,17 @@ import { isAdmin } from "@/lib/admin-auth";
 
 /** Partenaires : CRUD complet pour l'équipe (H-08 — données réelles du client). */
 
-const urlField = z.string().trim().url().max(300).optional().or(z.literal(""));
+/* URL (https) OU chemin interne (/uploads/… issu de /api/admin/upload) — vide = aucun. */
+const urlField = z
+  .string()
+  .trim()
+  .max(300)
+  .refine(
+    (v) => v === "" || v.startsWith("/") || /^https?:\/\/\S+\.\S+/i.test(v),
+    "bad_url"
+  )
+  .nullable()
+  .optional();
 
 const createSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -19,8 +29,8 @@ const createSchema = z.object({
 const putSchema = z.object({
   id: z.string().uuid(),
   name: z.string().trim().min(2).max(120).optional(),
-  logoUrl: urlField.nullable(),
-  websiteUrl: urlField.nullable(),
+  logoUrl: urlField,
+  websiteUrl: urlField,
   description: z.string().trim().max(500).nullable().optional(),
   sortOrder: z.coerce.number().int().min(0).max(999).optional(),
   isActive: z.boolean().optional(),

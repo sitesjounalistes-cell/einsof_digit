@@ -86,6 +86,7 @@ export function PwaPrompt() {
   };
 
   const dismissLater = () => {
+    track("pwa_prompt_dismissed");
     try {
       localStorage.setItem(DISMISS_KEY, String(Date.now()));
     } catch {
@@ -95,6 +96,7 @@ export function PwaPrompt() {
   };
 
   const install = async () => {
+    track("pwa_prompt_accepted");
     const ev = deferred.current;
     if (!ev) {
       setIosSteps(true);

@@ -1,7 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, type FormEvent } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
+import Image from "next/image";
+import { ImagePlus, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { GoldButton } from "@/components/site/kit";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -53,6 +60,11 @@ const URL_RE = /^https?:\/\/\S+\.\S+/i;
 
 const isBlankUrl = (v: string): boolean => v.trim() === "";
 const urlValid = (v: string): boolean => isBlankUrl(v) || URL_RE.test(v.trim());
+/** Logo : https ou chemin interne (/uploads/… issu de /api/admin/upload). */
+const logoUrlValid = (v: string): boolean =>
+  isBlankUrl(v) || v.trim().startsWith("/") || URL_RE.test(v.trim());
+
+const MAX_UPLOAD_BYTES = 6 * 1024 * 1024; // 6 Mo (miroir de la validation serveur)
 
 export function PartnersPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
   const [rows, setRows] = useState<PartnerRow[] | null>(null);
@@ -65,6 +77,56 @@ export function PartnersPanel({ onUnauthorized }: { onUnauthorized: () => void }
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  /* Upload du logo (pattern ProjectsPanel — /api/admin/upload) */
+  const logoFileRef = useRef<HTMLInputElement>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
+
+  const uploadLogo = async (file: File) => {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setLogoUploadError("Image trop lourde — 6 Mo maximum.");
+      return;
+    }
+    setLogoUploading(true);
+    setLogoUploadError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      if (res.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      const json = (await res.json().catch(() => null)) as {
+        ok: boolean;
+        data?: { url: string };
+        error?: { code?: string };
+      } | null;
+      if (res.ok && json?.ok && json.data?.url) {
+        setForm((f) => ({ ...f, logoUrl: json.data!.url }));
+      } else {
+        const code = json?.error?.code;
+        setLogoUploadError(
+          code === "too_large"
+            ? "Image trop lourde — 6 Mo maximum."
+            : code === "bad_type"
+              ? "Format non reconnu — JPEG, PNG, WebP, AVIF ou GIF attendu."
+              : "Envoi impossible. Réessayez."
+        );
+      }
+    } catch {
+      setLogoUploadError("Erreur réseau. Réessayez.");
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const onLogoFile = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; /* permet de re-choisir le même fichier */
+    if (file) void uploadLogo(file);
+  };
 
   /* ── Liste ─────────────────────────────────────────────────── */
   useEffect(() => {
@@ -179,8 +241,10 @@ export function PartnersPanel({ onUnauthorized }: { onUnauthorized: () => void }
       setFormError("Le nom du partenaire est requis (2 à 120 caractères).");
       return;
     }
-    if (!urlValid(form.logoUrl)) {
-      setFormError("L'URL du logo doit être une adresse valide commençant par http(s):// — ou vide.");
+    if (!logoUrlValid(form.logoUrl)) {
+      setFormError(
+        "L'URL du logo doit être une adresse valide commençant par http(s):// ou un chemin interne commençant par / — ou vide."
+      );
       return;
     }
     if (!urlValid(form.websiteUrl)) {
@@ -303,14 +367,46 @@ export function PartnersPanel({ onUnauthorized }: { onUnauthorized: () => void }
             </label>
             <label className="grid gap-1.5">
               <span className={labelCls}>URL du logo (optionnel)</span>
-              <input
-                className={inputCls}
-                value={form.logoUrl}
-                onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))}
-                maxLength={300}
-                placeholder="https://exemple.com/logo.png"
-                type="url"
-              />
+              {form.logoUrl.trim() !== "" && (
+                <span className="flex h-16 w-28 items-center justify-center overflow-hidden rounded-lg border border-line bg-bg p-2">
+                  <Image
+                    src={form.logoUrl}
+                    alt="Aperçu du logo"
+                    width={112}
+                    height={64}
+                    className="max-h-full max-w-full object-contain"
+                    unoptimized
+                  />
+                </span>
+              )}
+              <span className="flex flex-wrap items-center gap-2">
+                <input
+                  className={inputCls}
+                  value={form.logoUrl}
+                  onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))}
+                  maxLength={300}
+                  placeholder="https://exemple.com/logo.png ou /uploads/…"
+                  type="text"
+                />
+                <button
+                  type="button"
+                  onClick={() => logoFileRef.current?.click()}
+                  disabled={logoUploading}
+                  className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-line px-3 text-sm text-mute transition-colors hover:border-gold/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {logoUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.25} aria-hidden />
+                  ) : (
+                    <ImagePlus className="h-4 w-4" strokeWidth={1.25} aria-hidden />
+                  )}
+                  Envoyer
+                </button>
+              </span>
+              {logoUploadError && (
+                <p role="alert" className="text-xs text-destructive">
+                  {logoUploadError}
+                </p>
+              )}
             </label>
             <label className="grid gap-1.5">
               <span className={labelCls}>URL du site (optionnel)</span>
@@ -348,6 +444,16 @@ export function PartnersPanel({ onUnauthorized }: { onUnauthorized: () => void }
               {formError}
             </p>
           )}
+
+          <input
+            ref={logoFileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+            className="hidden"
+            onChange={onLogoFile}
+            tabIndex={-1}
+            aria-hidden="true"
+          />
 
           <div className="mt-4">
             <GoldButton type="submit" disabled={busy} className="min-h-10! px-4! text-xs!">

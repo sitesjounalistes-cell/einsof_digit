@@ -39,6 +39,7 @@ const createSchema = z.object({
   slug: slugField.optional(),
   isPublished: z.boolean().default(false),
   sortOrder: z.coerce.number().int().min(0).max(999).optional(),
+  categoryId: z.string().uuid().or(z.literal("")).nullable().optional(),
 });
 
 const patchSchema = z.object({
@@ -54,7 +55,20 @@ const patchSchema = z.object({
   slug: slugField.nullable().optional(),
   isPublished: z.boolean().optional(),
   sortOrder: z.coerce.number().int().min(0).max(999).optional(),
+  categoryId: z.string().uuid().or(z.literal("")).nullable().optional(),
 });
+
+/** Résout une valeur categoryId (""/null = aucun) — renvoie undefined si absent,
+ * null si aucun, l'id si valide ou "bad" si la catégorie n'existe pas. */
+async function resolveCategoryId(
+  v: string | null | undefined
+): Promise<string | null | "bad" | undefined> {
+  if (v === undefined) return undefined;
+  const id = (v ?? "").trim();
+  if (id === "") return null;
+  const exists = await db.portfolioCategory.findUnique({ where: { id }, select: { id: true } });
+  return exists ? id : "bad";
+}
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 
@@ -106,6 +120,7 @@ export async function GET() {
   try {
     const rows = await db.project.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      include: { category: { select: { nameJson: true } } },
     });
     return NextResponse.json({
       ok: true,
@@ -120,6 +135,10 @@ export async function GET() {
         description: parseLocaleJson(p.description).fr ?? null,
         linkUrl: p.linkUrl,
         imageUrl: p.imageUrl,
+        categoryId: p.categoryId,
+        categoryName: p.category
+          ? (parseLocaleJson(p.category.nameJson).fr ?? null)
+          : null,
         isPublished: p.isPublished,
         sortOrder: p.sortOrder,
       })),
@@ -151,6 +170,10 @@ export async function POST(req: Request) {
   }
   try {
     const d = parsed.data;
+    const categoryId = await resolveCategoryId(d.categoryId);
+    if (categoryId === "bad") {
+      return NextResponse.json({ ok: false, error: { code: "bad_category" } }, { status: 400 });
+    }
     const slug = await uniqueSlug(d.slug ? d.slug : d.title);
     const project = await db.project.create({
       data: {
@@ -165,6 +188,7 @@ export async function POST(req: Request) {
         imageUrl: clean(d.imageUrl ?? null),
         isPublished: d.isPublished,
         sortOrder: d.sortOrder ?? 0,
+        categoryId,
       },
     });
     return NextResponse.json(
@@ -196,8 +220,19 @@ export async function PATCH(req: Request) {
       { status: 400 }
     );
   }
-  const { id, title, summary, description, client, sector, linkUrl, imageUrl, slug, ...rest } =
-    parsed.data;
+  const {
+    id,
+    title,
+    summary,
+    description,
+    client,
+    sector,
+    linkUrl,
+    imageUrl,
+    slug,
+    categoryId,
+    ...rest
+  } = parsed.data;
   try {
     const existing = await db.project.findUnique({ where: { id } });
     if (!existing) {
@@ -216,6 +251,13 @@ export async function PATCH(req: Request) {
     if (sector !== undefined) data.sector = clean(sector);
     if (linkUrl !== undefined) data.linkUrl = clean(linkUrl);
     if (imageUrl !== undefined) data.imageUrl = clean(imageUrl);
+    if (categoryId !== undefined) {
+      const resolved = await resolveCategoryId(categoryId);
+      if (resolved === "bad") {
+        return NextResponse.json({ ok: false, error: { code: "bad_category" } }, { status: 400 });
+      }
+      data.categoryId = resolved;
+    }
     if (slug !== undefined && slug !== null && slug.trim() !== "") {
       const next = slugify(slug);
       if (next !== existing.slug) data.slug = await uniqueSlug(next, id);
