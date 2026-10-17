@@ -97,7 +97,7 @@ export async function* streamOpenRouter(
          avant même la requête (chaque appel échoue → repli lent).
          Audit F-20 : URL et titre par défaut alignés sur la marque dynamique
          et la même URL canonique par défaut que lib/seo.ts. */
-      "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.einsof.gn",
+      "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.einsofdigit.com",
       "X-Title": `${BRAND} Assistant commercial`,
     },
     body: JSON.stringify({

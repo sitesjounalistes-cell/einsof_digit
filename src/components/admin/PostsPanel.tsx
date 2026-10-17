@@ -1090,7 +1090,7 @@ export function PostsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
                               className={inputCls}
                               value={ad.linkUrl}
                               maxLength={600}
-                              placeholder="https://www.einsof.gn/logiciels"
+                              placeholder="https://www.einsofdigit.com/logiciels"
                               onChange={(e) => updateAd(i, { linkUrl: e.target.value })}
                             />
                           </label>

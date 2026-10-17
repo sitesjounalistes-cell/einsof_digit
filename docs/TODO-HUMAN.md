@@ -5,7 +5,7 @@
 | N° | Tâche | Responsable | Bloquante avant | État |
 |----|-------|-------------|-----------------|------|
 | H-01 | Fournir le nom définitif de l'entreprise, le logo (SVG), la charte | Client | Production | ⏳ Nom provisoire **EINSOF** (variable `NEXT_PUBLIC_BRAND_NAME`), monogramme provisoire en place |
-| H-02 | Acheter le nom de domaine, accès DNS | Client | Mise en ligne | ⏳ |
+| H-02 | Acheter le nom de domaine, accès DNS | Client | Mise en ligne | 🟡 **Domaine acheté et connecté sur Vercel : `einsofdigit.com`** (redirection 308 vers www, 17/10/2026). DNS gérés par Vercel — revoir si l'on veut un registrar externe. `NEXT_PUBLIC_SITE_URL=https://www.einsofdigit.com` (défaut dans `seo.ts` si absente) |
 | H-03 | Créer les comptes : Vercel, Neon, Cloudflare (R2/Turnstile), Resend, Upstash, Sentry ; fournir les clés | Client | Production | ⏳ Adaptateurs simulés en sandbox |
 | H-04 | Choisir le fournisseur IA (LLM + embeddings 1024) | Client | Production | 🟡 **OpenRouter** en moteur principal (chaîne llama-3.3-70b → mistral-small → deepseek, clé `OPENROUTER_API_KEY`) + repli z-ai. ⚠ **La clé d'origine a fuité dans git : la révoquer sur openrouter.ai/keys et en générer une nouvelle** (audit S-02) ; embeddings reportés (cf. DECISIONS) |
 | H-05 | Générer les clés VAPID de production + définir `CRON_SECRET` | Client/technique | Notifications push en production | 🟡 Push opérationnel en sandbox (clés auto-générées et persistées, abonnement consenti, envoi de test dans l'admin, SW prêt) ; générer `bun scripts/push-keys.ts` pour la production |

@@ -186,7 +186,7 @@ export function SoftwareLinksPanel({ onUnauthorized }: { onUnauthorized: () => v
                       value={draft.demoUrl}
                       onChange={(e) => setField(p.slug, "demoUrl", e.target.value)}
                       maxLength={500}
-                      placeholder="https://demo.einsof.gn/…"
+                      placeholder="https://demo.einsofdigit.com/…"
                       type="url"
                       aria-invalid={demoInvalid}
                     />

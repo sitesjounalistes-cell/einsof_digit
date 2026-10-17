@@ -390,7 +390,7 @@ export function SettingsPanel({ onUnauthorized }: { onUnauthorized: () => void }
                       className={inputCls}
                       value={email}
                       onChange={(e) => updateList("emails", i, e.target.value)}
-                      placeholder="contact@einsof.gn"
+                      placeholder="contact@einsofdigit.com"
                       aria-label={`E-mail ${i + 1}`}
                       maxLength={120}
                     />

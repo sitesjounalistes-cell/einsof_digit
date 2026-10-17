@@ -21,13 +21,11 @@ import { WEB_OFFERS, SOFTWARE_OFFERS, SAAS_PRODUCTS, formatGNF } from "@/lib/cat
    ════════════════════════════════════════════════════════════════ */
 
 /**
- * URL canonique du site.
- * ⚠ TODO-HUMAN : renseigner NEXT_PUBLIC_SITE_URL avec le domaine final
- * du client dès qu'il est acheté — tout le reste (sitemap, canoniques,
- * Open Graph, JSON-LD) se mettra à jour automatiquement.
+ * URL canonique du site — domaine définitif connecté sur Vercel le 17/10/2026
+ * (www.einsofdigit.com). NEXT_PUBLIC_SITE_URL reste prioritaire si définie.
  */
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://www.einsof.gn";
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://www.einsofdigit.com";
 
 /** Ville / zone géographique ciblées (données structurées + contenus). */
 export const GEO = {
