@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { MethodPage } from "@/components/pages/MethodPage";
 import { JsonLd } from "@/components/site/JsonLd";
-import {
 import { BRAND } from "@/lib/brand";
+import {
   GEO,
   PAGE_KEYWORDS,
   buildMetadata,

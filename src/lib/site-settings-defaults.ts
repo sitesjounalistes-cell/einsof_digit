@@ -1,5 +1,4 @@
 /**
-import { BRAND } from "@/lib/brand";
  * Réglages du site — types & valeurs par défaut (module isomorphe).
  * Ce fichier est volontairement SANS dépendance serveur (pas de db) :
  * il est importable depuis les composants client (panneau admin, sections
@@ -7,6 +6,7 @@ import { BRAND } from "@/lib/brand";
  *
  * La lecture base de données vit dans `src/lib/site-settings.ts` (serveur).
  */
+import { BRAND } from "@/lib/brand";
 
 /** Réseau social configuré (platform = clé d'icône : facebook, instagram, …) */
 export interface SocialItem {

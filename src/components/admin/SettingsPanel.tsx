@@ -19,8 +19,8 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
-import {
 import { BRAND } from "@/lib/brand";
+import {
   DEFAULT_MANAGER_MESSAGE,
   SOCIAL_PLATFORMS,
   type SiteSettingsData,

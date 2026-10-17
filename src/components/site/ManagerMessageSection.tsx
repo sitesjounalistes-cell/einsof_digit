@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Container, Section, SectionHeading } from "@/components/site/kit";
 import { Reveal, DrawRule } from "@/components/motion";
 import { useI18n } from "@/lib/i18n";
-import { BRAND_INITIAL } from "@/lib/brand";
+import { BRAND, BRAND_INITIAL } from "@/lib/brand";
 import {
   DEFAULT_SITE_SETTINGS,
   type SiteSettingsData,

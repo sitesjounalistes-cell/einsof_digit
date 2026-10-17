@@ -1,6 +1,6 @@
 # PROGRESS — Site premium EINSOF (cahier des charges §1–32)
 
-## ✅ Livré (version sandbox mono-route)
+## ✅ Livré (architecture **multi-pages** depuis le 14/10 au soir — voir « Passage multipage » plus bas)
 
 ### Design system « Obsidienne et Or » (section 32)
 - [x] Jetons couleurs exacts (§22/§32.2) : noir #0A0A0A, ivoire #FAF8F3, or #D4AF37, dégradé or, verre noir, grain + vignette
@@ -12,7 +12,7 @@
 
 ### Pages / sections publiques (section 23)
 - [x] Hero plein écran : image de marque générée, particules, titre mot à mot avec italique doré, salutation selon l'heure, 2 CTA, indicateur de défilement
-- [x] Chiffres clés : 7 ans · 10 experts · 5 langues · 6 SaaS (réels, §1/§2)
+- [x] Chiffres clés : 7 ans · 10 experts · 5 langues · **7 SaaS** (réels, §1/§2 — compteur dérivé du catalogue depuis l'audit du 17/10)
 - [x] Services : 7 cartes (dont « Stratégie d'entreprise — Bientôt ») avec prix §19
 - [x] Les deux piliers (§19.3) en alternance
 - [x] SaaS : 6 cartes avec maquettes CSS inclinées + tarifs exacts (dont école 9 mois, hospitalière 3 forfaits)
@@ -46,7 +46,7 @@
 - [x] Leads : statuts §12 (nouveau → gagné/perdu) avec events horodatés, notes internes, badges source/intérêts
 - [x] Messages de contact (statuts), Essais gratuits, Export CSV (BOM, `;`)
 - [x] Design sobre noir/or (§32.8)
-- [x] **9 onglets** : Flux, Journal (rédaction complète), Réalisations (CRUD), Démos, Partenaires, Témoignages, Documents, E-mails, Push
+- [x] **13 onglets** : Flux, Journal (rédaction complète), Réalisations (CRUD), Démos, Partenaires, Témoignages, Documents, E-mails, Podcasts, Statistiques, Publicité, Site & Contact, Logiciels *(l'onglet Push a été retiré le 16/10 — l'envoi de test vit dans Publicité ; décompte « 9 onglets » obsolète)*
 
 ### Compléments livrés (session « achèvement » — 14/10/2026)
 - [x] **Rédaction du Journal dans l'admin** (§26) : création/édition/suppression d'articles, onglets de langue fr requis + en/es/zh/de optionnels (repli fr), slug auto-suggéré, catégorie, temps de lecture auto-estimé (mots/200), publication par interrupteur — format de sérialisation identique au seed (`{"fr":"p1\n\np2"}`)
@@ -78,7 +78,7 @@
 - **Journal** : création d'article via l'admin (201), notice « Article créé », publication, suppression avec dialogue de confirmation ; API publique cohérente
 - **Partenaires** : création dans l'admin → section publique apparaît (masquée-si-vide vérifié dans les deux sens), carte rendue en thèmes sombre et clair
 - **E-mails** : newsletter → POST 201 → EmailLog `newsletter_welcome` visible dans l'onglet E-mails (« Simulé » en sandbox)
-- **Base purgée de toute donnée de test** après vérification : 0 lead/réservation/e-mail/chat/consentement, 3 articles éditoriaux, 12 créneaux opérationnels
+- **Base purgée de toute donnée de test** après vérification — puis **re-purgée le 17/10** (audit S-08 : il restait 11 chats, 50 consentements, 87 analytics, 1 e-mail et 2 résidus SoftwareLink) : 0 lead/réservation/e-mail/chat/consentement/analytics, 12 articles éditoriaux, 12 créneaux opérationnels + régénération automatique
 - Sections re-masquées automatiquement après purge ; lint 0 erreur, tsc 0 erreur, dev.log sans erreur
 - Vérifications antérieures (14/10) : rendu sombre + clair, desktop/mobile, chatbot tarifs exacts §19, essai 201/409, contact 201/400, admin flux/CSV, Omnis, PWA
 
@@ -124,3 +124,11 @@
 - **Thèmes adoucis (retour « trop blanc / trop noir »)** : clair = parchemin chaud (bg #f1ebdd, surface #faf6ec, lignes #d8cdb2, or #a8841c) ; sombre = obsidienne veloutée (bg #151517, surface #1d1d20, surface2 #26262a, lignes #34343a, mute éclairci) ; themeColor + manifest alignés ; vignette et grain réduits.
 - **Animations ++** : parallaxe PageHero (y 0→70 px, scale 1.04→1.12, off en mode réduit) ; cascade des dropdowns ; progression des pastilles ; marquee clients ; aperçus défilants. Pas de fondu sur <main> (leçon SiteShell respectée).
 - **Vérification Agent Browser** : autoplay en boucle ✓, dropdowns desktop (dark + light) ✓, tiroir mobile + sous-menus ✓, aperçus défilants ✓, accordéons FAQ ✓, thèmes clair/sombre sur accueil/services/détail/réalisations/FAQ ✓ ; lint 0 erreur ; dev.log propre.
+
+## 🔧 Audit & correctifs du 17/10/2026 (docs/AUDIT-2026-10-17.md)
+
+- **Sécurité (S-01→S-08)** : clé OpenRouter retirée de TOUT l'historique git (à révoquer côté openrouter.ai) ; `.env`/`db/`/`tool-results/`/`upload/` untrackés + purgés de l'historique ; plus aucun mot de passe/secret par défaut (fail-closed) ; cookie admin réellement signé HMAC avec expiration serveur ; hashIp = vrai SHA-256 ; rate-limit sur toutes les écritures publiques ; désabonnement push par preuve de possession.
+- **Fonctionnel (F-01→F-24)** : créneaux de démo **auto-régénérés** (plus de grille morte après le 03/11) ; bug newsletter corrigé (fusion de tous les abonnés en un Lead) ; consentement chat transmissible ; statistiques push « ouvertes » désormais mesurées (logId dans le payload) ; garde SSE alignée sur le parseur ; P2025 → 404 ; catégories de blog validées et traduites (6 clés × 5 langues).
+- **Contenu** : stats « 7 SaaS » dynamiques ; traductions « six » → « sept » (en/es/de/zh) ; ~80 littéraux EINSOF convertis en marque dynamique (jeton `{brand}` + brandize) ; §20.4 étendue au podcast (sitemap/llms.txt/prompt conditionnels) ; `/zones` et les 14 pages secteurs navigables par le chatbot.
+- **Nettoyage** : 20 dépendances jamais importées retirées ; 9 composants shadcn morts, `sections-registry`, `FaqSection`, `tailwind.config.ts`, Caddyfile, `.zscripts/`, `examples/`, `tool-results/`, `upload/`, `download/`, `mini-services/`, `agent-ctx/` supprimés ; scripts npm portables ; `README.md` créé.
+- **Vérifications** : historique git 0 clé `sk-or-v1-` (script) ; suivi git 326 fichiers (477 avant) ; base 0 PII, contenus intacts.

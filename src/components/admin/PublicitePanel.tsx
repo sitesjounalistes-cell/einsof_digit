@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { BRAND } from "@/lib/brand";
 import {
+  Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
