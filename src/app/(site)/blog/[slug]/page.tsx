@@ -14,6 +14,8 @@ async function getPost(slug: string) {
   try {
     const p = await db.blogPost.findUnique({ where: { slug } });
     if (!p || !p.isPublished) return null;
+    /* Publication planifiée : inaccessible avant sa date (404 propre). */
+    if (p.publishedAt && p.publishedAt.getTime() > Date.now()) return null;
     return {
       ...p,
       publishedAt: p.publishedAt?.toISOString() ?? null,

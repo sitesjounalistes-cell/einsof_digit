@@ -4,13 +4,18 @@ import { parseLocaleJson } from "@/lib/locale-json";
 
 export const dynamic = "force-dynamic";
 
-/** Articles du Journal publiés (spécification §23 : /blog). */
+/** Articles du Journal publiés (spécification §23 : /blog).
+ *  Publication planifiée : un article avec publishedAt dans le futur reste
+ *  invisible jusqu'à sa date (calendrier éditorial 3 articles/semaine). */
 export async function GET() {
   try {
     const rows = await db.blogPost.findMany({
-      where: { isPublished: true },
+      where: {
+        isPublished: true,
+        OR: [{ publishedAt: null }, { publishedAt: { lte: new Date() } }],
+      },
       orderBy: [{ publishedAt: "desc" }],
-      take: 12,
+      take: 60,
     });
     return NextResponse.json({
       ok: true,

@@ -61,8 +61,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let blogRoutes: MetadataRoute.Sitemap = [];
   let podcastRoutes: MetadataRoute.Sitemap = [];
   try {
+    /* Publication planifiée : seuls les articles déjà dus apparaissent. */
     const posts = await db.blogPost.findMany({
-      where: { isPublished: true },
+      where: {
+        isPublished: true,
+        OR: [{ publishedAt: null }, { publishedAt: { lte: now } }],
+      },
       select: { slug: true, updatedAt: true },
     });
     blogRoutes = posts.map((p) => ({
