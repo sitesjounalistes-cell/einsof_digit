@@ -3,6 +3,8 @@
 import { Hero } from "@/components/site/Hero";
 import { StatsSection } from "@/components/site/StatsSection";
 import { ClientLogosBand } from "@/components/site/ClientLogosBand";
+import { ServicesSection } from "@/components/site/ServicesSection";
+import { SaasSection } from "@/components/site/SaasSection";
 import { useI18n } from "@/lib/i18n";
 import { Reveal } from "@/components/motion";
 import { Container, GoldButton } from "@/components/site/kit";
@@ -10,9 +12,10 @@ import { ArrowRight } from "lucide-react";
 
 /**
  * Page d'accueil (hub) — architecture multi-pages :
- * hero, chiffres clés et appel à l'action final.
- * Chaque page du site (services, logiciels, tarifs, blog…) est
- * atteinte via le menu de navigation — pas de grille de cartes ici.
+ * hero, bande clients, chiffres clés, carrousel des 7 pôles de services,
+ * carrousel des logiciels SaaS (visuels produits) et appel à l'action final.
+ * (Retour client 17/10 : les carrousels illustrés reviennent à l'accueil —
+ * une page d'entrée sans visuels produits ne montre pas le savoir-faire.)
  */
 export function HomePage() {
   const { t } = useI18n();
@@ -22,6 +25,12 @@ export function HomePage() {
       {/* Bande déroulante des clients réalisés (preuve sociale immédiate) */}
       <ClientLogosBand />
       <StatsSection />
+
+      {/* Carrousel coverflow des 7 pôles de services (visuels illustrés) */}
+      <ServicesSection />
+
+      {/* Carrousel coverflow des logiciels SaaS (maquettes produits) */}
+      <SaasSection />
 
       {/* Appel à l'action final */}
       <section className="relative overflow-hidden bg-bg py-20 md:py-28">

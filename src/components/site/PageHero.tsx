@@ -72,12 +72,16 @@ export function PageHero({
               fill
               priority
               sizes="100vw"
-              className="object-cover object-center opacity-40 dark:opacity-55"
+              /* Retour client 17/10 : le visuel doit être BIEN VISIBLE
+                 (avant : 40 %/55 % — quasi invisible sous les voiles). */
+              className="object-cover object-center opacity-75 dark:opacity-80"
             />
           </motion.div>
-          {/* voile principal : bas → haut, garantit le contraste du texte */}
-          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/80 to-bg/45" />
-          {/* voile latéral gauche : renforce la zone de texte */}
+          {/* voile principal : bas → haut — allégé pour laisser voir l'image
+             tout en garantissant le contraste du texte (text-shadow du
+             WordMask + voile latéral ci-dessous). */}
+          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/45 to-bg/15" />
+          {/* voile latéral gauche : protège la zone de texte uniquement */}
           <div className="absolute inset-0 bg-gradient-to-r from-bg/85 via-bg/40 to-transparent" />
         </div>
       )}
