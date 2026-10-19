@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowUp, Lock, Waves, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -136,7 +137,13 @@ export function Footer() {
         {/* 1 — Marque */}
         <StaggerItem y={24}>
           <Float y={6} duration={5} className="inline-block">
-            <Monogram />
+            <Image
+              src="/logos/einsof-digit-or.png"
+              alt={BRAND}
+              width={173}
+              height={44}
+              className="w-auto"
+            />
           </Float>
           <p className="mt-4 text-sm text-mute">{t("footer.tagline")}</p>
         </StaggerItem>

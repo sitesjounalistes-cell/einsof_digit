@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import {
   ArrowRight,
@@ -74,12 +75,18 @@ const SERVICE_MENU_KEYS = [
 /* Abonnement factice — lecture d'une valeur « snapshot » uniquement */
 const subscribeNoop = () => () => {};
 
-/* ── Marque : monogramme (rotation au survol) + nom ────────── */
+/* ── Marque : logo client (infini doré + EINSOF DIGIT), sans fond ── */
 function BrandMark() {
   return (
-    <Link href="/" className="group flex min-h-[44px] items-center gap-3" aria-label={BRAND}>
-      <Monogram size={36} className="transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:rotate-12" />
-      <span className="font-serif text-lg tracking-[0.18em] text-ink">{BRAND}</span>
+    <Link href="/" className="group flex min-h-[44px] items-center" aria-label={BRAND}>
+      <Image
+        src="/logos/einsof-digit-or.png"
+        alt={BRAND}
+        width={157}
+        height={40}
+        priority
+        className="w-auto transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+      />
     </Link>
   );
 }

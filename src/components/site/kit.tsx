@@ -2,8 +2,8 @@
 
 import React, { type ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { DrawRule, Magnetic, Reveal, WordMask } from "@/components/motion";
-import { BRAND_INITIAL } from "@/lib/brand";
 import { type PriceOffer, formatGNF } from "@/lib/catalog";
 
 /* ── Section : coquille avec data-section-id stable ─────────── */
@@ -177,21 +177,22 @@ export function GoldButton({
   return magnetic ? <Magnetic>{comp}</Magnetic> : comp;
 }
 
-/* ── Monogramme provisoire (initiale Cormorant dans un cercle or) ── */
+/* ── Logo client : symbole infini doré, fond transparent ────── */
 
 export function Monogram({ size = 40, className = "" }: { size?: number; className?: string }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full border border-gold/50 bg-surface/60 ${className}`}
+      className={`relative inline-flex shrink-0 items-center justify-center ${className}`}
       style={{ width: size, height: size }}
       aria-hidden
     >
-      <span
-        className="font-serif text-goldtext"
-        style={{ fontSize: size * 0.44, fontWeight: 600, lineHeight: 1 }}
-      >
-        {BRAND_INITIAL}
-      </span>
+      <Image
+        src="/logos/einsof-symbole-or.png"
+        alt=""
+        fill
+        sizes="64px"
+        className="object-contain drop-shadow-[0_0_10px_rgba(212,175,55,0.35)]"
+      />
     </span>
   );
 }

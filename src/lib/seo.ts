@@ -1004,7 +1004,7 @@ export function organizationJsonLd(): Json {
     name: BRAND,
     alternateName: [`${BRAND} Guinée`, `${BRAND} Conakry`, `${BRAND} GN`],
     url: SITE_URL,
-    logo: `${SITE_URL}/logo.svg`,
+    logo: `${SITE_URL}/logos/einsof-digit-or.png`,
     image: `${SITE_URL}/images/hero-obsidienne.png`,
     description:
       "Agence digitale en Guinée : création de sites web professionnels, développement de logiciels sur mesure, applications mobiles, logiciels SaaS de gestion, community management, génération de leads et formations digitales. Basée à Conakry, active dans toutes les régions de Guinée.",
