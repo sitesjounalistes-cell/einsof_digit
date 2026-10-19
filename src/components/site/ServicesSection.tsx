@@ -13,6 +13,7 @@ import {
   Target,
   type LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
 import {
   Beam,
   DrawRule,
@@ -25,6 +26,18 @@ import { useI18n } from "@/lib/i18n";
 import { openForm } from "@/lib/chat-bus";
 import { trackCta } from "@/lib/analytics";
 import { formatGNF } from "@/lib/catalog";
+
+/* Visuel illustré de chaque pôle (cartes du carrousel — retour client 17/10 :
+   de vraies images, même présentation que les cartes logiciels SaaS). */
+const SVC_IMAGE: Record<string, string> = {
+  web: "/images/services/svc-web.png",
+  software: "/images/services/svc-software.png",
+  saas: "/images/services/svc-saas.png",
+  community: "/images/services/svc-community.png",
+  acquisition: "/images/services/svc-acquisition.png",
+  training: "/images/services/svc-training.png",
+  strategy: "/images/services/svc-strategy.png",
+};
 
 type ServiceKey =
   | "web"
@@ -124,25 +137,40 @@ export function ServicesSection({ heading = true }: { heading?: boolean }) {
               <Beam always={active || isStrategy} className="h-full rounded-xl">
                 <SpotlightCard className="h-full rounded-xl">
                   <div
-                    className={`card-lift group relative flex h-full flex-col overflow-hidden rounded-xl border bg-surface p-6 transition-colors duration-500 ${
+                    className={`card-lift group relative flex h-full flex-col overflow-hidden rounded-xl border bg-surface transition-colors duration-500 ${
                       active ? "border-gold/50" : "border-line"
                     }`}
                   >
                     <span
                       aria-hidden
-                      className="absolute -top-2 right-3 font-serif text-7xl text-gold opacity-[0.07] transition-opacity duration-500 group-hover:opacity-[0.15]"
+                      className="absolute right-4 top-4 z-10 font-serif text-5xl text-gold opacity-[0.18] transition-opacity duration-500 group-hover:opacity-30"
                     >
                       {String(i + 1).padStart(2, "0")}
                     </span>
 
-                    <span className="inline-flex w-fit rounded-full border border-gold/30 p-3 text-gold transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110">
-                      <Icon size={24} strokeWidth={1.25} aria-hidden />
-                    </span>
+                    {/* Visuel du pôle (photo illustrée) */}
+                    <div className="relative aspect-[16/10] shrink-0 overflow-hidden">
+                      <Image
+                        src={SVC_IMAGE[s.key]}
+                        alt={s.name}
+                        fill
+                        sizes="(max-width: 640px) 80vw, 350px"
+                        className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
+                      />
+                      <div
+                        aria-hidden
+                        className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent"
+                      />
+                      {/* badge icône en superposition du visuel */}
+                      <span className="absolute bottom-3 left-4 z-10 inline-flex rounded-full border border-gold/40 bg-deep/80 p-2.5 text-gold backdrop-blur-sm">
+                        <Icon size={18} strokeWidth={1.25} aria-hidden />
+                      </span>
+                    </div>
 
-                    <h3 className="display-3 mt-5">{s.name}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-mute">{s.desc}</p>
+                    <h3 className="display-3 mt-5 px-6">{s.name}</h3>
+                    <p className="mt-2 px-6 text-sm leading-relaxed text-mute">{s.desc}</p>
 
-                    <div className="mt-4">
+                    <div className="mt-4 px-6">
                       {price ? (
                         <p className="text-[0.8125rem] font-medium text-goldtext">{price}</p>
                       ) : (
@@ -155,7 +183,7 @@ export function ServicesSection({ heading = true }: { heading?: boolean }) {
                     {/* Pied de carte : invitation à ouvrir la page du pôle */}
                     <span
                       aria-hidden
-                      className="mt-auto inline-flex items-center gap-2 pt-6 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-goldtext"
+                      className="mt-auto inline-flex items-center gap-2 px-6 pb-6 pt-6 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-goldtext"
                     >
                       {t("services.discover")}
                       <ArrowRight
