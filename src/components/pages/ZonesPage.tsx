@@ -39,7 +39,7 @@ export function ZonesPage() {
         gold={c.hero.gold}
         sub={c.hero.sub}
         chips={c.hero.chips}
-        image="/images/headers/header-services.png"
+        image="/images/headers/header-zones.jpg"
       />
 
       {/* Intro SEO : couverture nationale + organisation à distance */}

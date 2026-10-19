@@ -188,7 +188,7 @@ export function PodcastPage() {
         gold={brandize(t("podcast.gold"))}
         sub={brandize(t("podcast.sub"))}
         chips={chips}
-        image="/images/headers/header-blog.png"
+        image="/images/headers/header-podcast.jpg"
       />
 
       {/* Épisodes */}

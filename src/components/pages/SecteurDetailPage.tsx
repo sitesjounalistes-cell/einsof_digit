@@ -103,7 +103,8 @@ export function SecteurDetailPage({ slug }: { slug: string }) {
         title={detail.heroTitle}
         gold={detail.heroGold}
         sub={detail.heroSub}
-        image="/images/headers/header-secteurs.png"
+        /* Bandeau dédié par secteur (16 visuels générés — scripts/gen-headers.py) */
+        image={`/images/headers/header-secteur-${slug}.jpg`}
         parent={{ label: t("nav.secteurs"), href: "/secteurs" }}
       />
 
