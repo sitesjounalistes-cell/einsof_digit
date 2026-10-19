@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import { DICTS, type Dict, type Lang, LANGS } from "./translations";
 
-/* ── External store (localStorage + navigator.language) — hydration safe ── */
+/* ── External store (localStorage, défaut fr) — hydration safe ── */
 
 let currentLang: Lang = "fr";
 const langListeners = new Set<() => void>();
@@ -26,14 +26,14 @@ function subscribeLang(fn: () => void) {
 }
 
 function loadLang() {
+  /* Français par défaut pour tous — y compris les robots (Googlebot
+     rend la page en Chrome en-US : l'auto-détection navigator.language
+     faisait indexer le contenu ANGLAIS du site, marché guinéen FR.
+     L'anglais reste disponible via le sélecteur explicite, persisté. */
   let next: Lang = "fr";
   try {
     const saved = localStorage.getItem("eins-lang") as Lang | null;
     if (saved && LANGS.some((l) => l.code === saved)) next = saved;
-    else {
-      const nav = navigator.language?.slice(0, 2) as Lang | undefined;
-      if (nav && LANGS.some((l) => l.code === nav)) next = nav;
-    }
   } catch {
     /* private mode */
   }
