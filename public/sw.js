@@ -13,8 +13,13 @@
       été visitée et mise en cache (ou l'accueil pour la racine).
    3. Seules les réponses HTML complètes (200, text/html) sont mises en
       cache — jamais une erreur ou une réponse partielle de stream. */
-const CACHE = "einsof-v2";
-const PRECACHE = ["/icon.svg", "/images/hero-obsidienne.png"];
+const CACHE = "einsof-v3";
+const PRECACHE = [
+  "/favicon.ico",
+  "/icons/icon-192.png",
+  "/logos/einsof-digit-or.png",
+  "/images/hero-obsidienne.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

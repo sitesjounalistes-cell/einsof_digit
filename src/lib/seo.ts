@@ -959,6 +959,15 @@ export function buildMetadata({
   return {
     title,
     description,
+    /* Favicon — spec Google Search : carré, multiple de 48 px, URL
+       stable et explorable (le /icon.png?hash généré change à chaque
+       build, ce qui perturbe le cache favicon de Google). */
+    icons: {
+      icon: [
+        { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/favicon.ico", sizes: "48x48" },
+      ],
+    },
     keywords: [...new Set([...keywords])],
     alternates: {
       canonical: url,
